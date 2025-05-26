@@ -1,0 +1,2 @@
+/home/dalton/Documents/development/indulge/android/app/.cxx/Debug/4c4r1d2y/armeabi-v7a/CMakeFiles/edit_cache.dir
+/home/dalton/Documents/development/indulge/android/app/.cxx/Debug/4c4r1d2y/armeabi-v7a/CMakeFiles/rebuild_cache.dir
