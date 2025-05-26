@@ -50,6 +50,28 @@ class SexualEncounter{
       media: json['media'],
     );
   }
-
   
+    SexualEncounter copyWith({
+    String? id,
+    DateTime? creationDate,
+    DateTime? lastUpdateDate,
+    Location? location,
+    List<String>? partners,
+    List<String>? activities,
+    String? enjoyment,
+    String? notes,
+    String? media,
+  }) {
+    return SexualEncounter(
+      id: id ?? this.id,
+      creationDate: creationDate ?? this.creationDate,
+      lastUpdateDate: lastUpdateDate ?? this.lastUpdateDate,
+      location: location ?? this.location,
+      partners: partners ?? this.partners,
+      activities: activities ?? this.activities,
+      enjoyment: enjoyment ?? this.enjoyment,
+      notes: notes ?? this.notes,
+      media: media ?? this.media,
+    );
+  }
 }
