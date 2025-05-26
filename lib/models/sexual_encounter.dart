@@ -1,45 +1,55 @@
-import 'encounter.dart';
-import 'package:uuid/uuid.dart';
-import 'dart:convert';
+import 'location.dart';
 
-class SexualEncounter extends Encounter {
-  String id;
-  List<String> personIds;
+class SexualEncounter{
+  final String id;
+  final DateTime creationDate;
+  final DateTime lastUpdateDate;
+  final Location? location;
+  final List<String>? partners;
+  final List<String>? activities;
+  final String? enjoyment;
+  final String? notes;
+  final String? media;
 
-  String? location;
-  int? overallEnjoyment;
-  String? note;
-
-  SexualEncounter._(super.encounterDate, this.id, this.personIds, this.location,
-      this.overallEnjoyment, this.note);
-
-  factory SexualEncounter(
-    DateTime encounterDate,
-    List<String> personIds,
-    String? location,
-    int? overallEnjoyment,
-    String? note,
-  ) {
-    const uuid = Uuid();
-    return SexualEncounter._(
-        encounterDate, uuid.v4(), personIds, location, overallEnjoyment, note);
+  SexualEncounter({
+    required this.id,
+    required this.creationDate,
+    required this.lastUpdateDate,
+    this.location,
+    this.partners,
+    this.activities,
+    this.enjoyment,
+    this.notes,
+    this.media
+  });
+  
+  Map<String, dynamic> toJson() { 
+    return {
+      'id': id,
+      'creationDate': creationDate.toIso8601String(),
+      'lastUpdateDate': lastUpdateDate.toIso8601String(),
+      'location': location?.toJson(),
+      'partners': partners?.map((partner) => partner).toList(),
+      'activities': activities?.map((partner) => partner).toList(),
+      'enjoyment': enjoyment,
+      'notes': notes,
+      'media': media,
+    };
   }
 
-  factory SexualEncounter.fromMap(Map<String, Object?> map) {
-    DateTime encounterDate = DateTime.parse(map["encounterDate"] as String);
-    String id = map["id"] as String;
-    List<String> personIds = [];
-    if (map["personIds"] is String) {
-      personIds = List<String>.from(jsonDecode(map["personIds"] as String));
-    }
-    if (map["personIds"] is! String || personIds.isEmpty) {
-      throw "A list of IDs must be supplied!";
-    }
-    String? location = map["location"] as String?;
-    int? overallEnjoyment = map["overallEnjoyment"] as int?;
-    String? note = map["note"] as String?;
-
-    return SexualEncounter._(
-        encounterDate, id, personIds, location, overallEnjoyment, note);
+  factory SexualEncounter.fromJson(Map<String, dynamic> json) {
+    return SexualEncounter(
+      id: json['id'],
+      creationDate: json['creationDate'],
+      lastUpdateDate: json['lastUpdateDate'],
+      location: json['location'] != null ? Location.fromJson(json['location']) : null,
+      partners: json['partners'],
+      activities: json['activities'],
+      enjoyment: json['enjoyment'],
+      notes: json['notes'],
+      media: json['media'],
+    );
   }
+
+  
 }
