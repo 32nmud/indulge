@@ -11,10 +11,6 @@ class DatabaseEngine {
       },
       version: 1,
     );
-
-    // await database.execute(
-        // 'INSERT INTO sexual_encounter VALUES (\'1\', NULL, 1, NULL, \'["asdf", "sdfg", "fghj"]\', \'2025-05-19\'), (\'2\', NULL, 1, NULL, \'["asdf", "sdfg", "fghj"]\', \'2025-05-22\'), (\'3\', NULL, 1, NULL, \'["asdf", "sdfg", "fghj"]\', \'2025-05-19\')');
-
     return database;
   }
 }
