@@ -7,14 +7,14 @@ import 'sexual_activity.dart';
 class SexualEvent {
   final int? baseEventId; // Database ID (null if new)
   final DateTime date; // Date of the event
-  final Location location; // Where the event happened
+  final Location? location; // Where the event happened
   final List<Person> participants; // People involved
   final List<SexualActivity> activities; // Activities that took place
 
   const SexualEvent({
     this.baseEventId,
     required this.date,
-    required this.location,
+    this.location,
     required this.participants,
     required this.activities,
   });

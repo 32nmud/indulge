@@ -25,7 +25,7 @@ class SexualActivityType {
       minParticipants: (map['min_participants'] as int?) ?? 0,
       maxParticipants: (map['max_participants'] as int?) ?? 0,
       displayCharacter: map['display_character'] as String? ?? '',
-      isRisky: map['is_risky'] as bool? ?? false,
+      isRisky: (map['is_risky'] as int? ?? 0) == 0 ? false : true,
     );
   }
 
@@ -55,4 +55,6 @@ class SexualActivityType {
       isRisky: isRisky ?? this.isRisky,
     );
   }
+
+  // TODO: Add a toString override
 }

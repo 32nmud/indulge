@@ -7,6 +7,8 @@ import '../../domain/database/models/sexual_activity.dart' as dbAct;
 import '../../domain/database/models/sexual_activity_type.dart' as dbActType;
 import '../../domain/database/models/person.dart' as dbPerson;
 import '../../domain/database/models/location.dart' as dbLocation;
+import '../../domain/database/models/address.dart' as dbAddress;
+import '../../domain/database/models/coordinate.dart' as dbCoordinate;
 import '../../domain/database/models/enums.dart' as dbEnum;
 
 /// Translates between the SQLite row objects (in
@@ -16,19 +18,25 @@ class SexualEventAdapter {
   /// Convert a fully‑fetched set of rows into a single `SexualEvent` DTO.
   static SexualEvent toDomain({
     required dbEvent.Event event,
-    required dbLocation.Location loc,
     required List<dbPerson.Person> participants,
     required List<dbAct.SexualActivity> activities,
     required List<dbActType.SexualActivityType> activityTypes,
+    dbLocation.Location? location,
+    dbAddress.Address? address,
+    dbCoordinate.Coordinate? coordinate,
   }) {
-    // Map location
-    final locationDto = Location(
-      id: loc.id,
-      address: loc.address,
-      city: loc.city,
-      state: loc.state,
-      zip: loc.zip,
-    );
+    Location? locationDto;
+    if (location != null && (address != null || coordinate != null)) {
+      locationDto = Location(
+        id: location.id,
+        address: address?.line1,
+        city: address?.city,
+        state: address?.state,
+        zip: address?.zip,
+        lat: coordinate?.lat,
+        long: coordinate?.long,
+      );
+    }
 
     // Map participants
     final participantDtos = participants
@@ -84,7 +92,7 @@ class SexualEventAdapter {
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
         eventType: dbEnum.EventType.sexual,
-        locationId: dto.location.id,
+        locationId: dto.location?.id,
         notes: null,
       );
 }

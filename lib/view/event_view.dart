@@ -1,29 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:indulge/models/encounter.dart';
-import 'package:indulge/models/sexual_encounter.dart';
-import 'package:indulge/domain/data_access.dart';
 import 'package:intl/intl.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
+import 'package:indulge/domain/repositories/sexual_event_repository.dart';
+import 'package:indulge/data/models/sexual_event.dart';
 
-class EncounterViewPage extends StatefulWidget {
-  final DataAccess dataAccess;
-  const EncounterViewPage({super.key, required this.dataAccess});
+class EventViewPage extends StatefulWidget {
+  final SexualEventRepository sexualEventRepo;
+  const EventViewPage({super.key, required this.sexualEventRepo});
 
   @override
-  State<EncounterViewPage> createState() => _EncounterViewPageState();
+  State<EventViewPage> createState() => _EventViewPageState();
 }
 
-class _EncounterViewPageState extends State<EncounterViewPage> {
+class _EventViewPageState extends State<EventViewPage> {
   DateTime _selectedDay = DateTime.now();
-  late final ValueNotifier<List<Encounter>> _selectedEvents;
+  late final ValueNotifier<List<SexualEvent>> _selectedEvents;
 
-  String _getEncounterEventPreviewString(Encounter encounter) {
-    if (encounter is SexualEncounter) {
-      String string = 'Sexual event with ';
-      return '$string${encounter.personIds}';
-    } else {
-      return 'Some other type of event';
-    }
+  String _getEventPreviewString(SexualEvent event) {
+    String string = 'Sexual event with ';
+    return '$string${event.participants}';
   }
 
   DateTime _getEarliestEvent() {
@@ -39,8 +34,8 @@ class _EncounterViewPageState extends State<EncounterViewPage> {
     super.initState();
     _selectedEvents = ValueNotifier([]);
     // dataAccess.getEncountersInRange(startDate, endDate)
-    widget.dataAccess.getEncountersForDate(_selectedDay).then((encounters) {
-      _selectedEvents = ValueNotifier(encounters);
+    widget.sexualEventRepo.getByDate(_selectedDay).then((events) {
+      _selectedEvents = ValueNotifier(events);
     });
   }
 
@@ -52,9 +47,9 @@ class _EncounterViewPageState extends State<EncounterViewPage> {
       onDateChange: (date) => {
         setState(() {
           _selectedDay = date;
-          widget.dataAccess
-              .getEncountersForDate(date)
-              .then((encounters) => _selectedEvents.value = encounters);
+          widget.sexualEventRepo
+              .getByDate(date)
+              .then((events) => _selectedEvents.value = events);
         })
       },
       itemExtent: 64.0,
@@ -65,12 +60,12 @@ class _EncounterViewPageState extends State<EncounterViewPage> {
 
   Widget _dayItem(
       BuildContext context, date, isSelected, isDisabled, isToday, onTap) {
-    Future<List<Encounter>> eventsForDay =
-        widget.dataAccess.getEncountersForDate(date);
+    Future<List<SexualEvent>> eventsForDay =
+        widget.sexualEventRepo.getByDate(date);
     ThemeData theme = Theme.of(context);
     return InkResponse(
       onTap: onTap,
-      child: ValueListenableBuilder<List<Encounter>>(
+      child: ValueListenableBuilder<List<SexualEvent>>(
           valueListenable: _selectedEvents,
           builder: (context, value, _) {
             return Card(
@@ -117,7 +112,7 @@ class _EncounterViewPageState extends State<EncounterViewPage> {
 
   Widget _encounterList() {
     return Expanded(
-      child: ValueListenableBuilder<List<Encounter>>(
+      child: ValueListenableBuilder<List<SexualEvent>>(
         valueListenable: _selectedEvents,
         builder: (context, value, _) {
           return ListView.builder(
@@ -126,7 +121,7 @@ class _EncounterViewPageState extends State<EncounterViewPage> {
               return Card(
                 child: Padding(
                   padding: const EdgeInsets.all(10),
-                  child: Text(_getEncounterEventPreviewString(value[index])),
+                  child: Text(_getEventPreviewString(value[index])),
                 ),
               );
             },

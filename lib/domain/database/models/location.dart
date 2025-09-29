@@ -3,57 +3,51 @@ import 'package:meta/meta.dart';
 @immutable
 class Location {
   final int? id;
-  final String address;
-  final String? city;
-  final String? state;
-  final String? zip;
+  final int? addressId;
+  final int? coordinateId;
+  final String? nickname;
 
   const Location({
     this.id,
-    required this.address,
-    this.city,
-    this.state,
-    this.zip,
+    this.addressId,
+    this.coordinateId,
+    this.nickname,
   });
 
   factory Location.fromMap(Map<String, dynamic> map) {
     return Location(
       id: map['id'] as int?,
-      address: map['address'] as String,
-      city: map['city'] as String?,
-      state: map['state'] as String?,
-      zip: map['zip'] as String?,
+      addressId: map['address_id'] as int?,
+      coordinateId: map['coordinate_id'] as int?,
+      nickname: map['nickname'] as String?,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'address': address,
-      'city': city,
-      'state': state,
-      'zip': zip,
+      'address_is': addressId,
+      'coordinate_id': coordinateId,
+      'nickname': nickname
     };
   }
 
   Location copyWith({
     int? id,
-    String? address,
-    String? city,
-    String? state,
-    String? zip,
+    final int? addressId,
+    final int? coordinateId,
+    final String? nickname,
   }) {
     return Location(
       id: id ?? this.id,
-      address: address ?? this.address,
-      city: city ?? this.city,
-      state: state ?? this.state,
-      zip: zip ?? this.zip,
+      addressId: addressId ?? this.addressId,
+      coordinateId: coordinateId ?? this.coordinateId,
+      nickname: nickname ?? this.nickname,
     );
   }
 
   @override
   String toString() {
-    return 'Location(id: $id, address: $address, city: $city, state: $state, zip: $zip)';
+    return 'Location(id: $id, addressId: $addressId, coordinateId: $coordinateId, nickname: $nickname)';
   }
 }
