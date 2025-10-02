@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:indulge/view/event_view.dart';
+import 'package:indulge/view/daily_event_view/daily_event_view.dart';
 import 'package:indulge/view/bottom_nav_bar.dart';
-import 'package:indulge/data/repositories/sexual_event_repository_impl.dart';
-import 'package:indulge/domain/repositories/sexual_event_repository.dart';
+import 'package:indulge/provider/event_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,13 +13,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (_) => EventsProvider(),
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+          useMaterial3: true,
+        ),
+        home: const MyHomePage(title: 'Indulge'),
       ),
-      home: const MyHomePage(title: 'Indulge'),
     );
   }
 }
@@ -34,46 +37,41 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
-  final Future<SexualEventRepository> _sexualEventRepo =
-      SexualEventRepositoryImpl.create();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text(widget.title),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {},
-          tooltip: 'Add a new encounter',
-          child: const Icon(Icons.add),
-        ),
-        bottomNavigationBar: BottomNavBar(currentPageIndex, (index) {
-          setState(() {
-            currentPageIndex = index;
-          });
-        }),
-        body: FutureBuilder(
-            future: _sexualEventRepo,
-            builder: (ctx, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasData) {
-                return [
-                  EventViewPage(sexualEventRepo: snapshot.data!),
-                  const Center(
-                    child: Text("This is the analysis page"),
-                  ),
-                  const Center(
-                    child: Text("This is the contacts page"),
-                  ),
-                  const Center(
-                    child: Text("This is the settings page"),
-                  )
-                ][currentPageIndex];
-              }
-              throw Exception("Invalid state!");
-            }));
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        tooltip: 'Add a new encounter',
+        child: const Icon(Icons.add),
+      ),
+      bottomNavigationBar: BottomNavBar(currentPageIndex, (index) {
+        setState(() {
+          currentPageIndex = index;
+        });
+      }),
+      body: FutureBuilder<void>(
+        future: context.read<EventsProvider>().ready,
+        builder: (ctx, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return IndexedStack(
+            index: currentPageIndex,
+            children: const [
+              EventViewPage(),
+              Center(child: Text("This is the analysis page")),
+              Center(child: Text("This is the contacts page")),
+              Center(child: Text("This is the settings page")),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

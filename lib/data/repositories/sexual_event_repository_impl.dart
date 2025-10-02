@@ -116,6 +116,25 @@ class SexualEventRepositoryImpl implements SexualEventRepository {
   }
 
   @override
+  Future<Map<DateTime, int>> getDailyEventCount() async {
+    final String sql = '''
+      SELECT date, COUNT(id) AS count FROM event GROUP BY date;
+    ''';
+    final List<Map<String, Object?>> results = await _db.rawQuery(sql);
+    Map<DateTime, int> normalizedResults = Map();
+    for (final row in results) {
+      DateTime? date = DateTime.tryParse(row['date'] as String? ?? '');
+      int? count = row['count'] as int? ?? 0;
+      if (date != null && count != 0) {
+        date = DateTime(date.year, date.month, date.day);
+        normalizedResults.addAll({date: count});
+      }
+    }
+
+    return normalizedResults;
+  }
+
+  @override
   Future<int> save(SexualEvent event) async {
     final dbEvt = SexualEventAdapter.toDatabase(event);
 

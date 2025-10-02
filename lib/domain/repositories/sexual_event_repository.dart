@@ -12,6 +12,9 @@ abstract class SexualEventRepository {
   /// (time component is ignored).
   Future<List<SexualEvent>> getByDate(DateTime date);
 
+  /// Load a count of all events that occur on any date.
+  Future<Map<DateTime, int>> getDailyEventCount();
+
   /// Persist a new or existing event.
   /// If [event.baseEventId] is null, a new row is inserted
   /// and the generated id is returned.

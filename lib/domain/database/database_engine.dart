@@ -41,11 +41,6 @@ class DatabaseEngine {
       version: 1,
     );
 
-    // Debug: list tables in the database
-    final tables = await database
-        .rawQuery("SELECT name FROM sqlite_master WHERE type='table';");
-    print('Existing tables: ${tables.map((t) => t['name']).join(', ')}');
-
     return database;
   }
 }
