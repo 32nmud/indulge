@@ -3,7 +3,7 @@ import 'enums.dart';
 
 @immutable
 class Event {
-  final int? id;
+  final int id;
   final DateTime date;
   final DateTime createdAt;
   final DateTime lastModified;
@@ -12,7 +12,7 @@ class Event {
   final String? notes;
 
   const Event({
-    this.id,
+    required this.id,
     required this.date,
     required this.createdAt,
     required this.lastModified,
@@ -23,7 +23,7 @@ class Event {
 
   factory Event.fromMap(Map<String, dynamic> map) {
     return Event(
-      id: map['id'] as int?,
+      id: map['id'] as int,
       date: DateTime.parse(map['date'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
       lastModified: DateTime.parse(map['last_modified'] as String),

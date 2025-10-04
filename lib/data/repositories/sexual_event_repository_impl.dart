@@ -159,4 +159,11 @@ class SexualEventRepositoryImpl implements SexualEventRepository {
         .delete('event_participant', where: 'event_id = ?', whereArgs: [id]);
     await _db.delete('event', where: 'id = ?', whereArgs: [id]);
   }
+
+  @override
+  Future<void> removeActivity(int id) async {
+    await _db.delete('sexual_activity_participant',
+        where: 'sexual_activity_id = ?', whereArgs: [id]);
+    await _db.delete('sexual_activity', where: 'id = ?', whereArgs: [id]);
+  }
 }

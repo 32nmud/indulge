@@ -23,4 +23,7 @@ abstract class SexualEventRepository {
 
   /// Delete the event identified by [id].
   Future<void> delete(int id);
+
+  /// Remove a sexual activity by its database id.
+  Future<void> removeActivity(int id);
 }

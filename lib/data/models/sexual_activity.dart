@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 
 @immutable
 class SexualActivity {
-  final int? id;
+  final int id;
   final int eventId;
   final int activityId;
   final String name;
@@ -12,7 +12,7 @@ class SexualActivity {
   final bool isRisky;
 
   const SexualActivity({
-    this.id,
+    required this.id,
     required this.eventId,
     required this.activityId,
     required this.name,

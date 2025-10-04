@@ -3,6 +3,7 @@ import 'package:indulge/view/daily_event_view/daily_event_view.dart';
 import 'package:indulge/view/bottom_nav_bar.dart';
 import 'package:indulge/provider/event_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:indulge/view/event_editor/event_editor.dart';
 
 void main() {
   runApp(const MyApp());
@@ -46,7 +47,14 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => {
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => const EventEditorPage(),
+            ),
+          )
+        },
         tooltip: 'Add a new encounter',
         child: const Icon(Icons.add),
       ),

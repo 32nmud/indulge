@@ -2,19 +2,19 @@ import 'package:meta/meta.dart';
 
 @immutable
 class SexualActivity {
-  final int? id;
+  final int id;
   final int eventId;
   final int activityId;
 
   const SexualActivity({
-    this.id,
+    required this.id,
     required this.eventId,
     required this.activityId,
   });
 
   factory SexualActivity.fromMap(Map<String, dynamic> map) {
     return SexualActivity(
-      id: map['id'] as int?,
+      id: map['id'] as int,
       eventId: map['event_id'] as int,
       activityId: map['activity_id'] as int,
     );
