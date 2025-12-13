@@ -1,0 +1,32 @@
+{
+  "resources": [
+    {
+      "id": "devId1",
+      "date": "2025-12-12",
+      "lastModifiedDate": "2025-12-12",
+      "activities": [
+        {
+          "type": {
+            "reference": "bottoming",
+            "resourceType": "sexualActivityType"
+          },
+          "participants": []
+        }
+      ]
+    },
+    {
+      "id": "devId2",
+      "date": "2025-12-12",
+      "lastModifiedDate": "2025-12-12",
+      "activities": [
+        {
+          "type": {
+            "reference": "topping",
+            "resourceType": "sexualActivityType"
+          },
+          "participants": []
+        }
+      ]
+    }
+  ]
+}

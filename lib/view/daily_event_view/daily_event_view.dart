@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/provider/event_provider.dart';
+import 'package:indulge/provider/sexual_event_provider.dart';
 import 'day_card.dart';
 import 'event_list.dart';
 
@@ -19,7 +19,7 @@ class _EventViewPageState extends State<EventViewPage> {
     super.initState();
     // Trigger the initial load for the current day once the widget tree is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EventsProvider>().selectDate(_selectedDay);
+      context.read<SexualEventsProvider>().selectDate(_selectedDay);
     });
   }
 

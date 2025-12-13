@@ -1,31 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:indulge/data/models/person/person.dart';
+import 'package:indulge/view/event_editor/add_item_card.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/data/models/sexual_event/sexual_event.dart';
+import 'package:indulge/data/models/sexual_activity/sexual_activity.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:indulge/view/daily_event_view/event_card/event_card.dart';
+import 'participant_card.dart';
 
 typedef RemovedItemBuilder<T> =
     Widget Function(T item, BuildContext context, Animation<double> animation);
 
-class AnimatedEventList extends StatefulWidget {
-  const AnimatedEventList({super.key});
+class AnimatedEventParticipantList extends StatefulWidget {
+  const AnimatedEventParticipantList({super.key});
 
   @override
-  State<AnimatedEventList> createState() => _AnimatedEventListState();
+  State<AnimatedEventParticipantList> createState() =>
+      _AnimatedEventParticipantListState();
 }
 
-class _AnimatedEventListState extends State<AnimatedEventList> {
+class _AnimatedEventParticipantListState
+    extends State<AnimatedEventParticipantList> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  late ListModel<SexualEvent> _list;
+  late ListModel<Person> _list;
 
   @override
   void initState() {
     super.initState();
     final provider = context.read<SexualEventsProvider>();
-    _list = ListModel<SexualEvent>(
+    _list = ListModel<Person>(
       listKey: _listKey,
       removedItemBuilder: _buildRemovedItem,
-      initialItems: provider.state.currentEvents ?? [],
+      initialItems: provider.state.selectedEventParticipants ?? [],
     );
   }
 
@@ -33,7 +37,7 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final provider = context.read<SexualEventsProvider>();
-    _list.syncWith(provider.state.currentEvents ?? []);
+    _list.syncWith(provider.state.selectedEventParticipants ?? []);
   }
 
   Widget _buildItem(
@@ -41,20 +45,28 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
     BuildContext context,
     Animation<double> animation,
   ) {
+    final provider = context.read<SexualEventsProvider>();
     return SizeTransition(
       sizeFactor: animation,
-      child: EventCard(event: _list[index]),
+      child: ParticipantCard(
+        participant: _list[index],
+        eventId: provider.state.selectedEvent!.id,
+      ),
     );
   }
 
   Widget _buildRemovedItem(
-    SexualEvent event,
+    Person participant,
     BuildContext context,
     Animation<double> animation,
   ) {
+    final provider = context.read<SexualEventsProvider>();
     return SizeTransition(
       sizeFactor: animation,
-      child: EventCard(event: event),
+      child: ParticipantCard(
+        participant: participant,
+        eventId: provider.state.selectedEvent!.id,
+      ),
     );
   }
 
@@ -62,13 +74,12 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
   Widget build(BuildContext context) {
     context.watch<SexualEventsProvider>();
 
-    return Expanded(
-      child: AnimatedList(
-        key: _listKey,
-        initialItemCount: _list.length,
-        itemBuilder: (context, index, animation) =>
-            _buildItem(index, context, animation),
-      ),
+    return AnimatedList(
+      shrinkWrap: true,
+      key: _listKey,
+      initialItemCount: _list.length,
+      itemBuilder: (context, index, animation) =>
+          _buildItem(index, context, animation),
     );
   }
 }

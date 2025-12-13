@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/provider/event_provider.dart';
+import 'package:indulge/provider/sexual_event_provider.dart';
 
 class DayCard extends StatefulWidget {
   const DayCard({super.key});
@@ -24,7 +24,7 @@ class _DayCardState extends State<DayCard> {
       onDateChange: (date) {
         setState(() {
           _selectedDay = date;
-          context.read<EventsProvider>().selectDate(date);
+          context.read<SexualEventsProvider>().selectDate(date);
         });
       },
       itemExtent: 64.0,
@@ -41,7 +41,7 @@ class _DayCardState extends State<DayCard> {
     bool isToday,
     VoidCallback onTap,
   ) {
-    final provider = context.watch<EventsProvider>();
+    final provider = context.watch<SexualEventsProvider>();
     final count = provider.state.dailyEventCount?[date] ?? 0;
     final theme = Theme.of(context);
 
@@ -61,12 +61,18 @@ class _DayCardState extends State<DayCard> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(DateFormat('MMM').format(date),
-                    style: theme.textTheme.bodySmall),
-                Text(DateFormat('d').format(date),
-                    style: theme.textTheme.titleLarge),
-                Text(DateFormat('E').format(date),
-                    style: theme.textTheme.bodySmall),
+                Text(
+                  DateFormat('MMM').format(date),
+                  style: theme.textTheme.bodySmall,
+                ),
+                Text(
+                  DateFormat('d').format(date),
+                  style: theme.textTheme.titleLarge,
+                ),
+                Text(
+                  DateFormat('E').format(date),
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
             ),
           ),

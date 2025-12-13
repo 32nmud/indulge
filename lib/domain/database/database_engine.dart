@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter/services.dart';
+import 'database_seed.dart';
 
 class DatabaseEngine {
   static Future<Database> buildLocalConnection() async {
@@ -11,15 +12,7 @@ class DatabaseEngine {
       onCreate: (db, version) async {
         // Load the full SQL schema from the bundled asset
         final schemaFile = await rootBundle.loadString('assets/sql/schema.sql');
-
-        final sampleFile =
-            await rootBundle.loadString('assets/sql/sample_data.sql');
-
-        final sample_statements = sampleFile
-            .split(';')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
+        final DatabaseSeed seeder = DatabaseSeed(db: db);
 
         // SQLite in sqflite only supports a single statement per execute call.
         // Split the file into individual statements and execute them one by one.
@@ -33,10 +26,10 @@ class DatabaseEngine {
         for (var stmt in statements) {
           batch.execute(stmt);
         }
-        for (var stmt in sample_statements) {
-          batch.execute(stmt);
-        }
         await batch.commit(noResult: true);
+
+        await seeder.loadSeeds();
+        await seeder.loadDevSeeds();
       },
       version: 1,
     );

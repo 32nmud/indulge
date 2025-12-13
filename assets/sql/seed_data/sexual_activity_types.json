@@ -1,0 +1,58 @@
+{
+  "resources": [
+    {
+      "id": "bottoming",
+      "name": "Bottoming",
+      "displayCharacter": "🍑",
+      "properties": [
+        {
+          "name": "bareback",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        },
+        {
+          "name": "condom",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        },
+        {
+          "name": "came inside",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        },
+        {
+          "name": "broken condom",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        }
+      ]
+    },
+    {
+      "id": "topping",
+      "name": "Topping",
+      "displayCharacter": "🍆",
+      "properties": [
+        {
+          "name": "bareback",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        },
+        {
+          "name": "condom",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        },
+        {
+          "name": "came inside",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        },
+        {
+          "name": "broken condom",
+          "displayCharacter": "",
+          "canHaveMultipleParticipants": true
+        }
+      ]
+    }
+  ]
+}

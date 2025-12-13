@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/view/daily_event_view/daily_event_view.dart';
 import 'package:indulge/view/bottom_nav_bar.dart';
-import 'package:indulge/provider/event_provider.dart';
+import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/view/event_editor/event_editor.dart';
+import 'package:logging/logging.dart';
 
 void main() {
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    print('${record.level.name}: ${record.message}');
+  });
   runApp(const MyApp());
 }
 
@@ -15,9 +20,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => EventsProvider(),
+      create: (_) => SexualEventsProvider(),
       child: MaterialApp(
-        title: 'Flutter Demo',
+        title: 'Indulge',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
           useMaterial3: true,
@@ -53,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
             MaterialPageRoute<void>(
               builder: (context) => const EventEditorPage(),
             ),
-          )
+          ),
         },
         tooltip: 'Add a new encounter',
         child: const Icon(Icons.add),
@@ -64,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }),
       body: FutureBuilder<void>(
-        future: context.read<EventsProvider>().ready,
+        future: context.read<SexualEventsProvider>().ready,
         builder: (ctx, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
