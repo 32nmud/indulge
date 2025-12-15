@@ -12,18 +12,16 @@ _SexualActivityParticipant _$SexualActivityParticipantFromJson(
   participant: json['participant'] == null
       ? const Reference()
       : Reference.fromJson(json['participant'] as Map<String, dynamic>),
-  activity: json['activity'] == null
-      ? const Reference()
-      : Reference.fromJson(json['activity'] as Map<String, dynamic>),
-  timesParticipated: (json['timesParticipated'] as num?)?.toInt() ?? 0,
-  subtypeParticipated: json['subtypeParticipated'] as String?,
+  propertyReferences:
+      (json['propertyReferences'] as List<dynamic>?)
+          ?.map((e) => Reference.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$SexualActivityParticipantToJson(
   _SexualActivityParticipant instance,
 ) => <String, dynamic>{
   'participant': instance.participant,
-  'activity': instance.activity,
-  'timesParticipated': instance.timesParticipated,
-  'subtypeParticipated': instance.subtypeParticipated,
+  'propertyReferences': instance.propertyReferences,
 };

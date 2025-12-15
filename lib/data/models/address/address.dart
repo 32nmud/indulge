@@ -10,7 +10,7 @@ abstract class Address with _$Address {
     @Default('') String state,
     String? line1,
     String? line2,
-    int? zipCode,
+    String? zipCode,
   }) = _Address;
 
   factory Address.fromJson(Map<String, dynamic> json) =>

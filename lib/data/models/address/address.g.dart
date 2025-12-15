@@ -11,7 +11,7 @@ _Address _$AddressFromJson(Map<String, dynamic> json) => _Address(
   state: json['state'] as String? ?? '',
   line1: json['line1'] as String?,
   line2: json['line2'] as String?,
-  zipCode: (json['zipCode'] as num?)?.toInt(),
+  zipCode: json['zipCode'] as String?,
 );
 
 Map<String, dynamic> _$AddressToJson(_Address instance) => <String, dynamic>{

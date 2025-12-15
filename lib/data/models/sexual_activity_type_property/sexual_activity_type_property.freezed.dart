@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualActivityTypeProperty {
 
- String get name; String get displayCharacter; bool get canHaveMultipleParticipants;
+ String get id; String get name; String get displayCharacter; bool get canHaveMultipleParticipants;
 /// Create a copy of SexualActivityTypeProperty
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SexualActivityTypePropertyCopyWith<SexualActivityTypeProperty> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivityTypeProperty&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivityTypeProperty&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,displayCharacter,canHaveMultipleParticipants);
+int get hashCode => Object.hash(runtimeType,id,name,displayCharacter,canHaveMultipleParticipants);
 
 @override
 String toString() {
-  return 'SexualActivityTypeProperty(name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants)';
+  return 'SexualActivityTypeProperty(id: $id, name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SexualActivityTypePropertyCopyWith<$Res>  {
   factory $SexualActivityTypePropertyCopyWith(SexualActivityTypeProperty value, $Res Function(SexualActivityTypeProperty) _then) = _$SexualActivityTypePropertyCopyWithImpl;
 @useResult
 $Res call({
- String name, String displayCharacter, bool canHaveMultipleParticipants
+ String id, String name, String displayCharacter, bool canHaveMultipleParticipants
 });
 
 
@@ -65,9 +65,10 @@ class _$SexualActivityTypePropertyCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivityTypeProperty
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,}) {
   return _then(_self.copyWith(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,displayCharacter: null == displayCharacter ? _self.displayCharacter : displayCharacter // ignore: cast_nullable_to_non_nullable
 as String,canHaveMultipleParticipants: null == canHaveMultipleParticipants ? _self.canHaveMultipleParticipants : canHaveMultipleParticipants // ignore: cast_nullable_to_non_nullable
 as bool,
@@ -155,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String displayCharacter,  bool canHaveMultipleParticipants)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualActivityTypeProperty() when $default != null:
-return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants);case _:
+return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants);case _:
   return orElse();
 
 }
@@ -176,10 +177,10 @@ return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipa
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String displayCharacter,  bool canHaveMultipleParticipants)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants)  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivityTypeProperty():
-return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants);case _:
+return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +197,10 @@ return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipa
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String displayCharacter,  bool canHaveMultipleParticipants)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivityTypeProperty() when $default != null:
-return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants);case _:
+return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants);case _:
   return null;
 
 }
@@ -210,10 +211,11 @@ return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipa
 /// @nodoc
 @JsonSerializable()
 
-class _SexualActivityTypeProperty implements SexualActivityTypeProperty {
-  const _SexualActivityTypeProperty({this.name = "", this.displayCharacter = "❔", this.canHaveMultipleParticipants = true});
+class _SexualActivityTypeProperty extends SexualActivityTypeProperty {
+  const _SexualActivityTypeProperty({this.id = "", this.name = "unknown", this.displayCharacter = "❔", this.canHaveMultipleParticipants = true}): super._();
   factory _SexualActivityTypeProperty.fromJson(Map<String, dynamic> json) => _$SexualActivityTypePropertyFromJson(json);
 
+@override@JsonKey() final  String id;
 @override@JsonKey() final  String name;
 @override@JsonKey() final  String displayCharacter;
 @override@JsonKey() final  bool canHaveMultipleParticipants;
@@ -231,16 +233,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivityTypeProperty&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivityTypeProperty&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,displayCharacter,canHaveMultipleParticipants);
+int get hashCode => Object.hash(runtimeType,id,name,displayCharacter,canHaveMultipleParticipants);
 
 @override
 String toString() {
-  return 'SexualActivityTypeProperty(name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants)';
+  return 'SexualActivityTypeProperty(id: $id, name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants)';
 }
 
 
@@ -251,7 +253,7 @@ abstract mixin class _$SexualActivityTypePropertyCopyWith<$Res> implements $Sexu
   factory _$SexualActivityTypePropertyCopyWith(_SexualActivityTypeProperty value, $Res Function(_SexualActivityTypeProperty) _then) = __$SexualActivityTypePropertyCopyWithImpl;
 @override @useResult
 $Res call({
- String name, String displayCharacter, bool canHaveMultipleParticipants
+ String id, String name, String displayCharacter, bool canHaveMultipleParticipants
 });
 
 
@@ -268,9 +270,10 @@ class __$SexualActivityTypePropertyCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivityTypeProperty
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,}) {
   return _then(_SexualActivityTypeProperty(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,displayCharacter: null == displayCharacter ? _self.displayCharacter : displayCharacter // ignore: cast_nullable_to_non_nullable
 as String,canHaveMultipleParticipants: null == canHaveMultipleParticipants ? _self.canHaveMultipleParticipants : canHaveMultipleParticipants // ignore: cast_nullable_to_non_nullable
 as bool,

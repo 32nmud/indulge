@@ -1,0 +1,39 @@
+{
+  "resourceType": "SexualEvent",
+  "id": "event123",
+  "date": "2024-01-01T15:30:00Z",
+  "activities": [
+    {
+      "type": {
+        "reference": "anal_sex",
+        "resourceType": "SexualActivityType"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "person1",
+            "resourceType": "Person"
+          },
+          "propertyReferences": [
+            {
+              "reference": "condom_use_bareback",
+              "resourceType": "SexualActivityTypeProperty"
+            }
+          ]
+        },
+        {
+          "participant": {
+            "reference": "person2",
+            "resourceType": "Person"
+          },
+          "propertyReferences": [
+            {
+              "reference": "condom_use_with_condom",
+              "resourceType": "SexualActivityTypeProperty"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

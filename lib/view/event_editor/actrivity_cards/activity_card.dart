@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indulge/data/models.dart';
 import 'package:indulge/data/models/person/person.dart';
 import 'package:indulge/data/models/sexual_activity/sexual_activity.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
@@ -27,15 +28,45 @@ class _ActivityCardState extends State<ActivityCard> {
   }
 
   Widget _participantOverview(List<Person> persons) {
-    List<String> participantNames = [
-      for (Person p in persons)
-        (p.name.nickname != null)
-            ? p.name.nickname!
-            : p.name.given ?? "unknown",
-    ];
+    SexualEventsProvider provider = context.read<SexualEventsProvider>();
+    List<Widget> participantWidgets = [];
+    Map<String, Widget> propertyTitles = {};
+    Map<String, List<Widget>> participantTitles = {};
+    for (Person person in persons) {
+      final properties = provider
+          .getSexualActivityTypePropertiesForPersonAndActivity(
+            person,
+            widget.activity,
+          );
+
+      for (SexualActivityTypeProperty property in properties) {
+        String propertyTitle = "${property.displayCharacter} ${property.name}";
+        propertyTitles.putIfAbsent(
+          property.id,
+          () => Text(
+            propertyTitle,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        );
+
+        String personTitle =
+            "  - ${person.name.nickname ?? person.name.given ?? "unknown"}";
+        if (participantTitles.containsKey(property.id)) {
+          participantTitles[property.id]!.add(Text(personTitle));
+        } else {
+          participantTitles[property.id] = [Text(personTitle)];
+        }
+      }
+    }
+
+    for (String key in participantTitles.keys) {
+      participantWidgets.add(propertyTitles[key]!);
+      participantWidgets.addAll(participantTitles[key]!);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [for (String name in participantNames) Text(name)],
+      children: participantWidgets,
     );
   }
 
@@ -92,11 +123,12 @@ class _ActivityCardState extends State<ActivityCard> {
           }
 
           if (snapshot.hasData) {
-            print(activityType);
             return ExpansionTile(
               leading: _previewIcon(),
               title: Text(activityType?.name ?? "Unknown Activity"),
               subtitle: _previewText(),
+              expandedAlignment: Alignment.centerLeft,
+              expandedCrossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _participantOverview(snapshot.data ?? []),
                 _buttonRow(context),

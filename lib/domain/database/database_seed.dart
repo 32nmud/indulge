@@ -2,26 +2,38 @@ import 'package:indulge/data/models.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:logging/logging.dart';
 
 class DatabaseSeed {
   final Database db;
+  final Logger _logger = Logger('DatabaseSeed');
 
   final Map<String, String> seedFiles = {
     "sexualActivityType": "assets/sql/seed_data/sexual_activity_types.json",
+    "sexualActivityTypeProperty":
+        "assets/sql/seed_data/sexual_activity_type_properties.json",
   };
 
   final Map<String, String> devSeedFiles = {
-    "sexualEventType": "assets/sql/development_seed_data/sexual_events.json",
+    "sexualEvent": "assets/sql/development_seed_data/sexual_events.json",
+    "location": "assets/sql/development_seed_data/locations.json",
+    "person": "assets/sql/development_seed_data/persons.json",
   };
 
   final Map<String, String> tableMap = {
     "sexualActivityType": "sexual_activity_type",
-    "sexualEventType": "sexual_event",
+    "sexualActivityTypeProperty": "sexual_activity_type_property",
+    "sexualEvent": "sexual_event",
+    "location": "location",
+    "person": "person",
   };
 
   final Map<String, dynamic> modelMap = {
     "sexualActivityType": SexualActivityType,
-    "sexualEventType": SexualEvent,
+    "sexualActivityTypeProperty": SexualActivityTypeProperty,
+    "sexualEvent": SexualEvent,
+    "location": Location,
+    "person": Person,
   };
 
   DatabaseSeed({required this.db});
@@ -45,7 +57,7 @@ class DatabaseSeed {
       try {
         await _loadAndSeedFile(key, filePath);
       } catch (e) {
-        print('Error loading seed file $filePath: $e');
+        _logger.severe('Error loading seed file $filePath: $e');
         rethrow;
       }
     }
@@ -61,7 +73,7 @@ class DatabaseSeed {
     final resources = json['resources'] as List<dynamic>? ?? [];
 
     if (resources.isEmpty) {
-      print('No resources found in $filePath');
+      _logger.info('No resources found in $filePath');
       return;
     }
 
@@ -78,8 +90,17 @@ class DatabaseSeed {
           case "sexualActivityType":
             await _seedSexualActivityType(txn, tableName, resourceData);
             break;
-          case "sexualEventType":
-            await _seedSexualEventType(txn, tableName, resourceData);
+          case "sexualActivityTypeProperty":
+            await _seedSexualActivityTypeProperty(txn, tableName, resourceData);
+            break;
+          case "sexualEvent":
+            await _seedSexualEvent(txn, tableName, resourceData);
+            break;
+          case "location":
+            await _seedLocation(txn, tableName, resourceData);
+            break;
+          case "person":
+            await _seedPerson(txn, tableName, resourceData);
             break;
           default:
             throw Exception('Unknown seed key: $key');
@@ -87,7 +108,7 @@ class DatabaseSeed {
       }
     });
 
-    print('Successfully seeded $key from $filePath');
+    _logger.info('Successfully seeded $key from $filePath');
   }
 
   /// Seed sexual activity types with their properties
@@ -110,8 +131,70 @@ class DatabaseSeed {
     );
   }
 
+  /// Seed sexual activity type properties with their properties
+  Future<void> _seedSexualActivityTypeProperty(
+    Transaction txn,
+    String tableName,
+    Map<String, dynamic> resourceData,
+  ) async {
+    // Create the model with properties
+    final activityTypeProperty = SexualActivityTypeProperty.fromJson(
+      resourceData,
+    );
+
+    // Insert into database
+    await txn.rawInsert(
+      'INSERT OR REPLACE INTO $tableName (id, last_modified, json) VALUES (?, ?, ?)',
+      [
+        activityTypeProperty.id,
+        DateTime.now().toIso8601String(),
+        jsonEncode(activityTypeProperty.toJson()),
+      ],
+    );
+  }
+
+  /// Seed location types with their properties
+  Future<void> _seedLocation(
+    Transaction txn,
+    String tableName,
+    Map<String, dynamic> resourceData,
+  ) async {
+    // Create the model with properties
+    final location = Location.fromJson(resourceData);
+
+    // Insert into database
+    await txn.rawInsert(
+      'INSERT OR REPLACE INTO $tableName (id, last_modified, json) VALUES (?, ?, ?)',
+      [
+        location.id,
+        DateTime.now().toIso8601String(),
+        jsonEncode(location.toJson()),
+      ],
+    );
+  }
+
+  /// Seed person types with their properties
+  Future<void> _seedPerson(
+    Transaction txn,
+    String tableName,
+    Map<String, dynamic> resourceData,
+  ) async {
+    // Create the model with properties
+    final person = Person.fromJson(resourceData);
+
+    // Insert into database
+    await txn.rawInsert(
+      'INSERT OR REPLACE INTO $tableName (id, last_modified, json) VALUES (?, ?, ?)',
+      [
+        person.id,
+        DateTime.now().toIso8601String(),
+        jsonEncode(person.toJson()),
+      ],
+    );
+  }
+
   /// Seed sexual event types with their properties
-  Future<void> _seedSexualEventType(
+  Future<void> _seedSexualEvent(
     Transaction txn,
     String tableName,
     Map<String, dynamic> resourceData,

@@ -6,24 +6,20 @@
       "displayCharacter": "🍑",
       "properties": [
         {
-          "name": "bareback",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "1",
+          "resourceType": "SexualActivityTypeProperty"
         },
         {
-          "name": "condom",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "2",
+          "resourceType": "SexualActivityTypeProperty"
         },
         {
-          "name": "came inside",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "3",
+          "resourceType": "SexualActivityTypeProperty"
         },
         {
-          "name": "broken condom",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "4",
+          "resourceType": "SexualActivityTypeProperty"
         }
       ]
     },
@@ -33,24 +29,20 @@
       "displayCharacter": "🍆",
       "properties": [
         {
-          "name": "bareback",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "1",
+          "resourceType": "SexualActivityTypeProperty"
         },
         {
-          "name": "condom",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "2",
+          "resourceType": "SexualActivityTypeProperty"
         },
         {
-          "name": "came inside",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "3",
+          "resourceType": "SexualActivityTypeProperty"
         },
         {
-          "name": "broken condom",
-          "displayCharacter": "",
-          "canHaveMultipleParticipants": true
+          "reference": "4",
+          "resourceType": "SexualActivityTypeProperty"
         }
       ]
     }

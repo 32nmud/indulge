@@ -13,7 +13,11 @@ _SexualActivity _$SexualActivityFromJson(Map<String, dynamic> json) =>
           : Reference.fromJson(json['type'] as Map<String, dynamic>),
       participants:
           (json['participants'] as List<dynamic>?)
-              ?.map((e) => Reference.fromJson(e as Map<String, dynamic>))
+              ?.map(
+                (e) => SexualActivityParticipant.fromJson(
+                  e as Map<String, dynamic>,
+                ),
+              )
               .toList() ??
           const [],
     );

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Address {
 
- String get city; String get state; String? get line1; String? get line2; int? get zipCode;
+ String get city; String get state; String? get line1; String? get line2; String? get zipCode;
 /// Create a copy of Address
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $AddressCopyWith<$Res>  {
   factory $AddressCopyWith(Address value, $Res Function(Address) _then) = _$AddressCopyWithImpl;
 @useResult
 $Res call({
- String city, String state, String? line1, String? line2, int? zipCode
+ String city, String state, String? line1, String? line2, String? zipCode
 });
 
 
@@ -72,7 +72,7 @@ as String,state: null == state ? _self.state : state // ignore: cast_nullable_to
 as String,line1: freezed == line1 ? _self.line1 : line1 // ignore: cast_nullable_to_non_nullable
 as String?,line2: freezed == line2 ? _self.line2 : line2 // ignore: cast_nullable_to_non_nullable
 as String?,zipCode: freezed == zipCode ? _self.zipCode : zipCode // ignore: cast_nullable_to_non_nullable
-as int?,
+as String?,
   ));
 }
 
@@ -157,7 +157,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String city,  String state,  String? line1,  String? line2,  int? zipCode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String city,  String state,  String? line1,  String? line2,  String? zipCode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Address() when $default != null:
 return $default(_that.city,_that.state,_that.line1,_that.line2,_that.zipCode);case _:
@@ -178,7 +178,7 @@ return $default(_that.city,_that.state,_that.line1,_that.line2,_that.zipCode);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String city,  String state,  String? line1,  String? line2,  int? zipCode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String city,  String state,  String? line1,  String? line2,  String? zipCode)  $default,) {final _that = this;
 switch (_that) {
 case _Address():
 return $default(_that.city,_that.state,_that.line1,_that.line2,_that.zipCode);case _:
@@ -198,7 +198,7 @@ return $default(_that.city,_that.state,_that.line1,_that.line2,_that.zipCode);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String city,  String state,  String? line1,  String? line2,  int? zipCode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String city,  String state,  String? line1,  String? line2,  String? zipCode)?  $default,) {final _that = this;
 switch (_that) {
 case _Address() when $default != null:
 return $default(_that.city,_that.state,_that.line1,_that.line2,_that.zipCode);case _:
@@ -220,7 +220,7 @@ class _Address implements Address {
 @override@JsonKey() final  String state;
 @override final  String? line1;
 @override final  String? line2;
-@override final  int? zipCode;
+@override final  String? zipCode;
 
 /// Create a copy of Address
 /// with the given fields replaced by the non-null parameter values.
@@ -255,7 +255,7 @@ abstract mixin class _$AddressCopyWith<$Res> implements $AddressCopyWith<$Res> {
   factory _$AddressCopyWith(_Address value, $Res Function(_Address) _then) = __$AddressCopyWithImpl;
 @override @useResult
 $Res call({
- String city, String state, String? line1, String? line2, int? zipCode
+ String city, String state, String? line1, String? line2, String? zipCode
 });
 
 
@@ -279,7 +279,7 @@ as String,state: null == state ? _self.state : state // ignore: cast_nullable_to
 as String,line1: freezed == line1 ? _self.line1 : line1 // ignore: cast_nullable_to_non_nullable
 as String?,line2: freezed == line2 ? _self.line2 : line2 // ignore: cast_nullable_to_non_nullable
 as String?,zipCode: freezed == zipCode ? _self.zipCode : zipCode // ignore: cast_nullable_to_non_nullable
-as int?,
+as String?,
   ));
 }
 

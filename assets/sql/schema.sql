@@ -24,3 +24,9 @@ CREATE TABLE sexual_activity_type (
     last_modified TIMESTAMP NOT NULL,
     json VARCHAR NOT NULL
 );
+
+CREATE TABLE sexual_activity_type_property (
+    id TEXT PRIMARY KEY,
+    last_modified TIMESTAMP NOT NULL,
+    json VARCHAR NOT NULL
+);

@@ -1,0 +1,31 @@
+{
+  "resources": [
+    {
+      "id": "dev_loc_1",
+      "address": {
+        "city": "Boston",
+        "state": "MA",
+        "line1": "789 Elm St",
+        "zipCode": "02108"
+      }
+    },
+    {
+      "id": "dev_loc_2",
+      "address": {
+        "city": "Seattle",
+        "state": "WA",
+        "line1": "345 Cedar Blvd",
+        "zipCode": "98101"
+      }
+    },
+    {
+      "id": "dev_loc_3",
+      "address": {
+        "city": "Miami",
+        "state": "FL",
+        "line1": "678 Palm Ave",
+        "zipCode": "33139"
+      }
+    }
+  ]
+}

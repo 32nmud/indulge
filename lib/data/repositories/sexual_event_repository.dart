@@ -77,9 +77,9 @@ class SexualEventRepository {
     _logger.info('Getting persons from activity: $activity');
 
     List<String> personIds = [];
-    for (Reference r in activity.participants) {
-      if (r.resourceType == "Person") {
-        personIds.add(r.reference);
+    for (SexualActivityParticipant participant in activity.participants) {
+      if (participant.participant.resourceType == "Person") {
+        personIds.add(participant.participant.reference);
       }
     }
     personIds = personIds.toSet().toList();
@@ -113,9 +113,9 @@ class SexualEventRepository {
 
     List<String> personIds = [];
     for (SexualActivity a in activities) {
-      for (Reference r in a.participants) {
-        if (r.resourceType == "Person") {
-          personIds.add(r.reference);
+      for (SexualActivityParticipant participant in a.participants) {
+        if (participant.participant.resourceType == "Person") {
+          personIds.add(participant.participant.reference);
         }
       }
     }
@@ -185,5 +185,35 @@ class SexualEventRepository {
     _logger.info('Deleting sexual event: $id');
 
     await _db.delete('sexual_event', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<SexualActivityTypeProperty>>
+  getSexualActivityTypePropertiesForParticipant(
+    SexualActivityParticipant participant,
+  ) async {
+    _logger.info(
+      'Getting sexual activity type properties for participant: ${participant.participant.reference}',
+    );
+
+    if (participant.propertyReferences.isEmpty) return [];
+
+    final List<SexualActivityTypeProperty> properties = [];
+    for (Reference reference in participant.propertyReferences) {
+      final rows = await _db.query(
+        'sexual_activity_type_property',
+        where: 'id = ?',
+        whereArgs: [reference.reference],
+      );
+
+      for (final row in rows) {
+        properties.add(
+          SexualActivityTypeProperty.fromJson(
+            jsonDecode(row['json'] as String) as Map<String, dynamic>,
+          ),
+        );
+      }
+    }
+
+    return properties;
   }
 }

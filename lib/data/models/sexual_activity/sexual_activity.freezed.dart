@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualActivity {
 
- Reference get type; List<Reference> get participants;
+ Reference get type; List<SexualActivityParticipant> get participants;
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $SexualActivityCopyWith<$Res>  {
   factory $SexualActivityCopyWith(SexualActivity value, $Res Function(SexualActivity) _then) = _$SexualActivityCopyWithImpl;
 @useResult
 $Res call({
- Reference type, List<Reference> participants
+ Reference type, List<SexualActivityParticipant> participants
 });
 
 
@@ -69,7 +69,7 @@ class _$SexualActivityCopyWithImpl<$Res>
   return _then(_self.copyWith(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as Reference,participants: null == participants ? _self.participants : participants // ignore: cast_nullable_to_non_nullable
-as List<Reference>,
+as List<SexualActivityParticipant>,
   ));
 }
 /// Create a copy of SexualActivity
@@ -163,7 +163,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference type,  List<Reference> participants)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference type,  List<SexualActivityParticipant> participants)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualActivity() when $default != null:
 return $default(_that.type,_that.participants);case _:
@@ -184,7 +184,7 @@ return $default(_that.type,_that.participants);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference type,  List<Reference> participants)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference type,  List<SexualActivityParticipant> participants)  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivity():
 return $default(_that.type,_that.participants);case _:
@@ -204,7 +204,7 @@ return $default(_that.type,_that.participants);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference type,  List<Reference> participants)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference type,  List<SexualActivityParticipant> participants)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivity() when $default != null:
 return $default(_that.type,_that.participants);case _:
@@ -219,12 +219,12 @@ return $default(_that.type,_that.participants);case _:
 @JsonSerializable()
 
 class _SexualActivity implements SexualActivity {
-  const _SexualActivity({this.type = const Reference(), final  List<Reference> participants = const []}): _participants = participants;
+  const _SexualActivity({this.type = const Reference(), final  List<SexualActivityParticipant> participants = const []}): _participants = participants;
   factory _SexualActivity.fromJson(Map<String, dynamic> json) => _$SexualActivityFromJson(json);
 
 @override@JsonKey() final  Reference type;
- final  List<Reference> _participants;
-@override@JsonKey() List<Reference> get participants {
+ final  List<SexualActivityParticipant> _participants;
+@override@JsonKey() List<SexualActivityParticipant> get participants {
   if (_participants is EqualUnmodifiableListView) return _participants;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_participants);
@@ -264,7 +264,7 @@ abstract mixin class _$SexualActivityCopyWith<$Res> implements $SexualActivityCo
   factory _$SexualActivityCopyWith(_SexualActivity value, $Res Function(_SexualActivity) _then) = __$SexualActivityCopyWithImpl;
 @override @useResult
 $Res call({
- Reference type, List<Reference> participants
+ Reference type, List<SexualActivityParticipant> participants
 });
 
 
@@ -285,7 +285,7 @@ class __$SexualActivityCopyWithImpl<$Res>
   return _then(_SexualActivity(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as Reference,participants: null == participants ? _self._participants : participants // ignore: cast_nullable_to_non_nullable
-as List<Reference>,
+as List<SexualActivityParticipant>,
   ));
 }
 

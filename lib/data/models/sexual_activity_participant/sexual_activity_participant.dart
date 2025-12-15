@@ -6,13 +6,31 @@ part 'sexual_activity_participant.g.dart';
 
 @Freezed(toJson: true, fromJson: true)
 abstract class SexualActivityParticipant with _$SexualActivityParticipant {
+  const SexualActivityParticipant._();
+
   const factory SexualActivityParticipant({
     @Default(Reference()) Reference participant,
-    @Default(Reference()) Reference activity,
-    @Default(0) int timesParticipated,
-    String? subtypeParticipated,
+    @Default([])
+    List<Reference>
+    propertyReferences, // References to SexualActivityTypeProperty
   }) = _SexualActivityParticipant;
 
-  factory SexualActivityParticipant.fromJson(Map<String, dynamic> json) =>
-      _$SexualActivityParticipantFromJson(json);
+  factory SexualActivityParticipant.fromJson(Map<String, dynamic> json) {
+    final cleaned = Map<String, dynamic>.from(json)..remove('resourceType');
+    return _$SexualActivityParticipantFromJson(cleaned);
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    final map = _$SexualActivityParticipantToJson(
+      this as _SexualActivityParticipant,
+    );
+    map['resourceType'] = "SexualActivityParticipant";
+    return map;
+  }
+
+  // Fixed getters
+  @override
+  @JsonKey(name: 'resourceType')
+  String get resourceType => "SexualActivityParticipant";
 }

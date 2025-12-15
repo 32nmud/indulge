@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/data/models/sexual_activity_participant/sexual_activity_participant.dart';
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
 import 'package:indulge/provider/event_state.dart';
 
@@ -33,7 +32,7 @@ class SexualEventsProvider extends ChangeNotifier {
   Future<void> selectEvent(SexualEvent event) async {
     try {
       // 1. Fetch Related Data
-      // 1a. Activity Types
+      // 1a. Activity Types and SwexualActivityTypeProperties
       final activityTypeIds = event.activities
           .map((a) => a.type.reference)
           .toSet()
@@ -63,10 +62,10 @@ class SexualEventsProvider extends ChangeNotifier {
         final typeId = activity.type.reference;
         final currentList = activityParticipantsMap[typeId] ?? [];
 
-        for (var pRef in activity.participants) {
-          if (pRef.resourceType == 'Person' &&
-              personMap.containsKey(pRef.reference)) {
-            final person = personMap[pRef.reference]!;
+        for (var participant in activity.participants) {
+          if (participant.participant.resourceType == 'Person' &&
+              personMap.containsKey(participant.participant.reference)) {
+            final person = personMap[participant.participant.reference]!;
             if (!currentList.any((p) => p.id == person.id)) {
               currentList.add(person);
             }
@@ -81,32 +80,27 @@ class SexualEventsProvider extends ChangeNotifier {
 
       for (var activity in event.activities) {
         final typeId = activity.type.reference;
-        for (var pRef in activity.participants) {
-          if (pRef.resourceType != 'Person') continue;
+        for (var participant in activity.participants) {
+          if (participant.participant.resourceType != 'Person') continue;
 
-          final key = '${pRef.reference}_$typeId';
+          final key = '${participant.participant.reference}_$typeId';
 
-          if (sapMap.containsKey(key)) {
-            final existing = sapMap[key]!;
-            sapMap[key] = existing.copyWith(
-              timesParticipated: existing.timesParticipated + 1,
-            );
-          } else {
-            sapMap[key] = SexualActivityParticipant(
-              participant: pRef,
-              activity: activity.type,
-              timesParticipated: 1,
-            );
+          if (!sapMap.containsKey(key)) {
+            sapMap[key] = participant;
           }
         }
       }
       final sapList = sapMap.values.toList();
 
-      print(event);
-      print(sapList);
-      print(eventParticipants);
-      print(activityParticipantsMap);
-      print(activityTypeMap);
+      // Fetch SexualActivityTypeProperties for the selected event
+      final List<SexualActivityTypeProperty> sexualActivityTypeProperties = [];
+      for (SexualActivity activity in event.activities) {
+        for (SexualActivityParticipant participant in activity.participants) {
+          final properties = await _repository
+              .getSexualActivityTypePropertiesForParticipant(participant);
+          sexualActivityTypeProperties.addAll(properties);
+        }
+      }
 
       // 3. Update State
       _state = _state.copyWith(
@@ -115,6 +109,7 @@ class SexualEventsProvider extends ChangeNotifier {
         selectedEventParticipants: eventParticipants,
         selectedEventActivityParticipants: activityParticipantsMap,
         selectedEventActivityTypes: activityTypeMap,
+        selectedEventSexualActivityTypeProperties: sexualActivityTypeProperties,
       );
     } catch (e) {
       debugPrint("Error loading event details: $e");
@@ -146,7 +141,7 @@ class SexualEventsProvider extends ChangeNotifier {
 
     for (final activity in _state.selectedEvent!.activities) {
       final updatedParticipants = activity.participants
-          .where((ref) => ref.reference != participant.id)
+          .where((ref) => ref.participant.reference != participant.id)
           .toList();
 
       currentActivities.add(
@@ -177,20 +172,27 @@ class SexualEventsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /*
-  // TODO: SexualActivity does not have an ID field in the new model.
-  // Logic needs to be revisited.
-  SexualActivity? getSexualActivityById(int activityId) {
-    SexualEvent event = _state.selectedEvent!;
-    if (event.activities.isEmpty) return null;
-
-    for (SexualActivity activity in event.activities) {
-      if (activity.id == activityId) return activity;
+  List<SexualActivityTypeProperty>
+  getSexualActivityTypePropertiesForPersonAndActivity(
+    Person person,
+    SexualActivity activity,
+  ) {
+    List<SexualActivityTypeProperty> properties = [];
+    for (SexualActivityParticipant property in activity.participants) {
+      for (Reference reference in property.propertyReferences) {
+        if (reference.resourceType == "SexualActivityTypeProperty" &&
+            property.participant.resourceType == "Person" &&
+            property.participant.reference == person.id) {
+          properties.add(
+            _state.selectedEventSexualActivityTypeProperties!.firstWhere(
+              (element) => element.id == reference.reference,
+            ),
+          );
+        }
+      }
     }
-
-    return null;
+    return properties;
   }
-  */
 
   Future<List<Person>> getPersonsForEvent(String eventId) async {
     SexualEvent? event = await _repository.getById(eventId);
