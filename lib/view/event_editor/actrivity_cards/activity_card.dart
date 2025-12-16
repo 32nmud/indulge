@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/data/models/person/person.dart';
-import 'package:indulge/data/models/sexual_activity/sexual_activity.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -40,17 +38,18 @@ class _ActivityCardState extends State<ActivityCard> {
           );
 
       for (SexualActivityTypeProperty property in properties) {
-        String propertyTitle = "${property.displayCharacter} ${property.name}";
+        String propertyTitle =
+            "${property.displayCharacter} ${property.name}${property.isRisky ? ' (❗)' : ''}";
         propertyTitles.putIfAbsent(
           property.id,
           () => Text(
             propertyTitle,
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
         );
 
         String personTitle =
-            "  - ${person.name.nickname ?? person.name.given ?? "unknown"}";
+            "    - ${person.name.nickname ?? person.name.given ?? "unknown"}";
         if (participantTitles.containsKey(property.id)) {
           participantTitles[property.id]!.add(Text(personTitle));
         } else {
@@ -105,11 +104,8 @@ class _ActivityCardState extends State<ActivityCard> {
 
     final typeId = widget.activity.type.reference;
     final activityType = provider.state.selectedEventActivityTypes?[typeId];
-    bool isRisky = activityType?.isRisky ?? false;
 
     return Card(
-      color: isRisky ? Colors.redAccent : Theme.of(context).cardColor,
-
       child: FutureBuilder(
         future: futurePersons,
         builder: (context, snapshot) {

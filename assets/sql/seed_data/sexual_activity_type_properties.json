@@ -3,26 +3,29 @@
     {
       "id": "1",
       "name": "bareback",
-      "displayCharacter": "",
-      "canHaveMultipleParticipants": true
+      "displayCharacter": "🍌",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true
     },
     {
       "id": "2",
       "name": "condom",
-      "displayCharacter": "",
+      "displayCharacter": "🛡️",
       "canHaveMultipleParticipants": true
     },
     {
       "id": "3",
       "name": "came inside",
-      "displayCharacter": "",
-      "canHaveMultipleParticipants": true
+      "displayCharacter": "💦",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true
     },
     {
       "id": "4",
       "name": "broken condom",
-      "displayCharacter": "",
-      "canHaveMultipleParticipants": true
+      "displayCharacter": "💔",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true
     }
   ]
 }

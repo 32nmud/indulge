@@ -13,6 +13,7 @@ abstract class SexualActivityTypeProperty with _$SexualActivityTypeProperty {
     @Default("unknown") String name,
     @Default("❔") String displayCharacter,
     @Default(true) bool canHaveMultipleParticipants,
+    @Default(false) bool isRisky,
   }) = _SexualActivityTypeProperty;
 
   factory SexualActivityTypeProperty.fromJson(Map<String, dynamic> json) {

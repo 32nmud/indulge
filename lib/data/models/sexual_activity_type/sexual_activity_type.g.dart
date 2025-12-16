@@ -14,7 +14,6 @@ _SexualActivityType _$SexualActivityTypeFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['lastUpdateDate'] as String),
       name: json['name'] as String,
       displayCharacter: json['displayCharacter'] as String?,
-      isRisky: json['isRisky'] as bool? ?? false,
       minParticipants: (json['minParticipants'] as num?)?.toInt() ?? -1,
       maxParticipants: (json['maxParticipants'] as num?)?.toInt() ?? -1,
       properties:
@@ -34,7 +33,6 @@ Map<String, dynamic> _$SexualActivityTypeToJson(_SexualActivityType instance) =>
       'lastUpdateDate': instance.lastUpdateDate?.toIso8601String(),
       'name': instance.name,
       'displayCharacter': instance.displayCharacter,
-      'isRisky': instance.isRisky,
       'minParticipants': instance.minParticipants,
       'maxParticipants': instance.maxParticipants,
       'properties': instance.properties,

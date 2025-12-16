@@ -14,7 +14,6 @@ abstract class SexualActivityType with _$SexualActivityType {
     DateTime? lastUpdateDate,
     required String name,
     String? displayCharacter,
-    @Default(false) bool isRisky,
     @Default(-1) int minParticipants,
     @Default(-1) int maxParticipants,
     @Default([]) List<SexualActivityTypeProperty> properties,

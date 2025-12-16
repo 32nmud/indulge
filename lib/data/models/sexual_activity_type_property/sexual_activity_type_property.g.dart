@@ -14,6 +14,7 @@ _SexualActivityTypeProperty _$SexualActivityTypePropertyFromJson(
   displayCharacter: json['displayCharacter'] as String? ?? "❔",
   canHaveMultipleParticipants:
       json['canHaveMultipleParticipants'] as bool? ?? true,
+  isRisky: json['isRisky'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$SexualActivityTypePropertyToJson(
@@ -23,4 +24,5 @@ Map<String, dynamic> _$SexualActivityTypePropertyToJson(
   'name': instance.name,
   'displayCharacter': instance.displayCharacter,
   'canHaveMultipleParticipants': instance.canHaveMultipleParticipants,
+  'isRisky': instance.isRisky,
 };
