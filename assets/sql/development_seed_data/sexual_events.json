@@ -24,6 +24,42 @@
               ]
             }
           ]
+        },
+        {
+          "type": {
+            "reference": "topping",
+            "resourceType": "sexualActivityType"
+          },
+          "participants": [
+            {
+              "participant": {
+                "reference": "devPerson2",
+                "resourceType": "Person"
+              },
+              "propertyReferences": [
+                {
+                  "reference": "2",
+                  "resourceType": "SexualActivityTypeProperty"
+                },
+                {
+                  "reference": "1",
+                  "resourceType": "SexualActivityTypeProperty"
+                }
+              ]
+            },
+            {
+              "participant": {
+                "reference": "devPerson1",
+                "resourceType": "Person"
+              },
+              "propertyReferences": [
+                {
+                  "reference": "2",
+                  "resourceType": "SexualActivityTypeProperty"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

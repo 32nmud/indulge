@@ -143,6 +143,37 @@ class SexualEventRepository {
     return persons;
   }
 
+  Future<List<SexualActivityType>> getAllSexualActivityTypes() async {
+    final rows = await _db.query('sexual_activity_type');
+
+    final List<SexualActivityType> types = [];
+    for (final row in rows) {
+      types.add(
+        SexualActivityType.fromJson(
+          jsonDecode(row['json'] as String) as Map<String, dynamic>,
+        ),
+      );
+    }
+
+    return types;
+  }
+
+  Future<List<SexualActivityTypeProperty>>
+  getAllSexualActivityTypeProperties() async {
+    final rows = await _db.query('sexual_activity_type_property');
+
+    final List<SexualActivityTypeProperty> properties = [];
+    for (final row in rows) {
+      properties.add(
+        SexualActivityTypeProperty.fromJson(
+          jsonDecode(row['json'] as String) as Map<String, dynamic>,
+        ),
+      );
+    }
+
+    return properties;
+  }
+
   Future<List<SexualActivityType>> getSexualActivityTypesByIds(
     List<String> ids,
   ) async {

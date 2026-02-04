@@ -6,10 +6,8 @@ class EventState {
   selectedEventSexualActivityParticipants;
   final List<Person>? selectedEventParticipants;
   final Map<String, List<Person>>? selectedEventActivityParticipants;
-  final Map<String, SexualActivityType>? selectedEventActivityTypes;
-  final List<SexualActivityTypeProperty>?
-  selectedEventSexualActivityTypeProperties;
-
+  final Map<String, SexualActivityType>? sexualActivityTypes;
+  final Map<String, SexualActivityTypeProperty>? sexualActivityTypeProperties;
   final List<SexualEvent>? currentEvents;
   final DateTime? selectedDate;
   final Map<DateTime, int>? dailyEventCount;
@@ -19,8 +17,8 @@ class EventState {
     this.selectedEventSexualActivityParticipants,
     this.selectedEventParticipants,
     this.selectedEventActivityParticipants,
-    this.selectedEventActivityTypes,
-    this.selectedEventSexualActivityTypeProperties,
+    this.sexualActivityTypes,
+    this.sexualActivityTypeProperties,
     this.currentEvents,
     this.selectedDate,
     this.dailyEventCount,
@@ -31,8 +29,8 @@ class EventState {
     List<SexualActivityParticipant>? selectedEventSexualActivityParticipants,
     List<Person>? selectedEventParticipants,
     Map<String, List<Person>>? selectedEventActivityParticipants,
-    Map<String, SexualActivityType>? selectedEventActivityTypes,
-    List<SexualActivityTypeProperty>? selectedEventSexualActivityTypeProperties,
+    Map<String, SexualActivityType>? sexualActivityTypes,
+    Map<String, SexualActivityTypeProperty>? sexualActivityTypeProperties,
     List<SexualEvent>? currentEvents,
     DateTime? selectedDate,
     Map<DateTime, int>? dailyEventCount,
@@ -47,11 +45,9 @@ class EventState {
       selectedEventActivityParticipants:
           selectedEventActivityParticipants ??
           this.selectedEventActivityParticipants,
-      selectedEventActivityTypes:
-          selectedEventActivityTypes ?? this.selectedEventActivityTypes,
-      selectedEventSexualActivityTypeProperties:
-          selectedEventSexualActivityTypeProperties ??
-          this.selectedEventSexualActivityTypeProperties,
+      sexualActivityTypes: sexualActivityTypes ?? this.sexualActivityTypes,
+      sexualActivityTypeProperties:
+          sexualActivityTypeProperties ?? this.sexualActivityTypeProperties,
       currentEvents: currentEvents ?? this.currentEvents,
       selectedDate: selectedDate ?? this.selectedDate,
       dailyEventCount: dailyEventCount ?? this.dailyEventCount,

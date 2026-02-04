@@ -15,7 +15,13 @@ class SexualEventsProvider extends ChangeNotifier {
   Future<String> _initProvider() async {
     _repository = await SexualEventRepository.create();
     final counts = await _repository.getDailyEventCount();
-    _state = _state.copyWith(dailyEventCount: counts);
+    final types = await _loadSexualActivityTypes();
+    final properties = await _loadSexualActivityTypeProperties();
+    _state = _state.copyWith(
+      dailyEventCount: counts,
+      sexualActivityTypes: types,
+      sexualActivityTypeProperties: properties,
+    );
     return "ready!";
   }
 
@@ -32,24 +38,13 @@ class SexualEventsProvider extends ChangeNotifier {
   Future<void> selectEvent(SexualEvent event) async {
     try {
       // 1. Fetch Related Data
-      // 1a. Activity Types and SwexualActivityTypeProperties
-      final activityTypeIds = event.activities
-          .map((a) => a.type.reference)
-          .toSet()
-          .toList();
-      final activityTypes = await _repository.getSexualActivityTypesByIds(
-        activityTypeIds,
-      );
 
-      // 1b. Persons (Participants)
+      // 1a. Persons (Participants)
       final participants = await _repository.getPersonsFromActivities(
         event.activities,
       );
 
       // 2. Construct State Fields
-      // Map<String, SexualActivityType>
-      final activityTypeMap = {for (var t in activityTypes) t.id: t};
-
       // List<Person> selectedEventParticipants
       final eventParticipants = participants;
 
@@ -92,24 +87,12 @@ class SexualEventsProvider extends ChangeNotifier {
       }
       final sapList = sapMap.values.toList();
 
-      // Fetch SexualActivityTypeProperties for the selected event
-      final List<SexualActivityTypeProperty> sexualActivityTypeProperties = [];
-      for (SexualActivity activity in event.activities) {
-        for (SexualActivityParticipant participant in activity.participants) {
-          final properties = await _repository
-              .getSexualActivityTypePropertiesForParticipant(participant);
-          sexualActivityTypeProperties.addAll(properties);
-        }
-      }
-
       // 3. Update State
       _state = _state.copyWith(
         selectedEvent: event,
         selectedEventSexualActivityParticipants: sapList,
         selectedEventParticipants: eventParticipants,
         selectedEventActivityParticipants: activityParticipantsMap,
-        selectedEventActivityTypes: activityTypeMap,
-        selectedEventSexualActivityTypeProperties: sexualActivityTypeProperties,
       );
     } catch (e) {
       debugPrint("Error loading event details: $e");
@@ -182,11 +165,13 @@ class SexualEventsProvider extends ChangeNotifier {
       for (Reference reference in property.propertyReferences) {
         if (reference.resourceType == "SexualActivityTypeProperty" &&
             property.participant.resourceType == "Person" &&
-            property.participant.reference == person.id) {
+            property.participant.reference == person.id &&
+            _state.sexualActivityTypeProperties != null &&
+            _state.sexualActivityTypeProperties!.containsKey(
+              reference.reference,
+            )) {
           properties.add(
-            _state.selectedEventSexualActivityTypeProperties!.firstWhere(
-              (element) => element.id == reference.reference,
-            ),
+            _state.sexualActivityTypeProperties![reference.reference]!,
           );
         }
       }
@@ -234,6 +219,10 @@ class SexualEventsProvider extends ChangeNotifier {
   }
   */
 
+  /* ########################
+         Private Methods
+    ####################### */
+
   Future<void> _loadEventsForDate(DateTime? date) async {
     if (date == null) {
       return;
@@ -241,5 +230,24 @@ class SexualEventsProvider extends ChangeNotifier {
 
     _state = _state.copyWith(currentEvents: await _repository.getByDate(date));
     notifyListeners();
+  }
+
+  Future<Map<String, SexualActivityTypeProperty>>
+  _loadSexualActivityTypeProperties() async {
+    final properties = await _repository.getAllSexualActivityTypeProperties();
+    Map<String, SexualActivityTypeProperty> propertyMap = {};
+    for (var property in properties) {
+      propertyMap[property.id] = property;
+    }
+    return propertyMap;
+  }
+
+  Future<Map<String, SexualActivityType>> _loadSexualActivityTypes() async {
+    final properties = await _repository.getAllSexualActivityTypes();
+    Map<String, SexualActivityType> typeMap = {};
+    for (var type in properties) {
+      typeMap[type.id] = type;
+    }
+    return typeMap;
   }
 }

@@ -14,7 +14,7 @@ class DayCard extends StatefulWidget {
 class _DayCardState extends State<DayCard> {
   DateTime _selectedDay = DateTime.now();
   DateTime _getEarliestEvent() => DateTime(2024, 1, 1);
-  DateTime _getLatestEvent() => DateTime(2025, 12, 31);
+  DateTime _getLatestEvent() => DateTime(2026, 12, 31);
 
   Widget _dayPicker() {
     return EasyDateTimeLinePicker.itemBuilder(
