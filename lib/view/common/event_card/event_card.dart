@@ -13,7 +13,29 @@ class EventCard extends StatefulWidget {
   State<EventCard> createState() => _EventCardState();
 }
 
-class _EventCardState extends State<EventCard> {
+class _EventCardState extends State<EventCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     SexualEventsProvider provider = context.watch<SexualEventsProvider>();
@@ -23,27 +45,26 @@ class _EventCardState extends State<EventCard> {
       widget.event.id,
     );
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      elevation: 2,
-      child: FutureBuilder<List<Person>>(
-        future: participants,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          } else if (snapshot.hasError) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text('Error: ${snapshot.error}'),
-            );
-          } else {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        elevation: 2,
+        clipBehavior: Clip.antiAlias,
+        child: FutureBuilder<List<Person>>(
+          future: participants,
+          builder: (context, snapshot) {
+            // Skip loading state to avoid choppy animations
             final persons = snapshot.data ?? [];
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('Error: ${snapshot.error}'),
+              );
+            }
             return _eventCard(context, persons, eventState, activities);
-          }
-        },
+          },
+        ),
       ),
     );
   }
@@ -54,39 +75,47 @@ class _EventCardState extends State<EventCard> {
     EventState eventState,
     List<SexualActivity> activities,
   ) {
-    return ExpansionTile(
-      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(8),
+    return InkWell(
+      onTapDown: (_) => _scaleController.forward(),
+      onTapUp: (_) => _scaleController.reverse(),
+      onTapCancel: () => _scaleController.reverse(),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        childrenPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
         ),
-        child: Icon(
-          Icons.local_fire_department,
-          color: Theme.of(context).colorScheme.primary,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.local_fire_department,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
+        title: Text(
+          _getEventTitleString(persons),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: _buildCompactPreview(activities, eventState, persons),
+        children: [
+          if (activities.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'No activities in this event',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          else
+            _buildDetailedActivitiesList(activities, persons, eventState),
+          const Divider(),
+          _buildButtonRow(context),
+        ],
       ),
-      title: Text(
-        _getEventTitleString(persons),
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: _buildCompactPreview(activities, eventState, persons),
-      children: [
-        if (activities.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'No activities in this event',
-              style: TextStyle(color: Colors.grey),
-            ),
-          )
-        else
-          _buildDetailedActivitiesList(activities, persons, eventState),
-        const Divider(),
-        _buildButtonRow(context),
-      ],
     );
   }
 
@@ -253,10 +282,10 @@ class _EventCardState extends State<EventCard> {
                 final isSelf = person.isSelf;
                 return Chip(
                   avatar: isSelf
-                      ? const Icon(
+                      ? Icon(
                           Icons.account_circle,
                           size: 16,
-                          color: Colors.blue,
+                          color: Theme.of(context).colorScheme.primary,
                         )
                       : null,
                   label: Text(
@@ -266,7 +295,9 @@ class _EventCardState extends State<EventCard> {
                       fontWeight: isSelf ? FontWeight.bold : null,
                     ),
                   ),
-                  backgroundColor: isSelf ? Colors.blue.shade50 : null,
+                  backgroundColor: isSelf
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : null,
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -297,7 +328,11 @@ class _EventCardState extends State<EventCard> {
                     ),
                     if (isRisky) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.warning, size: 14, color: Colors.orange),
+                      Icon(
+                        Icons.warning,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.tertiary,
+                      ),
                     ],
                   ],
                 ),
@@ -313,10 +348,10 @@ class _EventCardState extends State<EventCard> {
                       final isSelf = person.isSelf;
                       return Chip(
                         avatar: isSelf
-                            ? const Icon(
+                            ? Icon(
                                 Icons.account_circle,
                                 size: 16,
-                                color: Colors.blue,
+                                color: Theme.of(context).colorScheme.primary,
                               )
                             : null,
                         label: Text(
@@ -326,7 +361,9 @@ class _EventCardState extends State<EventCard> {
                             fontWeight: isSelf ? FontWeight.bold : null,
                           ),
                         ),
-                        backgroundColor: isSelf ? Colors.blue.shade50 : null,
+                        backgroundColor: isSelf
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : null,
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       );

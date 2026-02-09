@@ -211,6 +211,16 @@ class _PersonListPageState extends State<PersonListPage>
       return _buildEmptyState();
     }
 
+    // Sort to pin "Me" person to the top
+    visiblePersons.sort((a, b) {
+      if (a.isSelf && !b.isSelf) return -1;
+      if (!a.isSelf && b.isSelf) return 1;
+      // For other persons, maintain their original order or sort by name
+      final aName = a.name.nickname ?? a.name.given ?? 'Unknown';
+      final bName = b.name.nickname ?? b.name.given ?? 'Unknown';
+      return aName.toLowerCase().compareTo(bName.toLowerCase());
+    });
+
     return ListView.builder(
       itemCount: visiblePersons.length,
       padding: const EdgeInsets.all(8),

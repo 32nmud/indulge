@@ -55,9 +55,18 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
     BuildContext context,
     Animation<double> animation,
   ) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: EventCard(event: _list[index]),
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: EventCard(event: _list[index]),
+        ),
+      ),
     );
   }
 
@@ -66,9 +75,18 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
     BuildContext context,
     Animation<double> animation,
   ) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: EventCard(event: event),
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset.zero,
+          end: const Offset(-0.1, 0),
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeIn)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: EventCard(event: event),
+        ),
+      ),
     );
   }
 
@@ -110,18 +128,30 @@ class ListModel<E> {
 
   /// Replaces the current items with [newItems], animating removals and insertions.
   void syncWith(Iterable<E> newItems) {
+    final List<E> newList = List<E>.from(newItems);
+
+    // Remove all old items first (from end to start to maintain indices)
     for (int i = _items.length - 1; i >= 0; i--) {
-      E removed = _items[i];
+      final removed = _items[i];
       _animatedList?.removeItem(
         i,
         (context, animation) => removedItemBuilder(removed, context, animation),
+        duration: const Duration(milliseconds: 150),
       );
     }
     _items.clear();
 
-    for (int i = 0; i < newItems.length; i++) {
-      _items.add(newItems.elementAt(i));
-      _animatedList?.insertItem(i);
+    // Insert all new items with a slight stagger
+    for (int i = 0; i < newList.length; i++) {
+      _items.add(newList[i]);
+      final delayMs = i * 25; // Minimal stagger for smooth cascade
+      Future.delayed(Duration(milliseconds: delayMs + 100), () {
+        // Add delay before starting insertions to let removals complete
+        _animatedList?.insertItem(
+          i,
+          duration: const Duration(milliseconds: 250),
+        );
+      });
     }
   }
 }

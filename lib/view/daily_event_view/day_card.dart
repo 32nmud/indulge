@@ -12,6 +12,21 @@ class DayCard extends StatefulWidget {
 }
 
 class _DayCardState extends State<DayCard> {
+  late EasyDatePickerController _controller;
+  DateTime? _previousSelectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = EasyDatePickerController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   DateTime _getEarliestEvent() => DateTime(2024, 1, 1);
   DateTime _getLatestEvent() => DateTime(2026, 12, 31);
 
@@ -19,8 +34,21 @@ class _DayCardState extends State<DayCard> {
     final provider = context.watch<SexualEventsProvider>();
     final selectedDay = provider.state.selectedDate ?? DateTime.now();
 
+    // Animate to the new date when it changes
+    if (_previousSelectedDate != selectedDay) {
+      _previousSelectedDate = selectedDay;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_controller.hasClients) {
+          _controller.animateToFocusDate(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+          );
+        }
+      });
+    }
+
     return EasyDateTimeLinePicker.itemBuilder(
-      key: ValueKey(selectedDay.toIso8601String()),
+      controller: _controller,
       firstDate: _getEarliestEvent(),
       lastDate: _getLatestEvent(),
       focusedDate: selectedDay,
@@ -28,6 +56,7 @@ class _DayCardState extends State<DayCard> {
         context.read<SexualEventsProvider>().selectDate(date);
       },
       itemExtent: 80.0,
+      selectionMode: const SelectionMode.autoCenter(),
       itemBuilder: (context, date, isSelected, isDisabled, isToday, onTap) =>
           _dayItem(context, date, isSelected, isDisabled, isToday, onTap),
     );
@@ -49,62 +78,94 @@ class _DayCardState extends State<DayCard> {
 
     return InkResponse(
       onTap: onTap,
-      child: Card(
-        color: isSelected
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainer,
-        borderOnForeground: isSelected,
-        child: Stack(
-          children: [
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    DateFormat('MMM').format(date),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  Text(
-                    DateFormat('d').format(date),
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  Text(
-                    DateFormat('E').format(date),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Card(
+          color: Colors.transparent,
+          elevation: 0,
+          borderOnForeground: false,
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: (theme.textTheme.bodySmall ?? const TextStyle())
+                          .copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                      child: Text(DateFormat('MMM').format(date)),
+                    ),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: (theme.textTheme.titleLarge ?? const TextStyle())
+                          .copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                      child: Text(DateFormat('d').format(date)),
+                    ),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: (theme.textTheme.bodySmall ?? const TextStyle())
+                          .copyWith(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                      child: Text(DateFormat('E').format(date)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            if (count > 0)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 20,
-                    minHeight: 20,
-                  ),
-                  child: Center(
-                    child: Text(
-                      count.toString(),
-                      style: TextStyle(
-                        color: theme.colorScheme.onPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+              if (count > 0)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 20,
+                      minHeight: 20,
+                    ),
+                    child: Center(
+                      child: Text(
+                        count.toString(),
+                        style: TextStyle(
+                          color: theme.colorScheme.onPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
