@@ -12,20 +12,20 @@ class DayCard extends StatefulWidget {
 }
 
 class _DayCardState extends State<DayCard> {
-  DateTime _selectedDay = DateTime.now();
   DateTime _getEarliestEvent() => DateTime(2024, 1, 1);
   DateTime _getLatestEvent() => DateTime(2026, 12, 31);
 
   Widget _dayPicker() {
+    final provider = context.watch<SexualEventsProvider>();
+    final selectedDay = provider.state.selectedDate ?? DateTime.now();
+
     return EasyDateTimeLinePicker.itemBuilder(
+      key: ValueKey(selectedDay.toIso8601String()),
       firstDate: _getEarliestEvent(),
       lastDate: _getLatestEvent(),
-      focusedDate: _selectedDay,
+      focusedDate: selectedDay,
       onDateChange: (date) {
-        setState(() {
-          _selectedDay = date;
-          context.read<SexualEventsProvider>().selectDate(date);
-        });
+        context.read<SexualEventsProvider>().selectDate(date);
       },
       itemExtent: 80.0,
       itemBuilder: (context, date, isSelected, isDisabled, isToday, onTap) =>

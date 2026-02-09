@@ -3,6 +3,7 @@ import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
+import 'package:logging/logging.dart';
 
 class PersonListPage extends StatefulWidget {
   const PersonListPage({super.key});
@@ -13,7 +14,9 @@ class PersonListPage extends StatefulWidget {
 
 class _PersonListPageState extends State<PersonListPage>
     with AutomaticKeepAliveClientMixin {
+  final Logger _logger = Logger('PersonListPage');
   List<Person> _persons = [];
+  Map<String, int> _personEventCounts = {};
   bool _isLoading = true;
 
   @override
@@ -43,8 +46,40 @@ class _PersonListPageState extends State<PersonListPage>
     setState(() => _isLoading = true);
     final provider = context.read<SexualEventsProvider>();
     final persons = await provider.getAllPersons();
+
+    // Calculate event counts for each person
+    final allEvents = await provider.getAllEvents();
+    _logger.info(
+      'Counting events for ${persons.length} persons across ${allEvents.length} events',
+    );
+    final eventCounts = <String, int>{};
+
+    for (final person in persons) {
+      int count = 0;
+      for (final event in allEvents) {
+        // Check if this person participated in this event
+        // An event counts if the person appears in ANY activity
+        bool participated = event.activities.any(
+          (activity) => activity.participants.any(
+            (participant) =>
+                participant.participant.resourceType == 'Person' &&
+                participant.participant.reference == person.id,
+          ),
+        );
+
+        if (participated) {
+          count++;
+        }
+      }
+      eventCounts[person.id] = count;
+      _logger.info(
+        'Person ${person.name.nickname ?? person.name.given ?? person.id}: $count events',
+      );
+    }
+
     setState(() {
       _persons = persons;
+      _personEventCounts = eventCounts;
       _isLoading = false;
     });
   }
@@ -115,36 +150,52 @@ class _PersonListPageState extends State<PersonListPage>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       appBar: AppBar(title: const Text('Contacts')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _persons.isEmpty
-          ? _buildEmptyState()
-          : _buildPersonList(),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _loadPersons();
+        },
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _persons.isEmpty
+            ? _buildEmptyState()
+            : _buildPersonList(),
+      ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            'No contacts yet',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
+    return ListView(
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height - 200,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  size: 64,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No contacts yet',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add a person to get started',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Add a person to get started',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -170,6 +221,7 @@ class _PersonListPageState extends State<PersonListPage>
     final displayName = person.name.nickname ?? person.name.given ?? 'Unknown';
     final subtitle = _buildSubtitle(person);
     final isSelf = person.isSelf;
+    final eventCount = _personEventCounts[person.id] ?? 0;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -214,6 +266,33 @@ class _PersonListPageState extends State<PersonListPage>
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Event count badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.event,
+                    size: 16,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$eventCount',
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () => _navigateToEditor(person: person),

@@ -14,8 +14,15 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage>
     with AutomaticKeepAliveClientMixin {
   List<SexualEvent> _searchResults = [];
+  List<SexualEvent> _displayedResults = [];
   bool _isSearching = false;
   bool _hasSearched = false;
+  bool _isLoadingMore = false;
+
+  // Pagination
+  static const int _pageSize = 10;
+  int _currentPage = 0;
+  final ScrollController _scrollController = ScrollController();
 
   // Filter state
   DateTimeRange? _dateRange;
@@ -30,23 +37,63 @@ class _SearchPageState extends State<SearchPage>
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     // Listen to provider changes to reload search results
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SexualEventsProvider>().addListener(_onProviderChange);
+      // Load all events initially when no filters are set
+      _performSearch();
     });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     context.read<SexualEventsProvider>().removeListener(_onProviderChange);
     super.dispose();
   }
 
   void _onProviderChange() {
-    // Re-run search if user has already searched
-    if (_hasSearched) {
-      _performSearch();
+    // Re-run search (which always runs now to show all events by default)
+    _performSearch();
+  }
+
+  void _onScroll() {
+    if (_isLoadingMore) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    final delta = 200.0; // Trigger load when within 200px of bottom
+
+    if (currentScroll >= maxScroll - delta) {
+      _loadMoreResults();
     }
+  }
+
+  void _loadMoreResults() {
+    if (_isLoadingMore) return;
+
+    final startIndex = _currentPage * _pageSize;
+    if (startIndex >= _searchResults.length) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    // Simulate async loading (could add a small delay if desired)
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+
+      final endIndex = ((startIndex + _pageSize) < _searchResults.length)
+          ? (startIndex + _pageSize)
+          : _searchResults.length;
+
+      setState(() {
+        _displayedResults.addAll(_searchResults.sublist(startIndex, endIndex));
+        _currentPage++;
+        _isLoadingMore = false;
+      });
+    });
   }
 
   @override
@@ -75,7 +122,9 @@ class _SearchPageState extends State<SearchPage>
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      '${_searchResults.length} ${_searchResults.length == 1 ? 'result' : 'results'} found',
+                      _hasActiveFilters()
+                          ? '${_searchResults.length} ${_searchResults.length == 1 ? 'result' : 'results'} found'
+                          : '${_searchResults.length} total ${_searchResults.length == 1 ? 'event' : 'events'}',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -202,10 +251,6 @@ class _SearchPageState extends State<SearchPage>
   }
 
   Widget _buildResultsView() {
-    if (!_hasSearched) {
-      return _buildEmptyState();
-    }
-
     if (_isSearching) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -214,9 +259,9 @@ class _SearchPageState extends State<SearchPage>
       return _buildNoResultsState();
     }
 
-    // Group events by date
+    // Group displayed events by date
     final groupedEvents = <DateTime, List<SexualEvent>>{};
-    for (var event in _searchResults) {
+    for (var event in _displayedResults) {
       final dateOnly = DateTime(
         event.date.year,
         event.date.month,
@@ -228,24 +273,39 @@ class _SearchPageState extends State<SearchPage>
     final sortedDates = groupedEvents.keys.toList()
       ..sort((a, b) => b.compareTo(a)); // Most recent first
 
+    // Calculate total item count (dates + events + loading indicator)
+    int itemCount = 0;
+    for (var date in sortedDates) {
+      itemCount++; // Date header
+      itemCount += groupedEvents[date]!.length; // Events
+    }
+
+    // Add 1 for loading indicator if there are more results
+    final hasMore = _displayedResults.length < _searchResults.length;
+    if (hasMore) {
+      itemCount++;
+    }
+
     return RefreshIndicator(
       onRefresh: _performSearch,
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: sortedDates.length,
+        itemCount: itemCount,
         itemBuilder: (context, index) {
-          final date = sortedDates[index];
-          final events = groupedEvents[date]!;
+          int currentIndex = 0;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Date header
-              Padding(
+          for (var dateIndex = 0; dateIndex < sortedDates.length; dateIndex++) {
+            final date = sortedDates[dateIndex];
+            final events = groupedEvents[date]!;
+
+            // Check if this is the date header
+            if (currentIndex == index) {
+              return Padding(
                 padding: EdgeInsets.only(
                   left: 8,
                   right: 8,
-                  top: index == 0 ? 0 : 16,
+                  top: dateIndex == 0 ? 0 : 16,
                   bottom: 8,
                 ),
                 child: Row(
@@ -267,41 +327,29 @@ class _SearchPageState extends State<SearchPage>
                     ),
                   ],
                 ),
-              ),
-              // Events for this date
-              ...events.map((event) => EventCard(event: event)),
-            ],
-          );
-        },
-      ),
-    );
-  }
+              );
+            }
+            currentIndex++;
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            'Search for events',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: Text(
-              'Use filters to find specific events, partners, activities, or properties',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-            ),
-          ),
-        ],
+            // Check if this is one of the events
+            for (var eventIndex = 0; eventIndex < events.length; eventIndex++) {
+              if (currentIndex == index) {
+                return EventCard(event: events[eventIndex]);
+              }
+              currentIndex++;
+            }
+          }
+
+          // Loading indicator at the end
+          if (hasMore) {
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -352,6 +400,11 @@ class _SearchPageState extends State<SearchPage>
       _riskyOnly = null;
     });
     _performSearch();
+  }
+
+  void _resetPagination() {
+    _currentPage = 0;
+    _displayedResults.clear();
   }
 
   Future<void> _performSearch() async {
@@ -454,6 +507,16 @@ class _SearchPageState extends State<SearchPage>
       setState(() {
         _searchResults = filteredEvents;
         _isSearching = false;
+
+        // Reset pagination and load first page
+        _resetPagination();
+        final firstPageEnd = _pageSize < filteredEvents.length
+            ? _pageSize
+            : filteredEvents.length;
+        if (firstPageEnd > 0) {
+          _displayedResults = filteredEvents.sublist(0, firstPageEnd);
+          _currentPage = 1;
+        }
       });
     } catch (e) {
       setState(() {

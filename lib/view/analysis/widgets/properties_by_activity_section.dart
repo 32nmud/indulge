@@ -23,12 +23,12 @@ class _PropertiesByActivitySectionState
 
   @override
   Widget build(BuildContext context) {
-    if (widget.data.activityCounts.isEmpty) {
+    if (widget.data.activityCountsThisYear.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Sort activities by count
-    final sortedActivities = widget.data.activityCounts.entries.toList()
+    // Sort activities by count (last 12 months)
+    final sortedActivities = widget.data.activityCountsThisYear.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Card(
@@ -46,7 +46,7 @@ class _PropertiesByActivitySectionState
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap to see which properties were used for each activity',
+              widget.data.timeWindowLabel,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
@@ -142,7 +142,7 @@ class _PropertiesByActivitySectionState
     _logger.info('Getting properties for activity: $activityTypeId');
     _logger.info('Total events to search: ${widget.data.events.length}');
 
-    // Iterate through all events to find properties used with this activity type
+    // Iterate through events (already filtered by selected time window)
     for (final event in widget.data.events) {
       for (final activity in event.activities) {
         if (activity.type.reference == activityTypeId) {

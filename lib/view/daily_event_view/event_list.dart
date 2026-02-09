@@ -17,23 +17,37 @@ class AnimatedEventList extends StatefulWidget {
 class _AnimatedEventListState extends State<AnimatedEventList> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   late ListModel<SexualEvent> _list;
+  List<SexualEvent>? _previousEvents;
 
   @override
   void initState() {
     super.initState();
     final provider = context.read<SexualEventsProvider>();
+    final currentEvents = provider.state.currentEvents ?? [];
     _list = ListModel<SexualEvent>(
       listKey: _listKey,
       removedItemBuilder: _buildRemovedItem,
-      initialItems: provider.state.currentEvents ?? [],
+      initialItems: currentEvents,
     );
+    _previousEvents = currentEvents;
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final provider = context.read<SexualEventsProvider>();
-    _list.syncWith(provider.state.currentEvents ?? []);
+  void _syncIfChanged(List<SexualEvent> newEvents) {
+    // Only sync if the events list actually changed
+    if (_previousEvents == null ||
+        _previousEvents!.length != newEvents.length ||
+        !_eventsEqual(_previousEvents!, newEvents)) {
+      _list.syncWith(newEvents);
+      _previousEvents = newEvents;
+    }
+  }
+
+  bool _eventsEqual(List<SexualEvent> a, List<SexualEvent> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   Widget _buildItem(
@@ -60,7 +74,11 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<SexualEventsProvider>();
+    final provider = context.watch<SexualEventsProvider>();
+    final currentEvents = provider.state.currentEvents ?? [];
+
+    // Only sync if events actually changed
+    _syncIfChanged(currentEvents);
 
     return Expanded(
       child: AnimatedList(

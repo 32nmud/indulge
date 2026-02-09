@@ -27,6 +27,15 @@ class MonthlyActivityChart extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 4),
+            Text(
+              data.timeWindowLabel,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[500],
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               'Total activities per month',
@@ -43,7 +52,31 @@ class MonthlyActivityChart extends StatelessWidget {
   }
 
   Widget _buildChart(BuildContext context) {
-    final sortedMonths = data.monthlyCounts.keys.toList()..sort();
+    // For "All Time" view, show last 12 months to keep chart readable
+    // For other views, show all months in the selected time window
+    final now = DateTime.now();
+    final twelveMonthsAgo = DateTime(now.year, now.month - 11, 1);
+
+    // If startDate is null (All Time), limit to last 12 months
+    // Otherwise show all data from the selected window
+    final shouldLimitTo12Months = data.startDate == null;
+
+    final filteredMonths =
+        data.monthlyCounts.entries
+            .where((entry) {
+              if (!shouldLimitTo12Months) {
+                return true; // Show all months for specific time windows
+              }
+              final monthDate = DateTime.parse('${entry.key}-01');
+              return monthDate.isAfter(
+                twelveMonthsAgo.subtract(const Duration(days: 1)),
+              );
+            })
+            .map((e) => e.key)
+            .toList()
+          ..sort();
+
+    final sortedMonths = filteredMonths;
 
     if (sortedMonths.isEmpty) {
       return Center(
@@ -54,10 +87,12 @@ class MonthlyActivityChart extends StatelessWidget {
       );
     }
 
-    // Calculate max value for better scaling
-    final maxCount = data.monthlyCounts.values.isEmpty
+    // Calculate max value for better scaling from filtered data
+    final maxCount = sortedMonths.isEmpty
         ? 0
-        : data.monthlyCounts.values.reduce((a, b) => a > b ? a : b);
+        : sortedMonths
+              .map((key) => data.monthlyCounts[key] ?? 0)
+              .reduce((a, b) => a > b ? a : b);
     final maxY = (maxCount / 5).ceil() * 5;
 
     return BarChart(

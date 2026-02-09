@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
 
 class OverviewStatsSection extends StatelessWidget {
@@ -8,6 +9,9 @@ class OverviewStatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Determine if we're viewing "Last 12 Months" to show month-specific stats
+    final isLast12Months = data.timeWindowLabel == 'Last 12 Months';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -20,53 +24,347 @@ class OverviewStatsSection extends StatelessWidget {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
+
+        // Row 1: Total Events & Unique Partners
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
             children: [
               Expanded(
                 child: _StatCard(
-                  icon: Icons.calendar_today,
-                  label: 'Events',
+                  icon: Icons.event,
+                  label: 'Total Events',
                   value: data.totalEvents.toString(),
                   color: Colors.blue,
+                  subtitle: data.timeWindowLabel,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _StatCard(
-                  icon: Icons.favorite,
-                  label: 'Activities',
-                  value: data.totalActivities.toString(),
-                  color: Colors.pink,
+                  icon: Icons.people,
+                  label: 'Unique Partners',
+                  value: data.uniquePartners.toString(),
+                  color: Colors.purple,
+                  subtitle: data.timeWindowLabel,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Row 2: Events/Partners this month & year (only for Last 12 Months)
+        if (isLast12Months) ...[
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.calendar_today,
+                    label: 'Events This Month',
+                    value: data.eventsThisMonth.toString(),
+                    color: Colors.indigo,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.groups,
+                    label: 'Partners This Month',
+                    value: data.uniquePartnersThisMonth.toString(),
+                    color: Colors.deepPurple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+
+        // Row 3: Current Streak & Longest Streak
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.local_fire_department,
+                  label: 'Current Streak',
+                  value: data.currentStreak.toString(),
+                  color: Colors.orange,
+                  subtitle:
+                      '${data.currentStreak} day${data.currentStreak != 1 ? 's' : ''}',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.emoji_events,
+                  label: 'Longest Streak',
+                  value: data.longestStreak.toString(),
+                  color: Colors.amber[700]!,
+                  subtitle:
+                      '${data.longestStreak} day${data.longestStreak != 1 ? 's' : ''}',
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
+
+        // Row 4: Partner Ratio
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.people,
-                  label: 'Partners',
-                  value: data.uniquePartners.toString(),
-                  color: Colors.purple,
+          child: _PartnerRatioCard(
+            knownPartners: data.knownPartners,
+            anonymousInstances: data.anonymousPartnerInstances,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Row 5: Solo, Couple, Group events (last 12 months)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.category, color: Colors.teal, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        isLast12Months
+                            ? 'Event Types (Last 12 Months)'
+                            : 'Event Types',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildEventTypeItem(
+                          context,
+                          icon: Icons.person,
+                          label: 'Solo',
+                          value: data.soloEventsThisYear,
+                          color: Colors.blue[700]!,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildEventTypeItem(
+                          context,
+                          icon: Icons.people,
+                          label: 'Couple',
+                          value: data.coupleEventsThisYear,
+                          color: Colors.purple[700]!,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildEventTypeItem(
+                          context,
+                          icon: Icons.groups,
+                          label: 'Group',
+                          value: data.groupEventsThisYear,
+                          color: Colors.pink[700]!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Busiest Day and Event (Last 12 Months)
+        if (data.busiestDay != null || data.busiestEvent != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Card(
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          isLast12Months
+                              ? 'Records (Last 12 Months)'
+                              : 'Records',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (data.busiestDay != null) ...[
+                      _buildBusiestDayInfo(context),
+                      const SizedBox(height: 8),
+                    ],
+                    if (data.busiestEvent != null) ...[
+                      _buildBusiestEventInfo(context),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.local_fire_department,
-                  label: 'Streak',
-                  value: '${data.currentStreak} days',
-                  color: Colors.orange,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEventTypeItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required int value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 6),
+        Text(
+          value.toString(),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusiestDayInfo(BuildContext context) {
+    final dateStr = DateFormat('MMM d, yyyy').format(data.busiestDay!);
+    return Row(
+      children: [
+        Icon(Icons.event_busy, color: Colors.blue[700], size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Busiest Day',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                dateStr,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${data.busiestDayEventCount} event${data.busiestDayEventCount != 1 ? 's' : ''}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue[700],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusiestEventInfo(BuildContext context) {
+    final event = data.busiestEvent!;
+    final dateStr = DateFormat('MMM d, yyyy').format(event.date);
+    final participantCount = event.activities
+        .expand((a) => a.participants)
+        .map((p) => p.participant.reference)
+        .toSet()
+        .length;
+    final propertyCount = event.activities
+        .expand((a) => a.participants)
+        .expand((p) => p.propertyCounts)
+        .map((pc) => pc.propertyReference.reference)
+        .toSet()
+        .length;
+
+    return Row(
+      children: [
+        Icon(Icons.celebration, color: Colors.purple[700], size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Busiest Event',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                dateStr,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$participantCount partner${participantCount != 1 ? 's' : ''} • $propertyCount propert${propertyCount != 1 ? 'ies' : 'y'}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[500],
+                  fontSize: 10,
                 ),
               ),
             ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.purple.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${data.busiestEventActivityCount} activit${data.busiestEventActivityCount != 1 ? 'ies' : 'y'}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple[700],
+            ),
           ),
         ),
       ],
@@ -102,11 +400,16 @@ class _StatCard extends StatelessWidget {
               children: [
                 Icon(icon, color: color, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -124,10 +427,107 @@ class _StatCard extends StatelessWidget {
                 subtitle!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.grey[500],
-                  fontSize: 11,
+                  fontSize: 10,
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PartnerRatioCard extends StatelessWidget {
+  final int knownPartners;
+  final int anonymousInstances;
+
+  const _PartnerRatioCard({
+    required this.knownPartners,
+    required this.anonymousInstances,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = knownPartners + anonymousInstances;
+    final knownPercentage = total > 0
+        ? (knownPartners / total * 100).round()
+        : 0;
+    final anonPercentage = total > 0
+        ? (anonymousInstances / total * 100).round()
+        : 0;
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.pie_chart, color: Colors.teal, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Partner Ratio',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$knownPartners',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                      Text(
+                        'Known ($knownPercentage%)',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[500],
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(width: 1, height: 30, color: Colors.grey[300]),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$anonymousInstances',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
+                        'Anon ($anonPercentage%)',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[500],
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

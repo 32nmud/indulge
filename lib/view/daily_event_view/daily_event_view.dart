@@ -23,16 +23,42 @@ class _EventViewPageState extends State<EventViewPage> {
     });
   }
 
+  void _navigateToNextDay() {
+    final provider = context.read<SexualEventsProvider>();
+    final currentDate = provider.state.selectedDate ?? DateTime.now();
+    final nextDate = currentDate.add(const Duration(days: 1));
+    provider.selectDate(nextDate);
+  }
+
+  void _navigateToPreviousDay() {
+    final provider = context.read<SexualEventsProvider>();
+    final currentDate = provider.state.selectedDate ?? DateTime.now();
+    final previousDate = currentDate.subtract(const Duration(days: 1));
+    provider.selectDate(previousDate);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          DayCard(),
-          const SizedBox(height: 8.0),
-          AnimatedEventList(),
-        ],
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Swipe left (next day) - negative velocity
+        if (details.primaryVelocity! < -500) {
+          _navigateToNextDay();
+        }
+        // Swipe right (previous day) - positive velocity
+        else if (details.primaryVelocity! > 500) {
+          _navigateToPreviousDay();
+        }
+      },
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            DayCard(),
+            const SizedBox(height: 8.0),
+            AnimatedEventList(),
+          ],
+        ),
       ),
     );
   }

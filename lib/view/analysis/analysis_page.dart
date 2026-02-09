@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:intl/intl.dart';
+import 'package:indulge/data/models.dart';
 import 'package:logging/logging.dart';
 import 'models/analysis_data.dart';
 import 'utils/analysis_calculator.dart';
@@ -10,10 +10,12 @@ import 'widgets/monthly_activity_chart.dart';
 import 'widgets/activity_type_distribution.dart';
 import 'widgets/top_partners_section.dart';
 import 'widgets/properties_by_activity_section.dart';
-
 import 'widgets/time_patterns_section.dart';
-import 'widgets/streak_section.dart';
 import 'widgets/period_comparison_section.dart';
+import 'widgets/event_averages_section.dart';
+import 'widgets/property_partner_section.dart';
+
+enum TimeWindow { last12Months, allTime, specificYear }
 
 class AnalysisPage extends StatefulWidget {
   const AnalysisPage({super.key});
@@ -25,8 +27,10 @@ class AnalysisPage extends StatefulWidget {
 class _AnalysisPageState extends State<AnalysisPage>
     with AutomaticKeepAliveClientMixin {
   final Logger _logger = Logger('AnalysisPage');
-  DateTimeRange? _selectedDateRange;
   int _refreshKey = 0;
+  TimeWindow _timeWindow = TimeWindow.last12Months;
+  int? _selectedYear;
+  List<int> _availableYears = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -59,26 +63,68 @@ class _AnalysisPageState extends State<AnalysisPage>
     final allEvents = await provider.getAllEvents();
     _logger.info('Loaded ${allEvents.length} events');
 
-    // Filter by date range if selected
-    final events = _selectedDateRange != null
-        ? allEvents.where((event) {
-            return event.date.isAfter(
-                  _selectedDateRange!.start.subtract(const Duration(days: 1)),
-                ) &&
-                event.date.isBefore(
-                  _selectedDateRange!.end.add(const Duration(days: 1)),
-                );
-          }).toList()
-        : allEvents;
+    // Calculate available years from data
+    if (allEvents.isNotEmpty) {
+      final years = allEvents.map((e) => e.date.year).toSet().toList()..sort();
+      // Only update if the years list has actually changed
+      if (_availableYears.length != years.length ||
+          !_availableYears.every((year) => years.contains(year))) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _availableYears = years;
+            });
+          }
+        });
+      }
+    }
 
-    _logger.info('${events.length} events after filtering');
+    // Filter events based on selected time window
+    final now = DateTime.now();
+    DateTime? startDate;
+    DateTime? endDate;
+    List<SexualEvent> events;
+
+    switch (_timeWindow) {
+      case TimeWindow.last12Months:
+        startDate = DateTime(now.year, now.month - 11, 1);
+        events = allEvents.where((event) {
+          return event.date.isAfter(
+            startDate!.subtract(const Duration(days: 1)),
+          );
+        }).toList();
+        _logger.info('Filtering to last 12 months (from $startDate)');
+        break;
+      case TimeWindow.allTime:
+        events = allEvents;
+        startDate = null;
+        endDate = null;
+        _logger.info('Using all-time data');
+        break;
+      case TimeWindow.specificYear:
+        if (_selectedYear != null) {
+          startDate = DateTime(_selectedYear!, 1, 1);
+          endDate = DateTime(_selectedYear!, 12, 31, 23, 59, 59);
+          events = allEvents.where((event) {
+            return event.date.isAfter(
+                  startDate!.subtract(const Duration(days: 1)),
+                ) &&
+                event.date.isBefore(endDate!.add(const Duration(days: 1)));
+          }).toList();
+          _logger.info('Filtering to year $_selectedYear');
+        } else {
+          events = allEvents;
+        }
+        break;
+    }
 
     // Calculate all statistics
-    final analysisData = AnalysisCalculator.calculate(
+    final analysisData = await AnalysisCalculator.calculate(
       events,
-      provider.state,
-      startDate: _selectedDateRange?.start,
-      endDate: _selectedDateRange?.end,
+      provider,
+      startDate: startDate,
+      endDate: endDate,
+      timeWindowLabel: _getTimeWindowLabel(),
     );
 
     _logger.info('Calculated data - ${analysisData.totalEvents} total events');
@@ -92,201 +138,286 @@ class _AnalysisPageState extends State<AnalysisPage>
     });
   }
 
-  Future<void> _selectDateRange() async {
-    final now = DateTime.now();
-    final firstDate = DateTime(2020);
-    final lastDate = DateTime(now.year, now.month, now.day);
-
-    final picked = await showDateRangePicker(
+  void _showTimeWindowSelector() {
+    showModalBottomSheet(
       context: context,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      initialDateRange: _selectedDateRange,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(
-              context,
-            ).colorScheme.copyWith(primary: Theme.of(context).primaryColor),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Select Time Window',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              _buildTimeWindowOption(
+                TimeWindow.last12Months,
+                'Last 12 Months',
+                'Rolling 12-month window',
+                Icons.trending_up,
+              ),
+              _buildTimeWindowOption(
+                TimeWindow.allTime,
+                'All Time',
+                'Complete history',
+                Icons.all_inclusive,
+              ),
+              const Divider(height: 1),
+              if (_availableYears.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 8, bottom: 4),
+                  child: Text(
+                    'Specific Years',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ..._availableYears.reversed.map((year) {
+                return _buildYearOption(year);
+              }),
+              const SizedBox(height: 8),
+            ],
           ),
-          child: child!,
         );
       },
     );
-
-    if (picked != null) {
-      setState(() {
-        _selectedDateRange = picked;
-        _refreshKey++;
-      });
-    }
   }
 
-  void _clearDateRange() {
-    setState(() {
-      _selectedDateRange = null;
-      _refreshKey++;
-    });
+  Widget _buildTimeWindowOption(
+    TimeWindow window,
+    String title,
+    String subtitle,
+    IconData icon,
+  ) {
+    final isSelected = _timeWindow == window && _selectedYear == null;
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Theme.of(context).primaryColor : null,
+        ),
+      ),
+      subtitle: Text(subtitle),
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: Theme.of(context).primaryColor)
+          : null,
+      selected: isSelected,
+      onTap: () {
+        setState(() {
+          _timeWindow = window;
+          _selectedYear = null;
+          _refreshKey++;
+        });
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  Widget _buildYearOption(int year) {
+    final isSelected =
+        _timeWindow == TimeWindow.specificYear && _selectedYear == year;
+    return ListTile(
+      leading: Icon(
+        Icons.calendar_today,
+        color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
+      ),
+      title: Text(
+        year.toString(),
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Theme.of(context).primaryColor : null,
+        ),
+      ),
+      subtitle: Text('January - December $year'),
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: Theme.of(context).primaryColor)
+          : null,
+      selected: isSelected,
+      onTap: () {
+        setState(() {
+          _timeWindow = TimeWindow.specificYear;
+          _selectedYear = year;
+          _refreshKey++;
+        });
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  String _getTimeWindowLabel() {
+    switch (_timeWindow) {
+      case TimeWindow.last12Months:
+        return 'Last 12 Months';
+      case TimeWindow.allTime:
+        return 'All Time';
+      case TimeWindow.specificYear:
+        return _selectedYear?.toString() ?? 'Year';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Analysis'),
-        actions: [
-          if (_selectedDateRange != null)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: _clearDateRange,
-              tooltip: 'Clear date filter',
-            ),
-          IconButton(
-            icon: const Icon(Icons.date_range),
-            onPressed: _selectDateRange,
-            tooltip: 'Select date range',
-          ),
-        ],
-      ),
-      body: FutureBuilder<AnalysisData>(
-        key: ValueKey(_refreshKey),
-        future: _loadData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Stack(
+      children: [
+        FutureBuilder<AnalysisData>(
+          key: ValueKey(_refreshKey),
+          future: _loadData(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Failed to load analysis data',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      snapshot.error.toString(),
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _refresh,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (!snapshot.hasData) {
+              return const Center(child: Text('No data available'));
+            }
+
+            final analysisData = snapshot.data!;
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                _refresh();
+                // Wait a frame for the refresh to trigger
+                await Future.delayed(const Duration(milliseconds: 100));
+              },
+              child: ListView(
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Failed to load analysis data',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  // Time window indicator (always show for clarity)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Theme.of(context).primaryColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Viewing ${_getTimeWindowLabel()} data',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    snapshot.error.toString(),
-                    style: Theme.of(context).textTheme.bodySmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refresh,
-                    child: const Text('Retry'),
-                  ),
+                  // Empty state
+                  if (analysisData.totalEvents == 0)
+                    _buildEmptyState()
+                  else ...[
+                    // Overview Stats Cards
+                    OverviewStatsSection(data: analysisData),
+
+                    // Monthly Activity Chart
+                    MonthlyActivityChart(data: analysisData),
+
+                    // Time Patterns
+                    TimePatternsSection(data: analysisData),
+
+                    // Period Comparisons (only for Last 12 Months)
+                    PeriodComparisonSection(data: analysisData),
+
+                    // Event Averages
+                    EventAveragesSection(data: analysisData),
+
+                    // Activity Type Distribution
+                    ActivityTypeDistribution(data: analysisData),
+
+                    // Properties by Activity Type
+                    PropertiesByActivitySection(data: analysisData),
+
+                    // Top Partners
+                    TopPartnersSection(data: analysisData),
+
+                    // Partner Diversity by Activity
+                    PropertyPartnerSection(data: analysisData),
+
+                    // Bottom padding
+                    const SizedBox(height: 80),
+                  ],
                 ],
               ),
             );
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No data available'));
-          }
-
-          final analysisData = snapshot.data!;
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              _refresh();
-              // Wait a frame for the refresh to trigger
-              await Future.delayed(const Duration(milliseconds: 100));
-            },
-            child: ListView(
-              children: [
-                // Date range indicator
-                if (_selectedDateRange != null) _buildDateRangeIndicator(),
-
-                // Empty state
-                if (analysisData.totalEvents == 0)
-                  _buildEmptyState()
-                else ...[
-                  // Overview Stats Cards
-                  OverviewStatsSection(data: analysisData),
-
-                  // Monthly Activity Chart
-                  MonthlyActivityChart(data: analysisData),
-
-                  // Time Patterns
-                  TimePatternsSection(data: analysisData),
-
-                  // Period Comparisons & Averages
-                  PeriodComparisonSection(data: analysisData),
-
-                  // Activity Type Distribution
-                  ActivityTypeDistribution(data: analysisData),
-
-                  // Properties by Activity Type
-                  PropertiesByActivitySection(data: analysisData),
-
-                  // Streaks & Milestones
-                  StreakSection(data: analysisData),
-
-                  // Top Partners
-                  TopPartnersSection(data: analysisData),
-
-                  // Bottom padding
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildDateRangeIndicator() {
-    final startFormatted = DateFormat(
-      'MMM d, yyyy',
-    ).format(_selectedDateRange!.start);
-    final endFormatted = DateFormat(
-      'MMM d, yyyy',
-    ).format(_selectedDateRange!.end);
-
-    return Container(
-      margin: const EdgeInsets.all(16.0),
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).primaryColor.withOpacity(0.3),
+          },
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.filter_list,
-            color: Theme.of(context).primaryColor,
-            size: 20,
+        // Floating Action Button
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton.extended(
+            onPressed: _showTimeWindowSelector,
+            icon: const Icon(Icons.calendar_month),
+            label: Text(_getTimeWindowLabel()),
+            tooltip: 'Select time window',
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Showing data from $startFormatted to $endFormatted',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).primaryColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.close,
-              size: 20,
-              color: Theme.of(context).primaryColor,
-            ),
-            onPressed: _clearDateRange,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -308,22 +439,12 @@ class _AnalysisPageState extends State<AnalysisPage>
             ),
             const SizedBox(height: 8),
             Text(
-              _selectedDateRange != null
-                  ? 'No events found in the selected date range.\nTry adjusting your filters.'
-                  : 'Start logging events to see your analysis.',
+              'Start logging events to see your analysis.',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
             ),
-            if (_selectedDateRange != null) ...[
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _clearDateRange,
-                icon: const Icon(Icons.clear),
-                label: const Text('Clear Filters'),
-              ),
-            ],
           ],
         ),
       ),

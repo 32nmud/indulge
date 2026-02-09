@@ -21,6 +21,15 @@ class StreakSection extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Last 12 months',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[500],
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               'Your consistency and progress toward event milestones',

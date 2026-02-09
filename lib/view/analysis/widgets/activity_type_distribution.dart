@@ -17,7 +17,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.data.activityCounts.isEmpty) {
+    if (widget.data.activityCountsThisYear.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -34,9 +34,18 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 4),
+            Text(
+              widget.data.timeWindowLabel,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[500],
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
-              'Distribution of activity types',
+              'Total count of each activity type you\'ve done',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
@@ -59,8 +68,14 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
   }
 
   Widget _buildPieChart(BuildContext context) {
-    final sortedEntries = widget.data.activityCounts.entries.toList()
+    final sortedEntries = widget.data.activityCountsThisYear.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Calculate total from last 12 months
+    final totalActivitiesThisYear = sortedEntries.fold<int>(
+      0,
+      (sum, entry) => sum + entry.value,
+    );
 
     final colors = [
       Colors.blue,
@@ -101,7 +116,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
           final color = colors[i % colors.length];
 
           final entry = sortedEntries[i];
-          final percentage = (entry.value / widget.data.totalActivities * 100)
+          final percentage = (entry.value / totalActivitiesThisYear * 100)
               .round();
 
           return PieChartSectionData(
@@ -121,8 +136,14 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
   }
 
   Widget _buildLegend(BuildContext context) {
-    final sortedEntries = widget.data.activityCounts.entries.toList()
+    final sortedEntries = widget.data.activityCountsThisYear.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Calculate total from last 12 months
+    final totalActivitiesThisYear = sortedEntries.fold<int>(
+      0,
+      (sum, entry) => sum + entry.value,
+    );
 
     final colors = [
       Colors.blue,
@@ -144,7 +165,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
         final entry = sortedEntries[index];
         final activityType = widget.data.activityTypes[entry.key];
         final color = colors[index % colors.length];
-        final percentage = (entry.value / widget.data.totalActivities * 100)
+        final percentage = (entry.value / totalActivitiesThisYear * 100)
             .round();
 
         return Padding(

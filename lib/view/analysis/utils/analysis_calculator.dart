@@ -1,5 +1,6 @@
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
+import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
 import '../models/analysis_data.dart';
@@ -9,14 +10,22 @@ class AnalysisCalculator {
   static final Logger _logger = Logger('AnalysisCalculator');
 
   /// Computes all analysis data from the given events
-  static AnalysisData calculate(
+  static Future<AnalysisData> calculate(
     List<SexualEvent> events,
-    EventState providerState, {
+    SexualEventsProvider provider, {
     DateTime? startDate,
     DateTime? endDate,
-  }) {
+    String timeWindowLabel = 'Last 12 months',
+  }) async {
+    final providerState = provider.state;
     if (events.isEmpty) {
-      return _emptyAnalysisData(events, providerState, startDate, endDate);
+      return _emptyAnalysisData(
+        events,
+        providerState,
+        startDate,
+        endDate,
+        timeWindowLabel,
+      );
     }
 
     // Sort events by date
@@ -24,7 +33,8 @@ class AnalysisCalculator {
       ..sort((a, b) => a.date.compareTo(b.date));
 
     // Calculate basic counts
-    final activityCounts = <String, int>{};
+    final activityCounts = <String, int>{}; // All time for backwards compat
+    final activityCountsThisYear = <String, int>{}; // Last 12 months
     final activityTypes = <String, SexualActivityType>{};
     final personCounts = <String, int>{};
     final personEventCounts = <String, int>{};
@@ -32,10 +42,25 @@ class AnalysisCalculator {
     final personPropertyCounts = <String, Map<String, int>>{};
     final propertyCountsTotal = <String, int>{};
     final properties = <String, SexualActivityTypeProperty>{};
+    final propertyPartnerCounts =
+        <
+          String,
+          Set<String>
+        >{}; // Track unique partners per property (all time)
+
+    // Track activity-partner and property-partner counts for last 12 months
+    final activityPartnerCountsThisYear = <String, Set<String>>{};
+    final propertyPartnerCountsThisYear = <String, Set<String>>{};
+    final activityPropertyPartnerCountsThisYear =
+        <
+          String,
+          Map<String, Set<String>>
+        >{}; // activity -> property -> partners
 
     int totalActivities = 0;
     int riskyActivityCount = 0;
     int safeActivityCount = 0;
+    int anonymousPartnerInstances = 0;
 
     final dailyCounts = <String, int>{};
     final dayOfWeekCounts = <int, int>{};
@@ -44,6 +69,8 @@ class AnalysisCalculator {
     final eventPartnerCounts = <int>{}; // Partners per individual event
     final eventPropertyCounts = <int>{}; // Properties per individual event
     final eventActivityCounts = <int>{}; // Activities per individual event
+
+    // Track busiest event (will be filtered to last 12 months later)
 
     for (final event in sortedEvents) {
       // Daily counts
@@ -84,9 +111,20 @@ class AnalysisCalculator {
         for (final participant in activity.participants) {
           final personId = participant.participant.reference;
 
+          // Skip "me" person in partner counts
+          final person = await provider.getPersonById(personId);
+          if (person?.isSelf ?? false) {
+            continue; // Skip "me" from partner statistics
+          }
+
           // Count participants
           personCounts[personId] = (personCounts[personId] ?? 0) + 1;
           eventPartners.add(personId); // Track unique partners in this event
+
+          // Count anonymous partner instances
+          if (personId == 'anonymous') {
+            anonymousPartnerInstances++;
+          }
 
           // Count properties
           for (final propertyCount in participant.propertyCounts) {
@@ -114,6 +152,10 @@ class AnalysisCalculator {
             personPropertyCounts.putIfAbsent(personId, () => {});
             personPropertyCounts[personId]![propertyId] =
                 (personPropertyCounts[personId]![propertyId] ?? 0) + count;
+
+            // Track unique partners per property
+            propertyPartnerCounts.putIfAbsent(propertyId, () => {});
+            propertyPartnerCounts[propertyId]!.add(personId);
           }
         }
 
@@ -142,24 +184,188 @@ class AnalysisCalculator {
       weeklyCounts[weekKey] = (weeklyCounts[weekKey] ?? 0) + 1;
     }
 
-    // Calculate streaks
-    final streakData = _calculateStreaks(sortedEvents);
-
-    // Calculate period comparisons
+    // Calculate this month/year stats
     final now = DateTime.now();
+    final thisMonthStart = DateTime(now.year, now.month, 1);
+
+    // Use provided startDate or default to last 12 months
+    final thisYearStart = startDate ?? DateTime(now.year, now.month - 11, 1);
+
+    _logger.info(
+      'Filtering for selected time window starting from: $thisYearStart',
+    );
+
+    // Track longest and current streak
+    final longestStreak = _calculateStreaks(sortedEvents).longestStreak;
+    final currentStreak = _calculateStreaks(sortedEvents).currentStreak;
+
+    int eventsThisMonth = 0;
+    int eventsThisYear = 0;
+    final partnersThisMonth = <String>{};
+    final partnersThisYear = <String>{};
+    int anonymousCountThisMonth = 0;
+    int anonymousCountThisYear = 0;
+
+    // Solo, couple, group counts for last 12 months
+    int soloEventsThisYear = 0;
+    int coupleEventsThisYear = 0;
+    int groupEventsThisYear = 0;
+
+    // Track busiest day/event in last 12 months
+    final dailyCountsThisYear = <String, int>{};
+    DateTime? busiestDay;
+    int busiestDayEventCount = 0;
+    SexualEvent? busiestEventThisYear;
+    int busiestEventActivityCountThisYear = 0;
+
+    for (final event in sortedEvents) {
+      final isThisMonth = event.date.isAfter(
+        thisMonthStart.subtract(const Duration(days: 1)),
+      );
+      final isThisYear = event.date.isAfter(
+        thisYearStart.subtract(const Duration(days: 1)),
+      );
+
+      if (isThisMonth) {
+        eventsThisMonth++;
+        for (final activity in event.activities) {
+          for (final participant in activity.participants) {
+            final personId = participant.participant.reference;
+            final person = await provider.getPersonById(personId);
+            if (person?.isSelf ?? false) continue; // Skip "me"
+
+            if (personId == 'anonymous') {
+              anonymousCountThisMonth++;
+            } else {
+              partnersThisMonth.add(personId);
+            }
+          }
+        }
+      }
+
+      if (isThisYear) {
+        eventsThisYear++;
+
+        // Count partners in this event (excluding me)
+        final eventPartnersNoMe = <String>{};
+        for (final activity in event.activities) {
+          final activityTypeId = activity.type.reference;
+
+          // Track activity counts for last 12 months
+          activityCountsThisYear[activityTypeId] =
+              (activityCountsThisYear[activityTypeId] ?? 0) + 1;
+
+          for (final participant in activity.participants) {
+            final personId = participant.participant.reference;
+            final person = await provider.getPersonById(personId);
+            if (person?.isSelf ?? false) continue; // Skip "me"
+
+            if (personId == 'anonymous') {
+              anonymousCountThisYear++;
+            } else {
+              partnersThisYear.add(personId);
+            }
+            eventPartnersNoMe.add(personId);
+
+            // Track unique partners per activity type (last 12 months)
+            activityPartnerCountsThisYear.putIfAbsent(activityTypeId, () => {});
+            activityPartnerCountsThisYear[activityTypeId]!.add(personId);
+
+            // Track unique partners per property (last 12 months)
+            for (final propertyCount in participant.propertyCounts) {
+              final propertyId = propertyCount.propertyReference.reference;
+
+              propertyPartnerCountsThisYear.putIfAbsent(propertyId, () => {});
+              propertyPartnerCountsThisYear[propertyId]!.add(personId);
+
+              // Track unique partners per property within each activity type
+              activityPropertyPartnerCountsThisYear.putIfAbsent(
+                activityTypeId,
+                () => {},
+              );
+              activityPropertyPartnerCountsThisYear[activityTypeId]!
+                  .putIfAbsent(propertyId, () => {});
+              activityPropertyPartnerCountsThisYear[activityTypeId]![propertyId]!
+                  .add(personId);
+            }
+          }
+        }
+
+        // Categorize event type
+        if (eventPartnersNoMe.isEmpty) {
+          soloEventsThisYear++;
+        } else if (eventPartnersNoMe.length == 1) {
+          coupleEventsThisYear++;
+        } else {
+          groupEventsThisYear++;
+        }
+
+        // Track daily counts for busiest day
+        final dateKey = DateFormat('yyyy-MM-dd').format(event.date);
+        dailyCountsThisYear[dateKey] = (dailyCountsThisYear[dateKey] ?? 0) + 1;
+
+        // Track busiest event
+        final eventActivityCount = event.activities.length;
+        if (eventActivityCount > busiestEventActivityCountThisYear) {
+          busiestEventThisYear = event;
+          busiestEventActivityCountThisYear = eventActivityCount;
+        }
+      }
+    }
+
+    // Find busiest day from last 12 months
+    dailyCountsThisYear.forEach((dateStr, count) {
+      if (count > busiestDayEventCount) {
+        busiestDayEventCount = count;
+        busiestDay = DateTime.parse(dateStr);
+      }
+    });
+
+    final uniquePartnersThisMonth =
+        partnersThisMonth.length + anonymousCountThisMonth;
+    final uniquePartnersThisYear =
+        partnersThisYear.length + anonymousCountThisYear;
+
+    // Count known partners (excluding anonymous)
+    final knownPartners = personCounts.keys
+        .where((id) => id != 'anonymous')
+        .length;
+
+    // Calculate period comparisons (these use all events, not filtered)
     final thisWeekVsLastWeek = _calculateWeekComparison(sortedEvents, now);
     final thisMonthVsLastMonth = _calculateMonthComparison(sortedEvents, now);
 
-    // Calculate averages based on distinct weeks/months with events
-    final distinctWeeks = weeklyCounts.length.clamp(1, double.infinity);
-    final distinctMonths = monthlyCounts.length.clamp(1, double.infinity);
+    // Calculate averages based on last 12 months only
+    final weeklyCountsThisYear = <String, int>{};
+    final monthlyCountsThisYear = <String, int>{};
 
-    final averageActivitiesPerWeek = totalActivities / distinctWeeks;
-    final averageActivitiesPerMonth = totalActivities / distinctMonths;
+    for (final event in sortedEvents) {
+      if (event.date.isAfter(thisYearStart.subtract(const Duration(days: 1)))) {
+        final weekKey = _getWeekKey(event.date);
+        weeklyCountsThisYear[weekKey] =
+            (weeklyCountsThisYear[weekKey] ?? 0) + 1;
 
-    // Calculate event-focused averages
-    final averageEventsPerWeek = events.length / distinctWeeks;
-    final averageEventsPerMonth = events.length / distinctMonths;
+        final monthKey = DateFormat('yyyy-MM').format(event.date);
+        monthlyCountsThisYear[monthKey] =
+            (monthlyCountsThisYear[monthKey] ?? 0) + 1;
+      }
+    }
+
+    final distinctWeeksThisYear = weeklyCountsThisYear.length.clamp(
+      1,
+      double.infinity,
+    );
+    final distinctMonthsThisYear = monthlyCountsThisYear.length.clamp(
+      1,
+      double.infinity,
+    );
+
+    final averageActivitiesPerWeek = totalActivities / distinctWeeksThisYear;
+    final averageActivitiesPerMonth = totalActivities / distinctMonthsThisYear;
+
+    // Calculate event-focused averages (last 12 months)
+    final averageEventsPerWeek = eventsThisYear / distinctWeeksThisYear;
+    final averageEventsPerMonth = eventsThisYear / distinctMonthsThisYear;
 
     final averagePartnersPerEvent = eventPartnerCounts.isNotEmpty
         ? eventPartnerCounts.reduce((a, b) => a + b) / eventPartnerCounts.length
@@ -175,12 +381,41 @@ class AnalysisCalculator {
               eventPropertyCounts.length
         : 0.0;
 
-    // Calculate average events per day of week
+    // Calculate average events per day of week (based on last 12 months)
     final averageEventsPerDayOfWeek = <int, double>{};
     for (int day = 1; day <= 7; day++) {
       final count = dayOfWeekCounts[day] ?? 0;
-      averageEventsPerDayOfWeek[day] = count / distinctWeeks;
+      averageEventsPerDayOfWeek[day] = count / distinctWeeksThisYear;
     }
+
+    // Convert property-partner counts to final map (all time)
+    final propertyPartnerCountsMap = <String, int>{};
+    propertyPartnerCounts.forEach((propertyId, partners) {
+      propertyPartnerCountsMap[propertyId] = partners.length;
+    });
+
+    // Convert activity-partner counts for last 12 months
+    final activityPartnerCountsThisYearMap = <String, int>{};
+    activityPartnerCountsThisYear.forEach((activityId, partners) {
+      activityPartnerCountsThisYearMap[activityId] = partners.length;
+    });
+
+    // Convert property-partner counts for last 12 months
+    final propertyPartnerCountsThisYearMap = <String, int>{};
+    propertyPartnerCountsThisYear.forEach((propertyId, partners) {
+      propertyPartnerCountsThisYearMap[propertyId] = partners.length;
+    });
+
+    // Convert activity-property-partner counts for last 12 months
+    final activityPropertyPartnerCountsThisYearMap =
+        <String, Map<String, int>>{};
+    activityPropertyPartnerCountsThisYear.forEach((activityId, propertyMap) {
+      activityPropertyPartnerCountsThisYearMap[activityId] = {};
+      propertyMap.forEach((propertyId, partners) {
+        activityPropertyPartnerCountsThisYearMap[activityId]![propertyId] =
+            partners.length;
+      });
+    });
 
     // Days since last risky activity
     final daysSinceLastRiskyActivity = _calculateDaysSinceLastRisky(
@@ -193,24 +428,44 @@ class AnalysisCalculator {
     final daysSinceLastActivity = now.difference(lastEventDate).inDays;
 
     return AnalysisData(
+      timeWindowLabel: timeWindowLabel,
       totalEvents: events.length,
       totalActivities: totalActivities,
       uniquePartners: personCounts.length,
       riskyActivityCount: riskyActivityCount,
       safeActivityCount: safeActivityCount,
+      eventsThisMonth: eventsThisMonth,
+      eventsThisYear: eventsThisYear,
+      uniquePartnersThisMonth: uniquePartnersThisMonth,
+      uniquePartnersThisYear: uniquePartnersThisYear,
+      knownPartners: knownPartners,
+      anonymousPartnerInstances: anonymousPartnerInstances,
+      busiestDay: busiestDay,
+      busiestDayEventCount: busiestDayEventCount,
+      busiestEvent: busiestEventThisYear,
+      busiestEventActivityCount: busiestEventActivityCountThisYear,
+      soloEventsThisYear: soloEventsThisYear,
+      coupleEventsThisYear: coupleEventsThisYear,
+      groupEventsThisYear: groupEventsThisYear,
       activityCounts: activityCounts,
+      activityCountsThisYear: activityCountsThisYear,
       activityTypes: activityTypes,
+      longestStreak: longestStreak,
+      currentStreak: currentStreak,
       personCounts: personCounts,
       personEventCounts: personEventCounts,
       personEvents: personEvents,
       personPropertyCounts: personPropertyCounts,
       propertyCountsTotal: propertyCountsTotal,
       properties: properties,
+      propertyPartnerCounts: propertyPartnerCountsMap,
+      activityPartnerCountsThisYear: activityPartnerCountsThisYearMap,
+      propertyPartnerCountsThisYear: propertyPartnerCountsThisYearMap,
+      activityPropertyPartnerCountsThisYear:
+          activityPropertyPartnerCountsThisYearMap,
       dailyCounts: dailyCounts,
       dayOfWeekCounts: dayOfWeekCounts,
       monthlyCounts: monthlyCounts,
-      currentStreak: streakData.currentStreak,
-      longestStreak: streakData.longestStreak,
       daysSinceLastRiskyActivity: daysSinceLastRiskyActivity,
       daysSinceLastActivity: daysSinceLastActivity,
       thisWeekVsLastWeek: thisWeekVsLastWeek,
@@ -234,26 +489,46 @@ class AnalysisCalculator {
     EventState providerState,
     DateTime? startDate,
     DateTime? endDate,
+    String timeWindowLabel,
   ) {
     return AnalysisData(
+      timeWindowLabel: timeWindowLabel,
       totalEvents: 0,
       totalActivities: 0,
       uniquePartners: 0,
       riskyActivityCount: 0,
       safeActivityCount: 0,
+      eventsThisMonth: 0,
+      eventsThisYear: 0,
+      uniquePartnersThisMonth: 0,
+      uniquePartnersThisYear: 0,
+      knownPartners: 0,
+      anonymousPartnerInstances: 0,
+      busiestDay: null,
+      busiestDayEventCount: 0,
+      busiestEvent: null,
+      busiestEventActivityCount: 0,
+      soloEventsThisYear: 0,
+      coupleEventsThisYear: 0,
+      groupEventsThisYear: 0,
       activityCounts: {},
+      activityCountsThisYear: {},
       activityTypes: {},
+      longestStreak: 0,
+      currentStreak: 0,
       personCounts: {},
       personEventCounts: {},
       personEvents: {},
       personPropertyCounts: {},
       propertyCountsTotal: {},
       properties: {},
+      propertyPartnerCounts: {},
+      activityPartnerCountsThisYear: {},
+      propertyPartnerCountsThisYear: {},
+      activityPropertyPartnerCountsThisYear: {},
       dailyCounts: {},
       dayOfWeekCounts: {},
       monthlyCounts: {},
-      currentStreak: 0,
-      longestStreak: 0,
       daysSinceLastRiskyActivity: -1,
       daysSinceLastActivity: 0,
       thisWeekVsLastWeek: const PeriodComparison(

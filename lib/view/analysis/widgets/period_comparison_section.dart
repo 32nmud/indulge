@@ -8,6 +8,13 @@ class PeriodComparisonSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Only show period comparisons for "Last 12 Months" view
+    final isLast12Months = data.timeWindowLabel == 'Last 12 Months';
+
+    if (!isLast12Months) {
+      return const SizedBox.shrink();
+    }
+
     return Card(
       margin: const EdgeInsets.all(16.0),
       child: Padding(
@@ -46,9 +53,6 @@ class PeriodComparisonSection extends StatelessWidget {
               comparison: data.thisMonthVsLastMonth,
               color: Colors.purple,
             ),
-            const SizedBox(height: 16),
-            // Averages
-            _buildAveragesSection(context),
           ],
         ),
       ),
@@ -224,136 +228,6 @@ class PeriodComparisonSection extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-
-  Widget _buildAveragesSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.analytics_outlined, color: Colors.blue[700], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your Event Averages',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Based on your entire history',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildAverageItem(
-                  context,
-                  label: 'Events/Week',
-                  value: data.averageEventsPerWeek.toStringAsFixed(1),
-                  icon: Icons.calendar_view_week,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildAverageItem(
-                  context,
-                  label: 'Events/Month',
-                  value: data.averageEventsPerMonth.toStringAsFixed(1),
-                  icon: Icons.calendar_month,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildAverageItem(
-                  context,
-                  label: 'Unique Partners/Event',
-                  value: data.averagePartnersPerEvent.toStringAsFixed(1),
-                  icon: Icons.people,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildAverageItem(
-                  context,
-                  label: 'Activities/Event',
-                  value: data.averageActivitiesPerEvent.toStringAsFixed(1),
-                  icon: Icons.event_note,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _buildAverageItem(
-            context,
-            label: 'Properties/Event',
-            value: data.averagePropertiesPerEvent.toStringAsFixed(1),
-            icon: Icons.label,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAverageItem(
-    BuildContext context, {
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 14, color: Colors.blue[600]),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontSize: 10,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.blue[700],
-          ),
-        ),
-      ],
     );
   }
 }
