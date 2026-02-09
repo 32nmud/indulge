@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:uuid/uuid.dart';
-import '../sexual_activity_type_property/sexual_activity_type_property.dart';
+import '../reference/reference.dart';
 
 part 'sexual_activity_type.freezed.dart';
 part 'sexual_activity_type.g.dart';
@@ -16,7 +16,7 @@ abstract class SexualActivityType with _$SexualActivityType {
     String? displayCharacter,
     @Default(-1) int minParticipants,
     @Default(-1) int maxParticipants,
-    @Default([]) List<SexualActivityTypeProperty> properties,
+    @Default([]) List<Reference> properties,
   }) = _SexualActivityType;
 
   // -----------------------------------------------------------------

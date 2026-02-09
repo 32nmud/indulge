@@ -18,11 +18,7 @@ _SexualActivityType _$SexualActivityTypeFromJson(Map<String, dynamic> json) =>
       maxParticipants: (json['maxParticipants'] as num?)?.toInt() ?? -1,
       properties:
           (json['properties'] as List<dynamic>?)
-              ?.map(
-                (e) => SexualActivityTypeProperty.fromJson(
-                  e as Map<String, dynamic>,
-                ),
-              )
+              ?.map((e) => Reference.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
     );

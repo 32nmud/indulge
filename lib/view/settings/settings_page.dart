@@ -1,0 +1,265 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/view/settings/activity_type_list_page.dart';
+
+import 'package:indulge/data/repositories/sexual_event_repository.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
+import 'dart:io';
+
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        _buildSectionHeader('Activity Configuration'),
+        _buildListTile(
+          context,
+          icon: Icons.category,
+          title: 'Manage Activity Types',
+          subtitle: 'Add, edit, or remove activity types',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (context) => const ActivityTypeListPage(),
+              ),
+            );
+          },
+        ),
+        const Divider(),
+        _buildSectionHeader('Data Management'),
+        _buildListTile(
+          context,
+          icon: Icons.download,
+          title: 'Export Data',
+          subtitle: 'Export all data to a JSON file',
+          onTap: () => _exportData(context),
+        ),
+        _buildListTile(
+          context,
+          icon: Icons.upload,
+          title: 'Import Data',
+          subtitle: 'Import data from a JSON file',
+          onTap: () => _importData(context),
+        ),
+        _buildListTile(
+          context,
+          icon: Icons.refresh,
+          title: 'Reset Database',
+          subtitle: 'Delete all data and restore to initial state',
+          onTap: () => _confirmResetDatabase(context),
+          textColor: Colors.red,
+          iconColor: Colors.red,
+        ),
+        const Divider(),
+        _buildSectionHeader('About'),
+        _buildListTile(
+          context,
+          icon: Icons.info,
+          title: 'Version',
+          subtitle: '1.0.0',
+          onTap: null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback? onTap,
+    Color? textColor,
+    Color? iconColor,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: iconColor),
+      title: Text(title, style: TextStyle(color: textColor)),
+      subtitle: Text(subtitle),
+      trailing: onTap != null ? const Icon(Icons.chevron_right) : null,
+      onTap: onTap,
+    );
+  }
+
+  Future<void> _exportData(BuildContext context) async {
+    try {
+      final messenger = ScaffoldMessenger.of(context);
+
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final repo = await SexualEventRepository.create();
+
+      // Get all data
+      final events = await repo.getAllEvents();
+      final persons = await repo.getAllPersons();
+      final activityTypes = await repo.getAllSexualActivityTypes();
+      final properties = await repo.getAllSexualActivityTypeProperties();
+      final locations = await repo.getAllLocations();
+
+      final exportData = {
+        'version': '1.0.0',
+        'exportDate': DateTime.now().toIso8601String(),
+        'data': {
+          'events': events.map((e) => e.toJson()).toList(),
+          'persons': persons.map((p) => p.toJson()).toList(),
+          'activityTypes': activityTypes.map((t) => t.toJson()).toList(),
+          'activityProperties': properties.map((p) => p.toJson()).toList(),
+          'locations': locations.map((l) => l.toJson()).toList(),
+        },
+      };
+
+      // Save to file
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
+      final file = File('${directory.path}/indulge_export_$timestamp.json');
+      await file.writeAsString(jsonEncode(exportData));
+
+      // Close loading dialog
+      if (context.mounted) Navigator.of(context).pop();
+
+      // Show success message
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Data exported to: ${file.path}'),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(label: 'OK', onPressed: () {}),
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog if still open
+      if (context.mounted) Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _importData(BuildContext context) async {
+    // TODO: Implement file picker and import logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Import functionality coming soon')),
+    );
+  }
+
+  Future<void> _confirmResetDatabase(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Database?'),
+        content: const Text(
+          'This will permanently delete all your data including events, '
+          'contacts, and custom activities. This action cannot be undone.\n\n'
+          'The database will be restored to its initial state with default '
+          'activity types and the anonymous contact.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _resetDatabase(context);
+    }
+  }
+
+  Future<void> _resetDatabase(BuildContext context) async {
+    try {
+      final messenger = ScaffoldMessenger.of(context);
+
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Resetting database...'),
+            ],
+          ),
+        ),
+      );
+
+      // Delete the database file
+      final dbPath = join(await getDatabasesPath(), 'indulge.db');
+      await deleteDatabase(dbPath);
+
+      // Close loading dialog
+      if (context.mounted) Navigator.of(context).pop();
+
+      // Show success dialog with restart instructions
+      if (context.mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Database Reset Complete'),
+            content: const Text(
+              'The database has been reset successfully.\n\n'
+              'Please close and restart the app to complete the process.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (context.mounted) Navigator.of(context).pop();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reset failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+}

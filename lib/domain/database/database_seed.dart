@@ -12,12 +12,7 @@ class DatabaseSeed {
     "sexualActivityType": "assets/sql/seed_data/sexual_activity_types.json",
     "sexualActivityTypeProperty":
         "assets/sql/seed_data/sexual_activity_type_properties.json",
-  };
-
-  final Map<String, String> devSeedFiles = {
-    "sexualEvent": "assets/sql/development_seed_data/sexual_events.json",
-    "location": "assets/sql/development_seed_data/locations.json",
-    "person": "assets/sql/development_seed_data/persons.json",
+    "person": "assets/sql/seed_data/persons.json",
   };
 
   final Map<String, String> tableMap = {
@@ -41,11 +36,6 @@ class DatabaseSeed {
   /// Load the production seed file(s)
   Future<void> loadSeeds() async {
     await _loadSeedsFromMap(seedFiles);
-  }
-
-  /// Load the development seed file(s)
-  Future<void> loadDevSeeds() async {
-    await _loadSeedsFromMap(devSeedFiles);
   }
 
   /// Internal method to load seeds from a file map

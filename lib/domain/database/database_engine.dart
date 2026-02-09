@@ -29,7 +29,6 @@ class DatabaseEngine {
         await batch.commit(noResult: true);
 
         await seeder.loadSeeds();
-        await seeder.loadDevSeeds();
       },
       version: 1,
     );

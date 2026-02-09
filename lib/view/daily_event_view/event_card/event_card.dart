@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/view/event_editor/event_editor.dart';
 import 'package:provider/provider.dart';
 
 class EventCard extends StatefulWidget {
@@ -13,10 +14,6 @@ class EventCard extends StatefulWidget {
 }
 
 class _EventCardState extends State<EventCard> {
-  /* ########################
-         Main build
-  ####################### */
-
   @override
   Widget build(BuildContext context) {
     SexualEventsProvider provider = context.watch<SexualEventsProvider>();
@@ -27,26 +24,29 @@ class _EventCardState extends State<EventCard> {
     );
 
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      elevation: 2,
       child: FutureBuilder<List<Person>>(
         future: participants,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
+            return const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
           } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Text('No participants found');
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('Error: ${snapshot.error}'),
+            );
           } else {
-            return _eventCard(context, snapshot.data!, eventState, activities);
+            final persons = snapshot.data ?? [];
+            return _eventCard(context, persons, eventState, activities);
           }
         },
       ),
     );
   }
-
-  /* ########################
-          Widgets
-  ####################### */
 
   Widget _eventCard(
     BuildContext context,
@@ -55,159 +55,339 @@ class _EventCardState extends State<EventCard> {
     List<SexualActivity> activities,
   ) {
     return ExpansionTile(
-      leading: _previewIcon(),
-      title: Text(_getEventTitleString(persons)),
-      subtitle: _getEventPreviewText(activities, eventState),
-      expandedAlignment: Alignment.centerLeft,
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          Icons.local_fire_department,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      title: Text(
+        _getEventTitleString(persons),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: _buildCompactPreview(activities, eventState, persons),
       children: [
-        _activitiesOverview(activities, persons, eventState),
-        _buttonRow(context),
+        if (activities.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'No activities in this event',
+              style: TextStyle(color: Colors.grey),
+            ),
+          )
+        else
+          _buildDetailedActivitiesList(activities, persons, eventState),
+        const Divider(),
+        _buildButtonRow(context),
       ],
     );
   }
 
-  Widget _previewIcon() {
+  Widget _buildCompactPreview(
+    List<SexualActivity> activities,
+    EventState eventState,
+    List<Person> persons,
+  ) {
+    if (activities.isEmpty) {
+      return const Text('No activities');
+    }
+
     return Padding(
-      padding: EdgeInsetsGeometry.directional(end: 10),
-      child: Icon(Icons.monitor_heart),
+      padding: const EdgeInsets.only(top: 4.0),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: activities.map((activity) {
+          final activityType =
+              eventState.sexualActivityTypes?[activity.type.reference];
+          final emoji = activityType?.displayCharacter ?? '❔';
+          final name = activityType?.name ?? 'Unknown';
+
+          return Chip(
+            avatar: Text(emoji, style: const TextStyle(fontSize: 16)),
+            label: Text(name, style: const TextStyle(fontSize: 12)),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          );
+        }).toList(),
+      ),
     );
   }
 
-  Widget _getEventPreviewText(
-    List<SexualActivity> activities,
-    EventState eventState,
-  ) {
-    List<TextSpan> spans = [];
-    for (SexualActivity activity in activities) {
-      String activityTitle =
-          eventState.sexualActivityTypes![activity.type.reference]!.name;
-      String activityIcon =
-          eventState
-              .sexualActivityTypes![activity.type.reference]!
-              .displayCharacter ??
-          '❔';
-      spans.add(
-        TextSpan(
-          text:
-              '$activityIcon $activityTitle with ${activity.participants.length} ${activity.participants.length == 1 ? 'person' : 'people'}${spans.isNotEmpty ? '' : '\n'}',
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
-      );
-    }
-    return RichText(text: TextSpan(children: spans));
-  }
-
-  Widget _activitiesOverview(
+  Widget _buildDetailedActivitiesList(
     List<SexualActivity> activities,
     List<Person> persons,
     EventState eventState,
   ) {
-    List<TextSpan> spans = [];
-    for (SexualActivity activity in activities) {
-      String activityTitle =
-          eventState.sexualActivityTypes![activity.type.reference]!.name;
-      String activityIcon =
-          eventState
-              .sexualActivityTypes![activity.type.reference]!
-              .displayCharacter ??
-          '❔';
-      spans.add(
-        TextSpan(
-          text:
-              '${spans.isNotEmpty ? '\n' : ''}$activityIcon $activityTitle with ${activity.participants.length} people',
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
-      );
-      spans.addAll(_participantsOverview(persons, activity));
-    }
-    return RichText(text: TextSpan(children: spans));
-  }
-
-  Widget _editButton(BuildContext context) {
-    // TODO: This needs to be implemented
-    return ElevatedButton.icon(
-      icon: Icon(Icons.edit),
-      label: Text("Edit"),
-      onPressed: () {},
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: activities.map((activity) {
+        return _buildActivityCard(activity, persons, eventState);
+      }).toList(),
     );
   }
 
-  Widget _deleteButton(BuildContext context) {
-    // TODO: This needs to be implemented
-    return ElevatedButton.icon(
-      icon: Icon(Icons.delete),
-      label: Text("Remove"),
-      onPressed: () {},
-    );
-  }
-
-  Widget _buttonRow(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [_editButton(context), _deleteButton(context)],
-    );
-  }
-
-  /* ########################
-        Helper Methods
-  ####################### */
-
-  String _getEventTitleString(List<Person> persons) {
-    return 'Sexual event with ${persons.length} ${persons.length == 1 ? 'person' : 'people'}';
-  }
-
-  List<TextSpan> _participantsOverview(
-    List<Person> persons,
+  Widget _buildActivityCard(
     SexualActivity activity,
+    List<Person> persons,
+    EventState eventState,
   ) {
-    SexualEventsProvider provider = context.read<SexualEventsProvider>();
-    List<TextSpan> participantSpans = [];
-    Map<String, TextSpan> propertyTitles = {};
-    Map<String, List<TextSpan>> participantTitles = {};
-    for (Person person in persons) {
+    final activityType =
+        eventState.sexualActivityTypes?[activity.type.reference];
+    final emoji = activityType?.displayCharacter ?? '❔';
+    final name = activityType?.name ?? 'Unknown';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Activity header
+            Row(
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 32)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${activity.participants.length} ${activity.participants.length == 1 ? 'participant' : 'participants'}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            // Participants breakdown
+            if (activity.participants.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              _buildParticipantsBreakdown(activity, persons, eventState),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParticipantsBreakdown(
+    SexualActivity activity,
+    List<Person> persons,
+    EventState eventState,
+  ) {
+    final provider = context.read<SexualEventsProvider>();
+
+    // Get the person IDs who actually participated in this activity
+    final activityParticipantIds = activity.participants
+        .map((p) => p.participant.reference)
+        .toSet();
+
+    // Filter persons to only those in this activity
+    final activityPersons = persons
+        .where((person) => activityParticipantIds.contains(person.id))
+        .toList();
+
+    // Group participants by property
+    final Map<String, List<Person>> propertyGroups = {};
+
+    for (Person person in activityPersons) {
       final properties = provider
           .getSexualActivityTypePropertiesForPersonAndActivity(
             person,
             activity,
           );
 
-      for (SexualActivityTypeProperty property in properties) {
-        String propertyTitle =
-            "\n    ${property.displayCharacter} ${property.name}${property.isRisky ? ' (❗)' : ''}";
-        propertyTitles.putIfAbsent(
-          property.id,
-          () => TextSpan(
-            text: propertyTitle,
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-        );
-
-        String personTitle =
-            "\n        • ${person.name.nickname ?? person.name.given ?? "unknown"}";
-        if (participantTitles.containsKey(property.id)) {
-          participantTitles[property.id]!.add(
-            TextSpan(
-              text: personTitle,
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          );
-        } else {
-          participantTitles[property.id] = [
-            TextSpan(
-              text: personTitle,
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ];
+      if (properties.isEmpty) {
+        // Group under "no properties"
+        propertyGroups.putIfAbsent('_no_property', () => []).add(person);
+      } else {
+        for (SexualActivityTypeProperty property in properties) {
+          propertyGroups.putIfAbsent(property.id, () => []).add(person);
         }
       }
     }
 
-    for (String key in participantTitles.keys) {
-      participantSpans.add(propertyTitles[key]!);
-      participantSpans.addAll(participantTitles[key]!);
-    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: propertyGroups.entries.map((entry) {
+        if (entry.key == '_no_property') {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: entry.value.map((person) {
+                return Chip(
+                  label: Text(
+                    person.name.nickname ?? person.name.given ?? 'Unknown',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              }).toList(),
+            ),
+          );
+        } else {
+          final property = eventState.sexualActivityTypeProperties?[entry.key];
+          final propertyEmoji = property?.displayCharacter ?? '❔';
+          final propertyName = property?.name ?? 'Unknown';
+          final isRisky = property?.isRisky ?? false;
 
-    return participantSpans;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(propertyEmoji, style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 6),
+                    Text(
+                      propertyName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (isRisky) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.warning, size: 14, color: Colors.orange),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 24.0),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: entry.value.map((person) {
+                      return Chip(
+                        label: Text(
+                          person.name.nickname ??
+                              person.name.given ??
+                              'Unknown',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      }).toList(),
+    );
+  }
+
+  Widget _buildButtonRow(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TextButton.icon(
+            icon: const Icon(Icons.edit, size: 18),
+            label: const Text('Edit'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EventEditorPage(event: widget.event),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            icon: const Icon(Icons.delete, size: 18),
+            label: const Text('Delete'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => _confirmDelete(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Event'),
+          content: const Text(
+            'Are you sure you want to delete this event? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final provider = context.read<SexualEventsProvider>();
+        await provider.deleteEvent(widget.event.id);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting event: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  String _getEventTitleString(List<Person> persons) {
+    if (persons.isEmpty) {
+      return 'Event (no participants)';
+    }
+    return 'Event with ${persons.length} ${persons.length == 1 ? 'person' : 'people'}';
   }
 }

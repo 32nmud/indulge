@@ -141,18 +141,35 @@ class SexualEventsProvider extends ChangeNotifier {
     await selectEvent(updatedEvent);
   }
 
-  void removeActivityFromEdit(int id) {
-    // TODO: Update logic for new SexualEvent model which relies on ID string, not int or baseEventId
-    // _removeActivityFromEdit(id);
-    _loadEventsForDate(_state.selectedDate);
-    notifyListeners();
+  Future<void> removeActivityFromEdit(String activityTypeId) async {
+    if (_state.selectedEvent == null) return;
+
+    await _repository.removeActivityByTypeId(
+      _state.selectedEvent!.id,
+      activityTypeId,
+    );
+
+    final updatedEvent = await _repository.getById(_state.selectedEvent!.id);
+    if (updatedEvent != null) {
+      await selectEvent(updatedEvent);
+    } else {
+      _loadEventsForDate(_state.selectedDate);
+      notifyListeners();
+    }
   }
 
-  void removeParticipantFromEdit(int id) {
-    // TODO: Update logic for new SexualEvent model which relies on ID string, not int or baseEventId
-    // _removeParticipantFromEdit(id);
-    _loadEventsForDate(_state.selectedDate);
-    notifyListeners();
+  Future<void> removeParticipantFromEdit(String personId) async {
+    if (_state.selectedEvent == null) return;
+
+    await _repository.removeParticipantById(_state.selectedEvent!.id, personId);
+
+    final updatedEvent = await _repository.getById(_state.selectedEvent!.id);
+    if (updatedEvent != null) {
+      await selectEvent(updatedEvent);
+    } else {
+      _loadEventsForDate(_state.selectedDate);
+      notifyListeners();
+    }
   }
 
   List<SexualActivityTypeProperty>
@@ -192,32 +209,141 @@ class SexualEventsProvider extends ChangeNotifier {
     return await _repository.getPersonsFromActivity(activity);
   }
 
-  /*
-  // TODO: Commented out until repository supports removal and model issues are resolved
-  Future<void> _removeActivityFromEdit(int id) async {
-    if (_state.selectedEvent == null) return;
+  Future<List<Person>> getAllPersons() async {
+    return await _repository.getAllPersons();
+  }
 
-    _repository.removeActivity(id);
-    _state = _state.copyWith(
-      selectedEvent: await _repository.getById(
-        _state.selectedEvent!.baseEventId,
-      ),
-    );
+  Future<Person?> getPersonById(String id) async {
+    return await _repository.getPersonById(id);
+  }
+
+  Future<void> savePerson(Person person) async {
+    await _repository.savePerson(person);
     notifyListeners();
   }
 
-  Future<void> _removeParticipantFromEdit(int id) async {
-    if (_state.selectedEvent == null) return;
+  Future<void> deletePerson(String id) async {
+    await _repository.deletePerson(id);
 
-    _repository.removeParticipant(_state.selectedEvent!.baseEventId, id);
-    _state = _state.copyWith(
-      selectedEvent: await _repository.getById(
-        _state.selectedEvent!.baseEventId,
-      ),
-    );
+    // Refresh daily event count (events may have been modified)
+    final counts = await _repository.getDailyEventCount();
+    _state = _state.copyWith(dailyEventCount: counts);
+
+    // Reload current events to show updated participants
+    await _loadEventsForDate(_state.selectedDate);
+
+    // Clear selected event if it had this person
+    if (_state.selectedEvent != null) {
+      final updatedEvent = await _repository.getById(_state.selectedEvent!.id);
+      if (updatedEvent != null) {
+        await selectEvent(updatedEvent);
+      } else {
+        _state = _state.copyWith(
+          selectedEvent: null,
+          selectedEventSexualActivityParticipants: null,
+          selectedEventParticipants: null,
+          selectedEventActivityParticipants: null,
+        );
+      }
+    }
+
     notifyListeners();
   }
-  */
+
+  Future<void> saveEvent(SexualEvent event) async {
+    await _repository.save(event);
+
+    // Refresh daily event count
+    final counts = await _repository.getDailyEventCount();
+    _state = _state.copyWith(dailyEventCount: counts);
+
+    // Reload events for the event's date
+    await _loadEventsForDate(event.date);
+
+    // Select the saved event
+    await selectEvent(event);
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    await _repository.deleteById(eventId);
+
+    // Clear selected event and all related state if it was the one deleted
+    if (_state.selectedEvent?.id == eventId) {
+      _state = _state.copyWith(
+        selectedEvent: null,
+        selectedEventSexualActivityParticipants: null,
+        selectedEventParticipants: null,
+        selectedEventActivityParticipants: null,
+      );
+    }
+
+    // Refresh daily event count
+    final counts = await _repository.getDailyEventCount();
+    _state = _state.copyWith(dailyEventCount: counts);
+
+    // Reload events for current date
+    await _loadEventsForDate(_state.selectedDate);
+    notifyListeners();
+  }
+
+  Future<void> saveActivityType(SexualActivityType activityType) async {
+    await _repository.saveActivityType(activityType);
+
+    // Refresh activity types in state
+    final types = await _loadSexualActivityTypes();
+    _state = _state.copyWith(sexualActivityTypes: types);
+
+    notifyListeners();
+  }
+
+  Future<void> deleteActivityType(String id) async {
+    await _repository.deleteActivityType(id);
+
+    // Refresh activity types and daily event counts (events may have changed)
+    final types = await _loadSexualActivityTypes();
+    final counts = await _repository.getDailyEventCount();
+    _state = _state.copyWith(
+      sexualActivityTypes: types,
+      dailyEventCount: counts,
+    );
+
+    // Reload current events to reflect changes
+    await _loadEventsForDate(_state.selectedDate);
+
+    notifyListeners();
+  }
+
+  Future<bool> isActivityTypeUsed(String activityTypeId) async {
+    return await _repository.isActivityTypeUsed(activityTypeId);
+  }
+
+  Future<void> saveActivityProperty(SexualActivityTypeProperty property) async {
+    await _repository.saveActivityProperty(property);
+
+    // Refresh activity properties in state
+    final properties = await _loadSexualActivityTypeProperties();
+    _state = _state.copyWith(sexualActivityTypeProperties: properties);
+
+    notifyListeners();
+  }
+
+  Future<void> deleteActivityProperty(String id) async {
+    await _repository.deleteActivityProperty(id);
+
+    // Refresh both properties and activity types (types may have changed)
+    final properties = await _loadSexualActivityTypeProperties();
+    final types = await _loadSexualActivityTypes();
+    _state = _state.copyWith(
+      sexualActivityTypeProperties: properties,
+      sexualActivityTypes: types,
+    );
+
+    notifyListeners();
+  }
+
+  Future<bool> isActivityPropertyUsed(String propertyId) async {
+    return await _repository.isActivityPropertyUsed(propertyId);
+  }
 
   /* ########################
          Private Methods

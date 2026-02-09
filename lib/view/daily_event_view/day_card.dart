@@ -27,7 +27,7 @@ class _DayCardState extends State<DayCard> {
           context.read<SexualEventsProvider>().selectDate(date);
         });
       },
-      itemExtent: 64.0,
+      itemExtent: 80.0,
       itemBuilder: (context, date, isSelected, isDisabled, isToday, onTap) =>
           _dayItem(context, date, isSelected, isDisabled, isToday, onTap),
     );
@@ -42,7 +42,9 @@ class _DayCardState extends State<DayCard> {
     VoidCallback onTap,
   ) {
     final provider = context.watch<SexualEventsProvider>();
-    final count = provider.state.dailyEventCount?[date] ?? 0;
+    // Normalize date to match the keys in dailyEventCount (removes time component)
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    final count = provider.state.dailyEventCount?[normalizedDate] ?? 0;
     final theme = Theme.of(context);
 
     return InkResponse(
@@ -52,30 +54,57 @@ class _DayCardState extends State<DayCard> {
             ? theme.colorScheme.primaryContainer
             : theme.colorScheme.surfaceContainer,
         borderOnForeground: isSelected,
-        child: Badge.count(
-          count: count,
-          isLabelVisible: count != 0,
-          alignment: Alignment.topRight,
-          offset: const Offset(-8, 8),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  DateFormat('MMM').format(date),
-                  style: theme.textTheme.bodySmall,
-                ),
-                Text(
-                  DateFormat('d').format(date),
-                  style: theme.textTheme.titleLarge,
-                ),
-                Text(
-                  DateFormat('E').format(date),
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
+        child: Stack(
+          children: [
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    DateFormat('MMM').format(date),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  Text(
+                    DateFormat('d').format(date),
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  Text(
+                    DateFormat('E').format(date),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
-          ),
+            if (count > 0)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 20,
+                    minHeight: 20,
+                  ),
+                  child: Center(
+                    child: Text(
+                      count.toString(),
+                      style: TextStyle(
+                        color: theme.colorScheme.onPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualActivityType {
 
- String get id; DateTime? get lastUpdateDate; String get name; String? get displayCharacter; int get minParticipants; int get maxParticipants; List<SexualActivityTypeProperty> get properties;
+ String get id; DateTime? get lastUpdateDate; String get name; String? get displayCharacter; int get minParticipants; int get maxParticipants; List<Reference> get properties;
 /// Create a copy of SexualActivityType
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $SexualActivityTypeCopyWith<$Res>  {
   factory $SexualActivityTypeCopyWith(SexualActivityType value, $Res Function(SexualActivityType) _then) = _$SexualActivityTypeCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime? lastUpdateDate, String name, String? displayCharacter, int minParticipants, int maxParticipants, List<SexualActivityTypeProperty> properties
+ String id, DateTime? lastUpdateDate, String name, String? displayCharacter, int minParticipants, int maxParticipants, List<Reference> properties
 });
 
 
@@ -74,7 +74,7 @@ as String,displayCharacter: freezed == displayCharacter ? _self.displayCharacter
 as String?,minParticipants: null == minParticipants ? _self.minParticipants : minParticipants // ignore: cast_nullable_to_non_nullable
 as int,maxParticipants: null == maxParticipants ? _self.maxParticipants : maxParticipants // ignore: cast_nullable_to_non_nullable
 as int,properties: null == properties ? _self.properties : properties // ignore: cast_nullable_to_non_nullable
-as List<SexualActivityTypeProperty>,
+as List<Reference>,
   ));
 }
 
@@ -159,7 +159,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime? lastUpdateDate,  String name,  String? displayCharacter,  int minParticipants,  int maxParticipants,  List<SexualActivityTypeProperty> properties)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime? lastUpdateDate,  String name,  String? displayCharacter,  int minParticipants,  int maxParticipants,  List<Reference> properties)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualActivityType() when $default != null:
 return $default(_that.id,_that.lastUpdateDate,_that.name,_that.displayCharacter,_that.minParticipants,_that.maxParticipants,_that.properties);case _:
@@ -180,7 +180,7 @@ return $default(_that.id,_that.lastUpdateDate,_that.name,_that.displayCharacter,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime? lastUpdateDate,  String name,  String? displayCharacter,  int minParticipants,  int maxParticipants,  List<SexualActivityTypeProperty> properties)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime? lastUpdateDate,  String name,  String? displayCharacter,  int minParticipants,  int maxParticipants,  List<Reference> properties)  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivityType():
 return $default(_that.id,_that.lastUpdateDate,_that.name,_that.displayCharacter,_that.minParticipants,_that.maxParticipants,_that.properties);case _:
@@ -200,7 +200,7 @@ return $default(_that.id,_that.lastUpdateDate,_that.name,_that.displayCharacter,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime? lastUpdateDate,  String name,  String? displayCharacter,  int minParticipants,  int maxParticipants,  List<SexualActivityTypeProperty> properties)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime? lastUpdateDate,  String name,  String? displayCharacter,  int minParticipants,  int maxParticipants,  List<Reference> properties)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivityType() when $default != null:
 return $default(_that.id,_that.lastUpdateDate,_that.name,_that.displayCharacter,_that.minParticipants,_that.maxParticipants,_that.properties);case _:
@@ -215,7 +215,7 @@ return $default(_that.id,_that.lastUpdateDate,_that.name,_that.displayCharacter,
 @JsonSerializable()
 
 class _SexualActivityType extends SexualActivityType {
-  const _SexualActivityType({this.id = "", this.lastUpdateDate, required this.name, this.displayCharacter, this.minParticipants = -1, this.maxParticipants = -1, final  List<SexualActivityTypeProperty> properties = const []}): _properties = properties,super._();
+  const _SexualActivityType({this.id = "", this.lastUpdateDate, required this.name, this.displayCharacter, this.minParticipants = -1, this.maxParticipants = -1, final  List<Reference> properties = const []}): _properties = properties,super._();
   factory _SexualActivityType.fromJson(Map<String, dynamic> json) => _$SexualActivityTypeFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -224,8 +224,8 @@ class _SexualActivityType extends SexualActivityType {
 @override final  String? displayCharacter;
 @override@JsonKey() final  int minParticipants;
 @override@JsonKey() final  int maxParticipants;
- final  List<SexualActivityTypeProperty> _properties;
-@override@JsonKey() List<SexualActivityTypeProperty> get properties {
+ final  List<Reference> _properties;
+@override@JsonKey() List<Reference> get properties {
   if (_properties is EqualUnmodifiableListView) return _properties;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_properties);
@@ -265,7 +265,7 @@ abstract mixin class _$SexualActivityTypeCopyWith<$Res> implements $SexualActivi
   factory _$SexualActivityTypeCopyWith(_SexualActivityType value, $Res Function(_SexualActivityType) _then) = __$SexualActivityTypeCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime? lastUpdateDate, String name, String? displayCharacter, int minParticipants, int maxParticipants, List<SexualActivityTypeProperty> properties
+ String id, DateTime? lastUpdateDate, String name, String? displayCharacter, int minParticipants, int maxParticipants, List<Reference> properties
 });
 
 
@@ -291,7 +291,7 @@ as String,displayCharacter: freezed == displayCharacter ? _self.displayCharacter
 as String?,minParticipants: null == minParticipants ? _self.minParticipants : minParticipants // ignore: cast_nullable_to_non_nullable
 as int,maxParticipants: null == maxParticipants ? _self.maxParticipants : maxParticipants // ignore: cast_nullable_to_non_nullable
 as int,properties: null == properties ? _self._properties : properties // ignore: cast_nullable_to_non_nullable
-as List<SexualActivityTypeProperty>,
+as List<Reference>,
   ));
 }
 
