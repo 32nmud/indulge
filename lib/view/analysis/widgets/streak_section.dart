@@ -45,7 +45,7 @@ class StreakSection extends StatelessWidget {
               label: 'Current Streak',
               value: data.currentStreak,
               unit: 'day${data.currentStreak != 1 ? 's' : ''}',
-              color: Colors.orange,
+              color: Theme.of(context).colorScheme.tertiary,
               subtitle: _getStreakMessage(data.currentStreak),
             ),
             const SizedBox(height: 12),
@@ -56,7 +56,7 @@ class StreakSection extends StatelessWidget {
               label: 'Longest Streak',
               value: data.longestStreak,
               unit: 'day${data.longestStreak != 1 ? 's' : ''}',
-              color: Colors.amber[700]!,
+              color: Theme.of(context).colorScheme.secondary,
               subtitle: data.longestStreak == data.currentStreak
                   ? 'You\'re on your longest streak!'
                   : 'Keep going to beat your record!',
@@ -259,10 +259,14 @@ class StreakSection extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.2),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.secondary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.amber.withOpacity(0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondary.withOpacity(0.5),
                         ),
                       ),
                       child: Row(
@@ -271,7 +275,7 @@ class StreakSection extends StatelessWidget {
                           Icon(
                             Icons.check_circle,
                             size: 10,
-                            color: Colors.amber[700],
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
                           const SizedBox(width: 2),
                           Text(
@@ -279,7 +283,9 @@ class StreakSection extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
-                              color: Colors.amber[900],
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
                             ),
                           ),
                         ],

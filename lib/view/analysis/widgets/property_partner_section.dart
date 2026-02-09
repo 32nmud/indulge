@@ -43,7 +43,9 @@ class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
             Text(
               widget.data.timeWindowLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
@@ -51,9 +53,9 @@ class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
             const SizedBox(height: 8),
             Text(
               'Number of unique partners per activity and property',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             ...sortedActivities.map((entry) {

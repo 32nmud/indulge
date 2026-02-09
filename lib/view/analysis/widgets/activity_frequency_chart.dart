@@ -30,9 +30,9 @@ class ActivityFrequencyChart extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Events over time',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(height: 200, child: _buildChart(context)),
@@ -49,7 +49,11 @@ class ActivityFrequencyChart extends StatelessWidget {
       return Center(
         child: Text(
           'No data available',
-          style: TextStyle(color: Colors.grey[400]),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+          ),
         ),
       );
     }
@@ -71,7 +75,10 @@ class ActivityFrequencyChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: maxYRounded > 0 ? maxYRounded / 5 : 1,
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: Colors.grey[300], strokeWidth: 1);
+            return FlLine(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeWidth: 1,
+            );
           },
         ),
         titlesData: FlTitlesData(
@@ -102,7 +109,10 @@ class ActivityFrequencyChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
                     format.format(date),
-                    style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
                   ),
                 );
               },
@@ -116,7 +126,10 @@ class ActivityFrequencyChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 10,
+                  ),
                 );
               },
             ),
@@ -125,8 +138,14 @@ class ActivityFrequencyChart extends StatelessWidget {
         borderData: FlBorderData(
           show: true,
           border: Border(
-            bottom: BorderSide(color: Colors.grey[300]!, width: 1),
-            left: BorderSide(color: Colors.grey[300]!, width: 1),
+            bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 1,
+            ),
+            left: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 1,
+            ),
           ),
         ),
         minX: 0,
@@ -137,7 +156,7 @@ class ActivityFrequencyChart extends StatelessWidget {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: Colors.blue,
+            color: Theme.of(context).colorScheme.primary,
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
@@ -145,15 +164,15 @@ class ActivityFrequencyChart extends StatelessWidget {
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
                   radius: 4,
-                  color: Colors.blue,
+                  color: Theme.of(context).colorScheme.primary,
                   strokeWidth: 2,
-                  strokeColor: Colors.white,
+                  strokeColor: Theme.of(context).colorScheme.surface,
                 );
               },
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.blue.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             ),
           ),
         ],
@@ -170,8 +189,8 @@ class ActivityFrequencyChart extends StatelessWidget {
 
                 return LineTooltipItem(
                   '${DateFormat('MMM d, yyyy').format(date)}\n$count event${count != 1 ? 's' : ''}',
-                  const TextStyle(
-                    color: Colors.white,
+                  TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),

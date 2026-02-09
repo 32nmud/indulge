@@ -175,21 +175,25 @@ class _PersonListPageState extends State<PersonListPage>
                 Icon(
                   Icons.people_outline,
                   size: 64,
-                  color: Colors.grey.shade400,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'No contacts yet',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Add a person to get started',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade500),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  ),
                 ),
               ],
             ),
@@ -225,13 +229,15 @@ class _PersonListPageState extends State<PersonListPage>
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      color: isSelf ? Colors.blue.shade50 : null,
+      color: isSelf ? Theme.of(context).colorScheme.primaryContainer : null,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: isSelf ? Colors.blue : null,
+          backgroundColor: isSelf
+              ? Theme.of(context).colorScheme.primary
+              : null,
           child: Icon(
             isSelf ? Icons.account_circle : Icons.person,
-            color: isSelf ? Colors.white : null,
+            color: isSelf ? Theme.of(context).colorScheme.onPrimary : null,
           ),
         ),
         title: Row(
@@ -247,13 +253,13 @@ class _PersonListPageState extends State<PersonListPage>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.blue,
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
+                child: Text(
                   'Me',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -270,7 +276,7 @@ class _PersonListPageState extends State<PersonListPage>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -279,14 +285,15 @@ class _PersonListPageState extends State<PersonListPage>
                   Icon(
                     Icons.event,
                     size: 16,
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '$eventCount',
                     style: TextStyle(
-                      color: Theme.of(context).primaryColor,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                       fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
                 ],

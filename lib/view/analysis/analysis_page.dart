@@ -184,7 +184,7 @@ class _AnalysisPageState extends State<AnalysisPage>
                   child: Text(
                     'Specific Years',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -210,7 +210,9 @@ class _AnalysisPageState extends State<AnalysisPage>
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
+        color: isSelected
+            ? Theme.of(context).primaryColor
+            : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       title: Text(
         title,
@@ -241,7 +243,9 @@ class _AnalysisPageState extends State<AnalysisPage>
     return ListTile(
       leading: Icon(
         Icons.calendar_today,
-        color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
+        color: isSelected
+            ? Theme.of(context).primaryColor
+            : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       title: Text(
         year.toString(),
@@ -340,17 +344,21 @@ class _AnalysisPageState extends State<AnalysisPage>
                     margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.5),
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Theme.of(context).primaryColor,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -359,8 +367,10 @@ class _AnalysisPageState extends State<AnalysisPage>
                             'Viewing ${_getTimeWindowLabel()} data',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.w500,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w600,
                                 ),
                           ),
                         ),
@@ -411,6 +421,7 @@ class _AnalysisPageState extends State<AnalysisPage>
           right: 16,
           bottom: 16,
           child: FloatingActionButton.extended(
+            heroTag: 'analysis_time_window_fab',
             onPressed: _showTimeWindowSelector,
             icon: const Icon(Icons.calendar_month),
             label: Text(_getTimeWindowLabel()),
@@ -428,12 +439,18 @@ class _AnalysisPageState extends State<AnalysisPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.analytics_outlined, size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.analytics_outlined,
+              size: 64,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
             const SizedBox(height: 16),
             Text(
               'No Data Available',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -441,9 +458,11 @@ class _AnalysisPageState extends State<AnalysisPage>
             Text(
               'Start logging events to see your analysis.',
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
             ),
           ],
         ),

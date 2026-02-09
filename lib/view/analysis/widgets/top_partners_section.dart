@@ -45,9 +45,9 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
             const SizedBox(height: 8),
             Text(
               widget.data.timeWindowLabel,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             ...topPartners.map((entry) {
@@ -119,8 +119,10 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                                                 .textTheme
                                                 .bodySmall
                                                 ?.copyWith(
-                                                  color: Colors.grey[500],
-                                                  fontSize: 11,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                  fontSize: 12,
                                                 ),
                                           ),
                                         ],
@@ -132,10 +134,13 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                                           '$eventCount event${eventCount != 1 ? 's' : ''} ($percentage%)',
                                           style: Theme.of(context)
                                               .textTheme
-                                              .bodySmall
+                                              .bodyMedium
                                               ?.copyWith(
-                                                color: Colors.grey[600],
-                                                fontSize: 12,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurface,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                         ),
                                         const SizedBox(width: 4),
@@ -143,7 +148,9 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                                           isExpanded
                                               ? Icons.expand_less
                                               : Icons.expand_more,
-                                          color: Colors.grey[600],
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
                                           size: 20,
                                         ),
                                       ],
@@ -156,7 +163,9 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                                   child: LinearProgressIndicator(
                                     value: eventCount / maxCount,
                                     minHeight: 8,
-                                    backgroundColor: Colors.grey[200],
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHighest,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       _getColorForIndex(
                                         topPartners.indexOf(entry),
@@ -230,22 +239,29 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
       margin: const EdgeInsets.only(left: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.insights, size: 16, color: Colors.grey[700]),
+              Icon(
+                Icons.insights,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               const SizedBox(width: 6),
               Text(
                 'Details',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -276,7 +292,7 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
             'Activities & Properties',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 11,
             ),
           ),
@@ -321,7 +337,7 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
             'Recent Events',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 11,
             ),
           ),
@@ -337,21 +353,27 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
               padding: const EdgeInsets.symmetric(vertical: 2.0),
               child: Row(
                 children: [
-                  Icon(Icons.circle, size: 6, color: Colors.grey[400]),
+                  Icon(
+                    Icons.circle,
+                    size: 6,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       dateStr,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(fontSize: 11),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   Text(
                     '$activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 11,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -374,13 +396,17 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 12, color: Colors.grey[600]),
+            Icon(
+              icon,
+              size: 12,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             const SizedBox(width: 4),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontSize: 10,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -390,7 +416,7 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],

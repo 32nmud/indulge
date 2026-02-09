@@ -45,13 +45,15 @@ class RiskyActivityTracker extends StatelessWidget {
                       Flexible(
                         flex: safePercentage,
                         child: Container(
-                          color: Colors.green,
+                          color: Theme.of(context).colorScheme.tertiary,
                           alignment: Alignment.center,
                           child: safePercentage >= 15
                               ? Text(
                                   '$safePercentage%',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onTertiary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -93,7 +95,7 @@ class RiskyActivityTracker extends StatelessWidget {
                     label: 'Safe',
                     count: data.safeActivityCount,
                     percentage: safePercentage,
-                    color: Colors.green,
+                    color: Theme.of(context).colorScheme.tertiary,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -172,7 +174,7 @@ class RiskyActivityTracker extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                        color: Theme.of(context).colorScheme.tertiary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(

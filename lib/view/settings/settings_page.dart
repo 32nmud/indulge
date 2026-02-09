@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/theme_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
 
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
@@ -17,6 +17,9 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: [
+        _buildSectionHeader('Appearance'),
+        _buildThemeSwitchTile(context),
+        const Divider(),
         _buildSectionHeader('Activity Configuration'),
         _buildListTile(
           context,
@@ -81,6 +84,50 @@ class SettingsPage extends StatelessWidget {
           color: Colors.grey,
         ),
       ),
+    );
+  }
+
+  Widget _buildThemeSwitchTile(BuildContext context) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
+        return Column(
+          children: [
+            RadioListTile<ThemeMode>(
+              title: const Text('Light'),
+              subtitle: const Text('Use light theme'),
+              value: ThemeMode.light,
+              groupValue: themeProvider.themeMode,
+              onChanged: (ThemeMode? value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('Dark'),
+              subtitle: const Text('Use dark theme'),
+              value: ThemeMode.dark,
+              groupValue: themeProvider.themeMode,
+              onChanged: (ThemeMode? value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                }
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('System'),
+              subtitle: const Text('Follow system theme settings'),
+              value: ThemeMode.system,
+              groupValue: themeProvider.themeMode,
+              onChanged: (ThemeMode? value) {
+                if (value != null) {
+                  themeProvider.setThemeMode(value);
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

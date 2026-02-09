@@ -31,7 +31,9 @@ class MonthlyActivityChart extends StatelessWidget {
             Text(
               data.timeWindowLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
@@ -39,9 +41,9 @@ class MonthlyActivityChart extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Total activities per month',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(height: 250, child: _buildChart(context)),
@@ -82,7 +84,11 @@ class MonthlyActivityChart extends StatelessWidget {
       return Center(
         child: Text(
           'No data available',
-          style: TextStyle(color: Colors.grey[400]),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withOpacity(0.5),
+          ),
         ),
       );
     }
@@ -146,7 +152,10 @@ class MonthlyActivityChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
                     '${DateFormat('MMM').format(date)}\n${DateFormat('yy').format(date)}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 );
@@ -161,7 +170,10 @@ class MonthlyActivityChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 10,
+                  ),
                 );
               },
             ),
@@ -170,8 +182,14 @@ class MonthlyActivityChart extends StatelessWidget {
         borderData: FlBorderData(
           show: true,
           border: Border(
-            bottom: BorderSide(color: Colors.grey[300]!, width: 1),
-            left: BorderSide(color: Colors.grey[300]!, width: 1),
+            bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 1,
+            ),
+            left: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 1,
+            ),
           ),
         ),
         gridData: FlGridData(
@@ -179,7 +197,10 @@ class MonthlyActivityChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: maxY > 0 ? maxY / 5 : 1,
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: Colors.grey[300], strokeWidth: 1);
+            return FlLine(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeWidth: 1,
+            );
           },
         ),
         barGroups: List.generate(sortedMonths.length, (index) {

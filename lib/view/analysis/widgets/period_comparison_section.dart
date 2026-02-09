@@ -31,9 +31,9 @@ class PeriodComparisonSection extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'How you\'re trending',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             // This Week vs Last Week

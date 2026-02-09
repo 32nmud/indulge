@@ -30,7 +30,9 @@ class TimePatternsSection extends StatelessWidget {
             Text(
               data.timeWindowLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
@@ -38,9 +40,9 @@ class TimePatternsSection extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Average events per day of week',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(height: 200, child: _buildBarChart(context)),
@@ -99,8 +101,8 @@ class TimePatternsSection extends StatelessWidget {
                     _getDayAbbreviation(dayOfWeek),
                     style: TextStyle(
                       color: _isWeekend(dayOfWeek)
-                          ? Colors.orange[700]
-                          : Colors.grey[600],
+                          ? Theme.of(context).colorScheme.tertiary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: _isWeekend(dayOfWeek)
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -124,7 +126,10 @@ class TimePatternsSection extends StatelessWidget {
                     : value.toInt().toString();
                 return Text(
                   displayValue,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 10,
+                  ),
                 );
               },
             ),
@@ -133,8 +138,14 @@ class TimePatternsSection extends StatelessWidget {
         borderData: FlBorderData(
           show: true,
           border: Border(
-            bottom: BorderSide(color: Colors.grey[300]!, width: 1),
-            left: BorderSide(color: Colors.grey[300]!, width: 1),
+            bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 1,
+            ),
+            left: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 1,
+            ),
           ),
         ),
         gridData: FlGridData(
@@ -142,7 +153,10 @@ class TimePatternsSection extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: _calculateNiceInterval(maxY),
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: Colors.grey[300], strokeWidth: 1);
+            return FlLine(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeWidth: 1,
+            );
           },
         ),
         barGroups: List.generate(7, (index) {
@@ -189,7 +203,7 @@ class TimePatternsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -201,10 +215,14 @@ class TimePatternsSection extends StatelessWidget {
               label: 'Weekdays',
               count: weekdayCount,
               percentage: weekdayPercentage,
-              color: Colors.blue,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          Container(width: 1, height: 40, color: Colors.grey[300]),
+          Container(
+            width: 1,
+            height: 40,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           Expanded(
             child: _buildComparisonItem(
               context,
@@ -212,7 +230,7 @@ class TimePatternsSection extends StatelessWidget {
               label: 'Weekends',
               count: weekendCount,
               percentage: weekendPercentage,
-              color: Colors.orange,
+              color: Theme.of(context).colorScheme.tertiary,
             ),
           ),
         ],
@@ -235,7 +253,7 @@ class TimePatternsSection extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 11,
           ),
         ),
@@ -250,7 +268,9 @@ class TimePatternsSection extends StatelessWidget {
         Text(
           '$percentage%',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[500],
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withOpacity(0.7),
             fontSize: 10,
           ),
         ),

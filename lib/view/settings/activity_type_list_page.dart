@@ -27,6 +27,7 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'activity_types_add_fab',
         onPressed: () async {
           final result = await Navigator.push<bool>(
             context,

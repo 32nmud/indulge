@@ -243,6 +243,7 @@ class _SearchPageState extends State<SearchPage>
       ),
       floatingActionButton: _hasActiveFilters()
           ? FloatingActionButton(
+              heroTag: 'search_perform_fab',
               onPressed: _performSearch,
               child: const Icon(Icons.search),
             )

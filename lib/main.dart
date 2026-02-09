@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indulge/view/daily_event_view/daily_event_view.dart';
 import 'package:indulge/view/bottom_nav_bar.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/view/event_editor/event_editor.dart';
 import 'package:indulge/view/person_list/person_list_page.dart';
@@ -24,15 +25,30 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => SexualEventsProvider(),
-      child: MaterialApp(
-        title: 'Indulge',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-          useMaterial3: true,
-        ),
-        home: const MyHomePage(title: 'Indulge'),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SexualEventsProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'Indulge',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.indigo,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
+            themeMode: themeProvider.themeMode,
+            home: const MyHomePage(title: 'Indulge'),
+          );
+        },
       ),
     );
   }
@@ -48,6 +64,15 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize theme provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ThemeProvider>().initialize();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (currentPageIndex) {
       case 0: // Events page
         return FloatingActionButton(
+          heroTag: 'events_add_fab',
           onPressed: () {
             final selectedDate = context
                 .read<SexualEventsProvider>()
@@ -132,6 +158,7 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       case 3: // Contacts page
         return FloatingActionButton(
+          heroTag: 'contacts_add_fab',
           onPressed: () {
             Navigator.push(
               context,

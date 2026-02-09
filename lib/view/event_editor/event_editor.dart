@@ -147,15 +147,33 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   void _addParticipant(int activityIndex, Person person) {
-    final participant = SexualActivityParticipant(
-      participant: Reference(reference: person.id, resourceType: 'Person'),
-      propertyCounts: [],
-    );
-
     final updatedActivities = List<SexualActivity>.from(
       _workingEvent.activities,
     );
     final activity = updatedActivities[activityIndex];
+
+    // Check if participant already exists in this activity
+    final alreadyExists = activity.participants.any(
+      (p) => p.participant.reference == person.id,
+    );
+
+    if (alreadyExists) {
+      // Show a message to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${person.name.given ?? "This participant"} is already in this activity',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final participant = SexualActivityParticipant(
+      participant: Reference(reference: person.id, resourceType: 'Person'),
+      propertyCounts: [],
+    );
 
     updatedActivities[activityIndex] = activity.copyWith(
       participants: [...activity.participants, participant],
@@ -451,6 +469,12 @@ class _EventEditorPageState extends State<EventEditorPage> {
     final provider = context.read<SexualEventsProvider>();
     final myself = provider.state.myself;
 
+    // Get current participants for this activity
+    final activity = _workingEvent.activities[activityIndex];
+    final existingParticipantIds = activity.participants
+        .map((p) => p.participant.reference)
+        .toSet();
+
     final result = await showDialog<dynamic>(
       context: context,
       barrierDismissible: true,
@@ -459,28 +483,43 @@ class _EventEditorPageState extends State<EventEditorPage> {
           title: const Text('Select Person'),
           children: [
             // Anonymous participant option first
-            SimpleDialogOption(
-              onPressed: () {
-                // Find the anonymous person
+            Builder(
+              builder: (context) {
                 final anonymous = _availablePersons.firstWhere(
                   (p) => p.id == 'anonymous',
                   orElse: () => _availablePersons.first,
                 );
-                Navigator.pop(context, anonymous);
-              },
-              child: const Row(
-                children: [
-                  Icon(Icons.help_outline, color: Colors.grey),
-                  SizedBox(width: 12),
-                  Text(
-                    'Anonymous',
-                    style: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey,
-                    ),
+                final alreadyAdded = existingParticipantIds.contains(
+                  anonymous.id,
+                );
+
+                return SimpleDialogOption(
+                  onPressed: alreadyAdded
+                      ? null
+                      : () => Navigator.pop(context, anonymous),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.help_outline, color: Colors.grey),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Anonymous',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      if (alreadyAdded)
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 20,
+                        ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
             const Divider(),
             ..._availablePersons
@@ -497,10 +536,30 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   return true;
                 })
                 .map((person) {
+                  final alreadyAdded = existingParticipantIds.contains(
+                    person.id,
+                  );
+
                   return SimpleDialogOption(
-                    onPressed: () => Navigator.pop(context, person),
-                    child: Text(
-                      person.name.nickname ?? person.name.given ?? 'Unknown',
+                    onPressed: alreadyAdded
+                        ? null
+                        : () => Navigator.pop(context, person),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            person.name.nickname ??
+                                person.name.given ??
+                                'Unknown',
+                          ),
+                        ),
+                        if (alreadyAdded)
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 20,
+                          ),
+                      ],
                     ),
                   );
                 })
@@ -677,7 +736,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -735,12 +796,16 @@ class _EventEditorPageState extends State<EventEditorPage> {
                     Icon(
                       Icons.category_outlined,
                       size: 48,
-                      color: Colors.grey[400],
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withOpacity(0.5),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No activities added yet',
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -866,15 +931,19 @@ class _EventEditorPageState extends State<EventEditorPage> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: Theme.of(context).colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.info_outline,
-                            color: Colors.blue.shade700,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -884,7 +953,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                                   ? 'Add at least one partner to continue'
                                   : 'Add other participants, or toggle properties below to track your own participation',
                               style: TextStyle(
-                                color: Colors.blue.shade700,
+                                color: Theme.of(context).colorScheme.primary,
                                 fontSize: 13,
                               ),
                             ),
@@ -1024,7 +1093,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: property.isRisky ? Colors.orange.shade50 : Colors.grey.shade50,
+      color: property.isRisky
+          ? Theme.of(context).colorScheme.tertiaryContainer
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -1047,7 +1118,11 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   ),
                 ),
                 if (property.isRisky)
-                  const Icon(Icons.warning, color: Colors.orange, size: 20),
+                  Icon(
+                    Icons.warning,
+                    color: Theme.of(context).colorScheme.tertiary,
+                    size: 20,
+                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1082,7 +1157,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
                               Icon(
                                 Icons.lock,
                                 size: 12,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ],
                           ],
@@ -1095,11 +1172,15 @@ class _EventEditorPageState extends State<EventEditorPage> {
                                 );
                               }
                             : null,
-                        selectedColor: Colors.blue.shade100,
+                        selectedColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
                         backgroundColor: meCheckboxEnabled
                             ? null
-                            : Colors.grey.shade300,
-                        checkmarkColor: Colors.blue,
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                        checkmarkColor: Theme.of(context).colorScheme.primary,
                       ),
                       if (meHasProperty && meCheckboxEnabled) ...[
                         const SizedBox(width: 4),

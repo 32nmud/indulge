@@ -38,7 +38,9 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
             Text(
               widget.data.timeWindowLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
               ),
@@ -46,9 +48,9 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
             const SizedBox(height: 8),
             Text(
               'Total count of each activity type you\'ve done',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -127,7 +129,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
             titleStyle: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
             ),
           );
         }),
@@ -190,7 +192,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
                       activityType?.name ?? 'Unknown',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontSize: 10,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

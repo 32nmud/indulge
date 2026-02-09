@@ -32,7 +32,7 @@ class ExpandableActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -66,7 +66,9 @@ class ExpandableActivityCard extends StatelessWidget {
                             subtitle,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: Colors.grey[600],
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                   fontSize: 11,
                                 ),
                           ),
@@ -81,7 +83,9 @@ class ExpandableActivityCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -89,14 +93,14 @@ class ExpandableActivityCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
                     const SizedBox(width: 8),
                     Icon(
                       isExpanded ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -128,7 +132,9 @@ class ExpandableActivityCard extends StatelessWidget {
                                   ? Icon(
                                       Icons.warning_amber_rounded,
                                       size: 16,
-                                      color: Colors.red[400],
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.tertiary,
                                     )
                                   : null,
                             ),
@@ -150,8 +156,12 @@ class ExpandableActivityCard extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: property?.isRisky ?? false
-                                    ? Colors.red.withOpacity(0.1)
-                                    : Colors.grey[200],
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.tertiaryContainer
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.secondaryContainer,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -160,8 +170,12 @@ class ExpandableActivityCard extends StatelessWidget {
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                   color: property?.isRisky ?? false
-                                      ? Colors.red[700]
-                                      : Colors.grey[700],
+                                      ? Theme.of(
+                                          context,
+                                        ).colorScheme.onTertiaryContainer
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.onSecondaryContainer,
                                 ),
                               ),
                             ),
@@ -182,7 +196,9 @@ class ExpandableActivityCard extends StatelessWidget {
                 child: Text(
                   'No properties recorded',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                     fontStyle: FontStyle.italic,
                   ),
                 ),

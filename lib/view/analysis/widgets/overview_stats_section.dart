@@ -93,7 +93,7 @@ class OverviewStatsSection extends StatelessWidget {
                   icon: Icons.local_fire_department,
                   label: 'Current Streak',
                   value: data.currentStreak.toString(),
-                  color: Colors.orange,
+                  color: Theme.of(context).colorScheme.tertiary,
                   subtitle:
                       '${data.currentStreak} day${data.currentStreak != 1 ? 's' : ''}',
                 ),
@@ -104,7 +104,7 @@ class OverviewStatsSection extends StatelessWidget {
                   icon: Icons.emoji_events,
                   label: 'Longest Streak',
                   value: data.longestStreak.toString(),
-                  color: Colors.amber[700]!,
+                  color: Theme.of(context).colorScheme.secondary,
                   subtitle:
                       '${data.longestStreak} day${data.longestStreak != 1 ? 's' : ''}',
                 ),
@@ -136,7 +136,11 @@ class OverviewStatsSection extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.category, color: Colors.teal, size: 20),
+                      Icon(
+                        Icons.category,
+                        color: Theme.of(context).colorScheme.tertiary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         isLast12Months
@@ -157,7 +161,7 @@ class OverviewStatsSection extends StatelessWidget {
                           icon: Icons.person,
                           label: 'Solo',
                           value: data.soloEventsThisYear,
-                          color: Colors.blue[700]!,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       Expanded(
@@ -166,7 +170,7 @@ class OverviewStatsSection extends StatelessWidget {
                           icon: Icons.people,
                           label: 'Couple',
                           value: data.coupleEventsThisYear,
-                          color: Colors.purple[700]!,
+                          color: Theme.of(context).colorScheme.secondary,
                         ),
                       ),
                       Expanded(
@@ -175,7 +179,7 @@ class OverviewStatsSection extends StatelessWidget {
                           icon: Icons.groups,
                           label: 'Group',
                           value: data.groupEventsThisYear,
-                          color: Colors.pink[700]!,
+                          color: Theme.of(context).colorScheme.tertiary,
                         ),
                       ),
                     ],
@@ -200,7 +204,11 @@ class OverviewStatsSection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.star, color: Colors.amber, size: 20),
+                        Icon(
+                          Icons.star,
+                          color: Theme.of(context).colorScheme.secondary,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           isLast12Months
@@ -250,7 +258,7 @@ class OverviewStatsSection extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 11,
           ),
         ),
@@ -262,7 +270,11 @@ class OverviewStatsSection extends StatelessWidget {
     final dateStr = DateFormat('MMM d, yyyy').format(data.busiestDay!);
     return Row(
       children: [
-        Icon(Icons.event_busy, color: Colors.blue[700], size: 18),
+        Icon(
+          Icons.event_busy,
+          color: Theme.of(context).colorScheme.primary,
+          size: 18,
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -271,7 +283,7 @@ class OverviewStatsSection extends StatelessWidget {
               Text(
                 'Busiest Day',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 11,
                 ),
               ),
@@ -288,7 +300,7 @@ class OverviewStatsSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -296,7 +308,7 @@ class OverviewStatsSection extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.blue[700],
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
@@ -321,7 +333,11 @@ class OverviewStatsSection extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(Icons.celebration, color: Colors.purple[700], size: 18),
+        Icon(
+          Icons.celebration,
+          color: Theme.of(context).colorScheme.secondary,
+          size: 18,
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -330,7 +346,7 @@ class OverviewStatsSection extends StatelessWidget {
               Text(
                 'Busiest Event',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 11,
                 ),
               ),
@@ -345,7 +361,9 @@ class OverviewStatsSection extends StatelessWidget {
               Text(
                 '$participantCount partner${participantCount != 1 ? 's' : ''} • $propertyCount propert${propertyCount != 1 ? 'ies' : 'y'}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                   fontSize: 10,
                 ),
               ),
@@ -404,7 +422,7 @@ class _StatCard extends StatelessWidget {
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 11,
                     ),
                     maxLines: 1,
@@ -426,7 +444,9 @@ class _StatCard extends StatelessWidget {
               Text(
                 subtitle!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                   fontSize: 10,
                 ),
               ),
@@ -466,13 +486,17 @@ class _PartnerRatioCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.pie_chart, color: Colors.teal, size: 20),
+                Icon(
+                  Icons.pie_chart,
+                  color: Theme.of(context).colorScheme.tertiary,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Partner Ratio',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 11,
                     ),
                   ),
@@ -490,20 +514,26 @@ class _PartnerRatioCard extends StatelessWidget {
                         '$knownPartners',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.green[700],
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       Text(
                         'Known ($knownPercentage%)',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[500],
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                           fontSize: 10,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(width: 1, height: 30, color: Colors.grey[300]),
+                Container(
+                  width: 1,
+                  height: 30,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -513,13 +543,15 @@ class _PartnerRatioCard extends StatelessWidget {
                         '$anonymousInstances',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       Text(
                         'Anon ($anonPercentage%)',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[500],
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withOpacity(0.7),
                           fontSize: 10,
                         ),
                       ),
