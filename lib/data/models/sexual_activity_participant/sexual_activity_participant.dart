@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../reference/reference.dart';
+import '../property_count/property_count.dart';
 
 part 'sexual_activity_participant.freezed.dart';
 part 'sexual_activity_participant.g.dart';
@@ -11,8 +12,7 @@ abstract class SexualActivityParticipant with _$SexualActivityParticipant {
   const factory SexualActivityParticipant({
     @Default(Reference()) Reference participant,
     @Default([])
-    List<Reference>
-    propertyReferences, // References to SexualActivityTypeProperty
+    List<PropertyCount> propertyCounts, // Property references with counts
   }) = _SexualActivityParticipant;
 
   factory SexualActivityParticipant.fromJson(Map<String, dynamic> json) {

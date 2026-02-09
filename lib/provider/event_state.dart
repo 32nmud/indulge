@@ -11,6 +11,7 @@ class EventState {
   final List<SexualEvent>? currentEvents;
   final DateTime? selectedDate;
   final Map<DateTime, int>? dailyEventCount;
+  final Person? myself;
 
   EventState({
     this.selectedEvent,
@@ -22,6 +23,7 @@ class EventState {
     this.currentEvents,
     this.selectedDate,
     this.dailyEventCount,
+    this.myself,
   });
 
   EventState copyWith({
@@ -34,6 +36,7 @@ class EventState {
     List<SexualEvent>? currentEvents,
     DateTime? selectedDate,
     Map<DateTime, int>? dailyEventCount,
+    Person? myself,
   }) {
     return EventState(
       selectedEvent: selectedEvent ?? this.selectedEvent,
@@ -51,6 +54,7 @@ class EventState {
       currentEvents: currentEvents ?? this.currentEvents,
       selectedDate: selectedDate ?? this.selectedDate,
       dailyEventCount: dailyEventCount ?? this.dailyEventCount,
+      myself: myself ?? this.myself,
     );
   }
 }

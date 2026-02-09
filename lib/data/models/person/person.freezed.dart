@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 mixin _$Person {
 
  String get id; DateTime get date; DateTime? get lastUpdateDate; Name get name; Reference? get location;// HivStatus hivStatus,
- DateTime? get birthday;
+ DateTime? get birthday; bool get isSelf;
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,16 @@ $PersonCopyWith<Person> get copyWith => _$PersonCopyWithImpl<Person>(this as Per
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.isSelf, isSelf) || other.isSelf == isSelf));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,lastUpdateDate,name,location,birthday);
+int get hashCode => Object.hash(runtimeType,id,date,lastUpdateDate,name,location,birthday,isSelf);
 
 @override
 String toString() {
-  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday)';
+  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday, isSelf: $isSelf)';
 }
 
 
@@ -49,7 +49,7 @@ abstract mixin class $PersonCopyWith<$Res>  {
   factory $PersonCopyWith(Person value, $Res Function(Person) _then) = _$PersonCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday
+ String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday, bool isSelf
 });
 
 
@@ -66,7 +66,7 @@ class _$PersonCopyWithImpl<$Res>
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,Object? isSelf = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -74,7 +74,8 @@ as DateTime,lastUpdateDate: freezed == lastUpdateDate ? _self.lastUpdateDate : l
 as DateTime?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as Name,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as Reference?,birthday: freezed == birthday ? _self.birthday : birthday // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,isSelf: null == isSelf ? _self.isSelf : isSelf // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 /// Create a copy of Person
@@ -180,10 +181,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Person() when $default != null:
-return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday);case _:
+return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf);case _:
   return orElse();
 
 }
@@ -201,10 +202,10 @@ return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.locati
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf)  $default,) {final _that = this;
 switch (_that) {
 case _Person():
-return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday);case _:
+return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -221,10 +222,10 @@ return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.locati
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf)?  $default,) {final _that = this;
 switch (_that) {
 case _Person() when $default != null:
-return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday);case _:
+return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf);case _:
   return null;
 
 }
@@ -236,7 +237,7 @@ return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.locati
 @JsonSerializable()
 
 class _Person extends Person {
-  const _Person({this.id = "", required this.date, this.lastUpdateDate, required this.name, this.location, this.birthday}): super._();
+  const _Person({this.id = "", required this.date, this.lastUpdateDate, required this.name, this.location, this.birthday, this.isSelf = false}): super._();
   factory _Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -246,6 +247,7 @@ class _Person extends Person {
 @override final  Reference? location;
 // HivStatus hivStatus,
 @override final  DateTime? birthday;
+@override@JsonKey() final  bool isSelf;
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
@@ -260,16 +262,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.isSelf, isSelf) || other.isSelf == isSelf));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,lastUpdateDate,name,location,birthday);
+int get hashCode => Object.hash(runtimeType,id,date,lastUpdateDate,name,location,birthday,isSelf);
 
 @override
 String toString() {
-  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday)';
+  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday, isSelf: $isSelf)';
 }
 
 
@@ -280,7 +282,7 @@ abstract mixin class _$PersonCopyWith<$Res> implements $PersonCopyWith<$Res> {
   factory _$PersonCopyWith(_Person value, $Res Function(_Person) _then) = __$PersonCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday
+ String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday, bool isSelf
 });
 
 
@@ -297,7 +299,7 @@ class __$PersonCopyWithImpl<$Res>
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,Object? isSelf = null,}) {
   return _then(_Person(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -305,7 +307,8 @@ as DateTime,lastUpdateDate: freezed == lastUpdateDate ? _self.lastUpdateDate : l
 as DateTime?,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as Name,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as Reference?,birthday: freezed == birthday ? _self.birthday : birthday // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,isSelf: null == isSelf ? _self.isSelf : isSelf // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

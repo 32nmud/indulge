@@ -1,11 +1,20 @@
 {
   "resources": [
     {
+      "id": "me",
+      "date": "2024-01-01T00:00:00.000Z",
+      "name": {
+        "given": "Me"
+      },
+      "isSelf": true
+    },
+    {
       "id": "anonymous",
       "date": "2024-01-01T00:00:00.000Z",
       "name": {
         "given": "Anonymous"
-      }
+      },
+      "isSelf": false
     }
   ]
 }

@@ -21,6 +21,7 @@ _SexualActivityType _$SexualActivityTypeFromJson(Map<String, dynamic> json) =>
               ?.map((e) => Reference.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      requiresPartner: json['requiresPartner'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$SexualActivityTypeToJson(_SexualActivityType instance) =>
@@ -32,4 +33,5 @@ Map<String, dynamic> _$SexualActivityTypeToJson(_SexualActivityType instance) =>
       'minParticipants': instance.minParticipants,
       'maxParticipants': instance.maxParticipants,
       'properties': instance.properties,
+      'requiresPartner': instance.requiresPartner,
     };

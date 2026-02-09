@@ -11,9 +11,13 @@ class PersonListPage extends StatefulWidget {
   State<PersonListPage> createState() => _PersonListPageState();
 }
 
-class _PersonListPageState extends State<PersonListPage> {
+class _PersonListPageState extends State<PersonListPage>
+    with AutomaticKeepAliveClientMixin {
   List<Person> _persons = [];
   bool _isLoading = true;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -108,6 +112,7 @@ class _PersonListPageState extends State<PersonListPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       appBar: AppBar(title: const Text('Contacts')),
       body: _isLoading
@@ -164,17 +169,47 @@ class _PersonListPageState extends State<PersonListPage> {
   Widget _buildPersonCard(Person person) {
     final displayName = person.name.nickname ?? person.name.given ?? 'Unknown';
     final subtitle = _buildSubtitle(person);
+    final isSelf = person.isSelf;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      color: isSelf ? Colors.blue.shade50 : null,
       child: ListTile(
         leading: CircleAvatar(
-          child: Text(
-            displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          backgroundColor: isSelf ? Colors.blue : null,
+          child: Icon(
+            isSelf ? Icons.account_circle : Icons.person,
+            color: isSelf ? Colors.white : null,
           ),
         ),
-        title: Text(displayName),
+        title: Row(
+          children: [
+            Text(
+              displayName,
+              style: TextStyle(
+                fontWeight: isSelf ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            if (isSelf) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'Me',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
         subtitle: subtitle != null ? Text(subtitle) : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -184,12 +219,13 @@ class _PersonListPageState extends State<PersonListPage> {
               onPressed: () => _navigateToEditor(person: person),
               tooltip: 'Edit',
             ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              color: Colors.red,
-              onPressed: () => _deletePerson(person),
-              tooltip: 'Delete',
-            ),
+            if (!isSelf)
+              IconButton(
+                icon: const Icon(Icons.delete),
+                color: Colors.red,
+                onPressed: () => _deletePerson(person),
+                tooltip: 'Delete',
+              ),
           ],
         ),
       ),

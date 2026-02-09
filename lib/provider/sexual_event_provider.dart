@@ -17,10 +17,12 @@ class SexualEventsProvider extends ChangeNotifier {
     final counts = await _repository.getDailyEventCount();
     final types = await _loadSexualActivityTypes();
     final properties = await _loadSexualActivityTypeProperties();
+    final myself = await _repository.getMyself();
     _state = _state.copyWith(
       dailyEventCount: counts,
       sexualActivityTypes: types,
       sexualActivityTypeProperties: properties,
+      myself: myself,
     );
     return "ready!";
   }
@@ -179,16 +181,19 @@ class SexualEventsProvider extends ChangeNotifier {
   ) {
     List<SexualActivityTypeProperty> properties = [];
     for (SexualActivityParticipant property in activity.participants) {
-      for (Reference reference in property.propertyReferences) {
-        if (reference.resourceType == "SexualActivityTypeProperty" &&
+      for (var propertyCount in property.propertyCounts) {
+        if (propertyCount.propertyReference.resourceType ==
+                "SexualActivityTypeProperty" &&
             property.participant.resourceType == "Person" &&
             property.participant.reference == person.id &&
             _state.sexualActivityTypeProperties != null &&
             _state.sexualActivityTypeProperties!.containsKey(
-              reference.reference,
+              propertyCount.propertyReference.reference,
             )) {
           properties.add(
-            _state.sexualActivityTypeProperties![reference.reference]!,
+            _state.sexualActivityTypeProperties![propertyCount
+                .propertyReference
+                .reference]!,
           );
         }
       }
@@ -284,6 +289,10 @@ class SexualEventsProvider extends ChangeNotifier {
     // Reload events for current date
     await _loadEventsForDate(_state.selectedDate);
     notifyListeners();
+  }
+
+  Future<List<SexualEvent>> getAllEvents() async {
+    return await _repository.getAllEvents();
   }
 
   Future<void> saveActivityType(SexualActivityType activityType) async {

@@ -120,6 +120,7 @@ class _PersonEditorPageState extends State<PersonEditorPage> {
         lastUpdateDate: DateTime.now(),
         name: name,
         birthday: _birthday,
+        isSelf: widget.person?.isSelf ?? false,
       );
 
       final provider = context.read<SexualEventsProvider>();

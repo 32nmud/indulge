@@ -8,3 +8,4 @@ export 'models/reference/reference.dart';
 export 'models/sexual_activity_type/sexual_activity_type.dart';
 export 'models/sexual_activity_type_property/sexual_activity_type_property.dart';
 export 'models/sexual_activity_participant/sexual_activity_participant.dart';
+export 'models/property_count/property_count.dart';

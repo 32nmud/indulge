@@ -7,6 +7,8 @@ import 'package:indulge/view/event_editor/event_editor.dart';
 import 'package:indulge/view/person_list/person_list_page.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
 import 'package:indulge/view/settings/settings_page.dart';
+import 'package:indulge/view/analysis/analysis_page.dart';
+import 'package:indulge/view/search/search_page.dart';
 import 'package:logging/logging.dart';
 
 void main() {
@@ -96,7 +98,8 @@ class _MyHomePageState extends State<MyHomePage> {
             index: currentPageIndex,
             children: const [
               EventViewPage(),
-              Center(child: Text("This is the analysis page")),
+              SearchPage(),
+              AnalysisPage(),
               PersonListPage(),
               SettingsPage(),
             ],
@@ -112,17 +115,22 @@ class _MyHomePageState extends State<MyHomePage> {
       case 0: // Events page
         return FloatingActionButton(
           onPressed: () {
+            final selectedDate = context
+                .read<SexualEventsProvider>()
+                .state
+                .selectedDate;
             Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => const EventEditorPage(),
+                builder: (context) =>
+                    EventEditorPage(initialDate: selectedDate),
               ),
             );
           },
           tooltip: 'Add a new encounter',
           child: const Icon(Icons.add),
         );
-      case 2: // Contacts page
+      case 3: // Contacts page
         return FloatingActionButton(
           onPressed: () {
             Navigator.push(

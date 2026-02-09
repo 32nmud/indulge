@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+import 'package:indulge/data/models.dart';
+
+/// A reusable expandable card widget for displaying activities with their properties
+class ExpandableActivityCard extends StatelessWidget {
+  final String title;
+  final String? emoji;
+  final String subtitle;
+  final int badgeCount;
+  final String badgeLabel;
+  final bool isExpanded;
+  final VoidCallback onTap;
+  final Map<String, int> propertyCountsMap;
+  final Map<String, SexualActivityTypeProperty> availableProperties;
+  final Widget? additionalContent;
+
+  const ExpandableActivityCard({
+    super.key,
+    required this.title,
+    this.emoji,
+    required this.subtitle,
+    required this.badgeCount,
+    required this.badgeLabel,
+    required this.isExpanded,
+    required this.onTap,
+    required this.propertyCountsMap,
+    required this.availableProperties,
+    this.additionalContent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  children: [
+                    // Emoji/Icon
+                    if (emoji != null) ...[
+                      Text(emoji!, style: const TextStyle(fontSize: 24)),
+                      const SizedBox(width: 12),
+                    ],
+                    // Title and subtitle
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Colors.grey[600],
+                                  fontSize: 11,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Badge
+                    if (badgeCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$badgeCount $badgeLabel',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: Colors.grey[600],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Expanded content
+          if (isExpanded) ...[
+            const Divider(height: 1),
+            if (propertyCountsMap.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...propertyCountsMap.entries.map((propEntry) {
+                      final propertyId = propEntry.key;
+                      final count = propEntry.value;
+                      final property = availableProperties[propertyId];
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          children: [
+                            // Risky indicator
+                            SizedBox(
+                              width: 20,
+                              child: property?.isRisky ?? false
+                                  ? Icon(
+                                      Icons.warning_amber_rounded,
+                                      size: 16,
+                                      color: Colors.red[400],
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 4),
+                            // Property name
+                            Expanded(
+                              child: Text(
+                                property?.name ?? 'Unknown',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Count badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: property?.isRisky ?? false
+                                    ? Colors.red.withOpacity(0.1)
+                                    : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${count}×',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: property?.isRisky ?? false
+                                      ? Colors.red[700]
+                                      : Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    if (additionalContent != null) ...[
+                      const SizedBox(height: 12),
+                      additionalContent!,
+                    ],
+                  ],
+                ),
+              ),
+            if (propertyCountsMap.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  'No properties recorded',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}

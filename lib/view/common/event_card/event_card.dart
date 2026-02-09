@@ -204,8 +204,6 @@ class _EventCardState extends State<EventCard> {
     List<Person> persons,
     EventState eventState,
   ) {
-    final provider = context.read<SexualEventsProvider>();
-
     // Get the person IDs who actually participated in this activity
     final activityParticipantIds = activity.participants
         .map((p) => p.participant.reference)
@@ -216,22 +214,27 @@ class _EventCardState extends State<EventCard> {
         .where((person) => activityParticipantIds.contains(person.id))
         .toList();
 
-    // Group participants by property
-    final Map<String, List<Person>> propertyGroups = {};
+    // Group participants by property with counts
+    final Map<String, Map<Person, int>> propertyGroups = {};
 
-    for (Person person in activityPersons) {
-      final properties = provider
-          .getSexualActivityTypePropertiesForPersonAndActivity(
-            person,
-            activity,
-          );
+    for (var participant in activity.participants) {
+      final person = activityPersons.firstWhere(
+        (p) => p.id == participant.participant.reference,
+        orElse: () => Person(
+          date: DateTime.now(),
+          name: const Name(given: 'Unknown'),
+        ),
+      );
 
-      if (properties.isEmpty) {
+      if (participant.propertyCounts.isEmpty) {
         // Group under "no properties"
-        propertyGroups.putIfAbsent('_no_property', () => []).add(person);
+        propertyGroups.putIfAbsent('_no_property', () => {});
+        propertyGroups['_no_property']![person] = 1;
       } else {
-        for (SexualActivityTypeProperty property in properties) {
-          propertyGroups.putIfAbsent(property.id, () => []).add(person);
+        for (var propertyCount in participant.propertyCounts) {
+          final propertyId = propertyCount.propertyReference.reference;
+          propertyGroups.putIfAbsent(propertyId, () => {});
+          propertyGroups[propertyId]![person] = propertyCount.count;
         }
       }
     }
@@ -245,12 +248,25 @@ class _EventCardState extends State<EventCard> {
             child: Wrap(
               spacing: 6,
               runSpacing: 6,
-              children: entry.value.map((person) {
+              children: entry.value.entries.map((personEntry) {
+                final person = personEntry.key;
+                final isSelf = person.isSelf;
                 return Chip(
+                  avatar: isSelf
+                      ? const Icon(
+                          Icons.account_circle,
+                          size: 16,
+                          color: Colors.blue,
+                        )
+                      : null,
                   label: Text(
                     person.name.nickname ?? person.name.given ?? 'Unknown',
-                    style: const TextStyle(fontSize: 12),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelf ? FontWeight.bold : null,
+                    ),
                   ),
+                  backgroundColor: isSelf ? Colors.blue.shade50 : null,
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -291,14 +307,26 @@ class _EventCardState extends State<EventCard> {
                   child: Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: entry.value.map((person) {
+                    children: entry.value.entries.map((personEntry) {
+                      final person = personEntry.key;
+                      final count = personEntry.value;
+                      final isSelf = person.isSelf;
                       return Chip(
+                        avatar: isSelf
+                            ? const Icon(
+                                Icons.account_circle,
+                                size: 16,
+                                color: Colors.blue,
+                              )
+                            : null,
                         label: Text(
-                          person.name.nickname ??
-                              person.name.given ??
-                              'Unknown',
-                          style: const TextStyle(fontSize: 12),
+                          '${person.name.nickname ?? person.name.given ?? 'Unknown'} ($count)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelf ? FontWeight.bold : null,
+                          ),
                         ),
+                        backgroundColor: isSelf ? Colors.blue.shade50 : null,
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       );

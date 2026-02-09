@@ -260,14 +260,14 @@ class SexualEventRepository {
       'Getting sexual activity type properties for participant: ${participant.participant.reference}',
     );
 
-    if (participant.propertyReferences.isEmpty) return [];
+    if (participant.propertyCounts.isEmpty) return [];
 
     final List<SexualActivityTypeProperty> properties = [];
-    for (Reference reference in participant.propertyReferences) {
+    for (var propertyCount in participant.propertyCounts) {
       final rows = await _db.query(
         'sexual_activity_type_property',
         where: 'id = ?',
-        whereArgs: [reference.reference],
+        whereArgs: [propertyCount.propertyReference.reference],
       );
 
       for (final row in rows) {
@@ -379,9 +379,34 @@ class SexualEventRepository {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Gets the "Me" person (the user themselves)
+  Future<Person?> getMyself() async {
+    _logger.info('Getting myself person');
+
+    final rows = await _db.query(
+      'person',
+      where: 'json LIKE ?',
+      whereArgs: ['%"isSelf":true%'],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+
+    return Person.fromJson(
+      jsonDecode(rows.first['json'] as String) as Map<String, dynamic>,
+    );
+  }
+
   /// Deletes a person by ID and replaces them with Anonymous in all events
+  /// Cannot delete the "self" person
   Future<void> deletePerson(String id) async {
     _logger.info('Deleting person: $id');
+
+    // Check if this is the self person
+    final person = await getPersonById(id);
+    if (person?.isSelf == true) {
+      throw Exception('Cannot delete yourself');
+    }
 
     // First, update all events that reference this person
     await replacePersonInAllEvents(id, 'anonymous');
@@ -564,16 +589,16 @@ class SexualEventRepository {
 
         for (final participant in activity.participants) {
           // Remove the property reference from this participant
-          final updatedPropertyRefs = participant.propertyReferences
-              .where((ref) => ref.reference != id)
+          final updatedPropertyCounts = participant.propertyCounts
+              .where((pc) => pc.propertyReference.reference != id)
               .toList();
 
           // Check if properties were removed
-          if (updatedPropertyRefs.length !=
-              participant.propertyReferences.length) {
+          if (updatedPropertyCounts.length !=
+              participant.propertyCounts.length) {
             eventModified = true;
             updatedParticipants.add(
-              participant.copyWith(propertyReferences: updatedPropertyRefs),
+              participant.copyWith(propertyCounts: updatedPropertyCounts),
             );
           } else {
             updatedParticipants.add(participant);

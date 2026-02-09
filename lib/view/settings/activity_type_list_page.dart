@@ -70,7 +70,26 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
                       activityType.displayCharacter ?? '❓',
                       style: const TextStyle(fontSize: 32),
                     ),
-                    title: Text(activityType.name),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            activityType.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (activityType.requiresPartner) ...[
+                          const SizedBox(width: 8),
+                          const Icon(Icons.group, size: 16, color: Colors.blue),
+                        ],
+                      ],
+                    ),
+                    subtitle: activityType.requiresPartner
+                        ? const Text(
+                            'Requires partner',
+                            style: TextStyle(fontSize: 11, color: Colors.blue),
+                          )
+                        : null,
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

@@ -17,6 +17,7 @@ abstract class SexualActivityType with _$SexualActivityType {
     @Default(-1) int minParticipants,
     @Default(-1) int maxParticipants,
     @Default([]) List<Reference> properties,
+    @Default(false) bool requiresPartner,
   }) = _SexualActivityType;
 
   // -----------------------------------------------------------------

@@ -14,6 +14,7 @@ abstract class SexualActivityTypeProperty with _$SexualActivityTypeProperty {
     @Default("❔") String displayCharacter,
     @Default(true) bool canHaveMultipleParticipants,
     @Default(false) bool isRisky,
+    @Default(false) bool requiresPartner,
   }) = _SexualActivityTypeProperty;
 
   factory SexualActivityTypeProperty.fromJson(Map<String, dynamic> json) {

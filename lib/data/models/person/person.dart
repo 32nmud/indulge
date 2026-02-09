@@ -18,6 +18,7 @@ abstract class Person with _$Person {
     Reference? location,
     // HivStatus hivStatus,
     DateTime? birthday,
+    @Default(false) bool isSelf,
   }) = _Person;
 
   // -----------------------------------------------------------------

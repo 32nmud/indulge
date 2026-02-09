@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualActivityParticipant {
 
- Reference get participant; List<Reference> get propertyReferences;
+ Reference get participant; List<PropertyCount> get propertyCounts;
 /// Create a copy of SexualActivityParticipant
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SexualActivityParticipantCopyWith<SexualActivityParticipant> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivityParticipant&&(identical(other.participant, participant) || other.participant == participant)&&const DeepCollectionEquality().equals(other.propertyReferences, propertyReferences));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivityParticipant&&(identical(other.participant, participant) || other.participant == participant)&&const DeepCollectionEquality().equals(other.propertyCounts, propertyCounts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,participant,const DeepCollectionEquality().hash(propertyReferences));
+int get hashCode => Object.hash(runtimeType,participant,const DeepCollectionEquality().hash(propertyCounts));
 
 @override
 String toString() {
-  return 'SexualActivityParticipant(participant: $participant, propertyReferences: $propertyReferences)';
+  return 'SexualActivityParticipant(participant: $participant, propertyCounts: $propertyCounts)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SexualActivityParticipantCopyWith<$Res>  {
   factory $SexualActivityParticipantCopyWith(SexualActivityParticipant value, $Res Function(SexualActivityParticipant) _then) = _$SexualActivityParticipantCopyWithImpl;
 @useResult
 $Res call({
- Reference participant, List<Reference> propertyReferences
+ Reference participant, List<PropertyCount> propertyCounts
 });
 
 
@@ -65,11 +65,11 @@ class _$SexualActivityParticipantCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivityParticipant
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? participant = null,Object? propertyReferences = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? participant = null,Object? propertyCounts = null,}) {
   return _then(_self.copyWith(
 participant: null == participant ? _self.participant : participant // ignore: cast_nullable_to_non_nullable
-as Reference,propertyReferences: null == propertyReferences ? _self.propertyReferences : propertyReferences // ignore: cast_nullable_to_non_nullable
-as List<Reference>,
+as Reference,propertyCounts: null == propertyCounts ? _self.propertyCounts : propertyCounts // ignore: cast_nullable_to_non_nullable
+as List<PropertyCount>,
   ));
 }
 /// Create a copy of SexualActivityParticipant
@@ -163,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference participant,  List<Reference> propertyReferences)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference participant,  List<PropertyCount> propertyCounts)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualActivityParticipant() when $default != null:
-return $default(_that.participant,_that.propertyReferences);case _:
+return $default(_that.participant,_that.propertyCounts);case _:
   return orElse();
 
 }
@@ -184,10 +184,10 @@ return $default(_that.participant,_that.propertyReferences);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference participant,  List<Reference> propertyReferences)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference participant,  List<PropertyCount> propertyCounts)  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivityParticipant():
-return $default(_that.participant,_that.propertyReferences);case _:
+return $default(_that.participant,_that.propertyCounts);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +204,10 @@ return $default(_that.participant,_that.propertyReferences);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference participant,  List<Reference> propertyReferences)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference participant,  List<PropertyCount> propertyCounts)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivityParticipant() when $default != null:
-return $default(_that.participant,_that.propertyReferences);case _:
+return $default(_that.participant,_that.propertyCounts);case _:
   return null;
 
 }
@@ -219,15 +219,15 @@ return $default(_that.participant,_that.propertyReferences);case _:
 @JsonSerializable()
 
 class _SexualActivityParticipant extends SexualActivityParticipant {
-  const _SexualActivityParticipant({this.participant = const Reference(), final  List<Reference> propertyReferences = const []}): _propertyReferences = propertyReferences,super._();
+  const _SexualActivityParticipant({this.participant = const Reference(), final  List<PropertyCount> propertyCounts = const []}): _propertyCounts = propertyCounts,super._();
   factory _SexualActivityParticipant.fromJson(Map<String, dynamic> json) => _$SexualActivityParticipantFromJson(json);
 
 @override@JsonKey() final  Reference participant;
- final  List<Reference> _propertyReferences;
-@override@JsonKey() List<Reference> get propertyReferences {
-  if (_propertyReferences is EqualUnmodifiableListView) return _propertyReferences;
+ final  List<PropertyCount> _propertyCounts;
+@override@JsonKey() List<PropertyCount> get propertyCounts {
+  if (_propertyCounts is EqualUnmodifiableListView) return _propertyCounts;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_propertyReferences);
+  return EqualUnmodifiableListView(_propertyCounts);
 }
 
 
@@ -244,16 +244,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivityParticipant&&(identical(other.participant, participant) || other.participant == participant)&&const DeepCollectionEquality().equals(other._propertyReferences, _propertyReferences));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivityParticipant&&(identical(other.participant, participant) || other.participant == participant)&&const DeepCollectionEquality().equals(other._propertyCounts, _propertyCounts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,participant,const DeepCollectionEquality().hash(_propertyReferences));
+int get hashCode => Object.hash(runtimeType,participant,const DeepCollectionEquality().hash(_propertyCounts));
 
 @override
 String toString() {
-  return 'SexualActivityParticipant(participant: $participant, propertyReferences: $propertyReferences)';
+  return 'SexualActivityParticipant(participant: $participant, propertyCounts: $propertyCounts)';
 }
 
 
@@ -264,7 +264,7 @@ abstract mixin class _$SexualActivityParticipantCopyWith<$Res> implements $Sexua
   factory _$SexualActivityParticipantCopyWith(_SexualActivityParticipant value, $Res Function(_SexualActivityParticipant) _then) = __$SexualActivityParticipantCopyWithImpl;
 @override @useResult
 $Res call({
- Reference participant, List<Reference> propertyReferences
+ Reference participant, List<PropertyCount> propertyCounts
 });
 
 
@@ -281,11 +281,11 @@ class __$SexualActivityParticipantCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivityParticipant
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? participant = null,Object? propertyReferences = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? participant = null,Object? propertyCounts = null,}) {
   return _then(_SexualActivityParticipant(
 participant: null == participant ? _self.participant : participant // ignore: cast_nullable_to_non_nullable
-as Reference,propertyReferences: null == propertyReferences ? _self._propertyReferences : propertyReferences // ignore: cast_nullable_to_non_nullable
-as List<Reference>,
+as Reference,propertyCounts: null == propertyCounts ? _self._propertyCounts : propertyCounts // ignore: cast_nullable_to_non_nullable
+as List<PropertyCount>,
   ));
 }
 

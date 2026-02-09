@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/data/models/sexual_event/sexual_event.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:indulge/view/daily_event_view/event_card/event_card.dart';
+import 'package:indulge/view/common/event_card/event_card.dart';
 
 typedef RemovedItemBuilder<T> =
     Widget Function(T item, BuildContext context, Animation<double> animation);

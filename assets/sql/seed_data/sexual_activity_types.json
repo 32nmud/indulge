@@ -4,6 +4,7 @@
       "id": "bottoming",
       "name": "Bottoming",
       "displayCharacter": "🍑",
+      "requiresPartner": true,
       "properties": [
         {
           "reference": "1",
@@ -27,6 +28,7 @@
       "id": "topping",
       "name": "Topping",
       "displayCharacter": "🍆",
+      "requiresPartner": true,
       "properties": [
         {
           "reference": "1",
@@ -42,6 +44,222 @@
         },
         {
           "reference": "4",
+          "resourceType": "SexualActivityTypeProperty"
+        }
+      ]
+    },
+    {
+      "id": "kink",
+      "name": "Kink",
+      "displayCharacter": "🪢",
+      "requiresPartner": false,
+      "properties": [
+        {
+          "reference": "5",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "6",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "7",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "8",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "9",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "10",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "11",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "12",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "13",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "14",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "15",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "16",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "17",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "18",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "19",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "20",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "21",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "22",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "23",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "24",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "25",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "26",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "27",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "28",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "29",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "30",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "31",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "32",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "33",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "34",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "35",
+          "resourceType": "SexualActivityTypeProperty"
+        }
+      ]
+    },
+    {
+      "id": "substances",
+      "name": "Substances",
+      "displayCharacter": "💊",
+      "requiresPartner": false,
+      "properties": [
+        {
+          "reference": "36",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "37",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "38",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "40",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "41",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "42",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "43",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "44",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "45",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "46",
+          "resourceType": "SexualActivityTypeProperty"
+        }
+      ]
+    },
+    {
+      "id": "oral",
+      "name": "Oral",
+      "displayCharacter": "👄",
+      "requiresPartner": true,
+      "properties": [
+        {
+          "reference": "47",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "48",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "49",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "50",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "51",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "52",
+          "resourceType": "SexualActivityTypeProperty"
+        },
+        {
+          "reference": "53",
           "resourceType": "SexualActivityTypeProperty"
         }
       ]

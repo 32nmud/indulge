@@ -17,6 +17,11 @@ class BottomNavBar extends StatelessWidget {
           label: 'Home',
         ),
         NavigationDestination(
+          selectedIcon: Icon(Icons.search),
+          icon: Icon(Icons.search_outlined),
+          label: 'Search',
+        ),
+        NavigationDestination(
           selectedIcon: Icon(Icons.bar_chart),
           icon: Icon(Icons.bar_chart_outlined),
           label: 'Analysis',

@@ -19,6 +19,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
   late TextEditingController _emojiController;
   late List<_PropertyRow> _properties;
   bool _isLoading = false;
+  bool _requiresPartner = false;
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     _emojiController = TextEditingController(
       text: widget.activityType?.displayCharacter ?? '❓',
     );
+    _requiresPartner = widget.activityType?.requiresPartner ?? false;
 
     // Load existing properties or start with empty list
     _properties = [];
@@ -45,6 +47,9 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
               emojiController: TextEditingController(
                 text: property.displayCharacter,
               ),
+              isRisky: property.isRisky,
+              requiresPartner: property.requiresPartner,
+              canHaveMultipleParticipants: property.canHaveMultipleParticipants,
             ),
           );
         }
@@ -134,6 +139,21 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    // Activity-level requiresPartner checkbox
+                    CheckboxListTile(
+                      title: const Text('Requires Partner'),
+                      subtitle: const Text(
+                        'When enabled, this activity cannot be performed alone (requires at least one other person)',
+                      ),
+                      value: _requiresPartner,
+                      onChanged: (value) {
+                        setState(() {
+                          _requiresPartner = value ?? false;
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -204,20 +224,91 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                                   const SizedBox(width: 8),
                                   // Property name
                                   Expanded(
-                                    child: TextFormField(
-                                      controller: property.nameController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Property Name',
-                                        hintText: 'e.g., Giving, Receiving',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
-                                          return 'Name required';
-                                        }
-                                        return null;
-                                      },
+                                    child: Column(
+                                      children: [
+                                        TextFormField(
+                                          controller: property.nameController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Property Name',
+                                            hintText: 'e.g., Giving, Receiving',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.trim().isEmpty) {
+                                              return 'Name required';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: CheckboxListTile(
+                                                title: const Text(
+                                                  'Risky',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                value: property.isRisky,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    property.isRisky =
+                                                        value ?? false;
+                                                  });
+                                                },
+                                                dense: true,
+                                                contentPadding: EdgeInsets.zero,
+                                                controlAffinity:
+                                                    ListTileControlAffinity
+                                                        .leading,
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: CheckboxListTile(
+                                                title: const Text(
+                                                  'Needs Partner',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                value: property.requiresPartner,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    property.requiresPartner =
+                                                        value ?? false;
+                                                  });
+                                                },
+                                                dense: true,
+                                                contentPadding: EdgeInsets.zero,
+                                                controlAffinity:
+                                                    ListTileControlAffinity
+                                                        .leading,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        CheckboxListTile(
+                                          title: const Text(
+                                            'Can have multiple participants',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          value: property
+                                              .canHaveMultipleParticipants,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              property.canHaveMultipleParticipants =
+                                                  value ?? true;
+                                            });
+                                          },
+                                          dense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                          controlAffinity:
+                                              ListTileControlAffinity.leading,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -263,6 +354,9 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
           id: const Uuid().v4(),
           nameController: TextEditingController(),
           emojiController: TextEditingController(text: '❔'),
+          isRisky: false,
+          requiresPartner: false,
+          canHaveMultipleParticipants: true,
         ),
       );
     });
@@ -295,6 +389,9 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
           id: property.id,
           name: property.nameController.text.trim(),
           displayCharacter: property.emojiController.text.trim(),
+          isRisky: property.isRisky,
+          requiresPartner: property.requiresPartner,
+          canHaveMultipleParticipants: property.canHaveMultipleParticipants,
         );
         await provider.saveActivityProperty(prop);
         propertyReferences.add(
@@ -311,6 +408,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
         name: _nameController.text.trim(),
         displayCharacter: _emojiController.text.trim(),
         properties: propertyReferences,
+        requiresPartner: _requiresPartner,
       );
 
       await provider.saveActivityType(activityType);
@@ -338,10 +436,16 @@ class _PropertyRow {
   final String id;
   final TextEditingController nameController;
   final TextEditingController emojiController;
+  bool isRisky;
+  bool requiresPartner;
+  bool canHaveMultipleParticipants;
 
   _PropertyRow({
     required this.id,
     required this.nameController,
     required this.emojiController,
+    required this.isRisky,
+    required this.requiresPartner,
+    required this.canHaveMultipleParticipants,
   });
 }

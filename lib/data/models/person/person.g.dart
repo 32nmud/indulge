@@ -19,6 +19,7 @@ _Person _$PersonFromJson(Map<String, dynamic> json) => _Person(
   birthday: json['birthday'] == null
       ? null
       : DateTime.parse(json['birthday'] as String),
+  isSelf: json['isSelf'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$PersonToJson(_Person instance) => <String, dynamic>{
@@ -28,4 +29,5 @@ Map<String, dynamic> _$PersonToJson(_Person instance) => <String, dynamic>{
   'name': instance.name,
   'location': instance.location,
   'birthday': instance.birthday?.toIso8601String(),
+  'isSelf': instance.isSelf,
 };
