@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class BottomNavBar extends StatelessWidget {
-  const BottomNavBar(this.currentIndex, this.onSelected);
+  const BottomNavBar(this.currentIndex, this.onSelected, {super.key});
   final int currentIndex;
   final Function(int) onSelected;
 

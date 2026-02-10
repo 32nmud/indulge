@@ -14,6 +14,8 @@ import 'widgets/time_patterns_section.dart';
 import 'widgets/period_comparison_section.dart';
 import 'widgets/event_averages_section.dart';
 import 'widgets/property_partner_section.dart';
+import 'widgets/cumulative_activities_chart.dart';
+import 'widgets/cumulative_properties_chart.dart';
 
 enum TimeWindow { last12Months, allTime, specificYear }
 
@@ -27,10 +29,13 @@ class AnalysisPage extends StatefulWidget {
 class _AnalysisPageState extends State<AnalysisPage>
     with AutomaticKeepAliveClientMixin {
   final Logger _logger = Logger('AnalysisPage');
-  int _refreshKey = 0;
   TimeWindow _timeWindow = TimeWindow.last12Months;
   int? _selectedYear;
   List<int> _availableYears = [];
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  AnalysisData? _currentData;
+  bool _isLoading = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -46,6 +51,7 @@ class _AnalysisPageState extends State<AnalysisPage>
 
   @override
   void dispose() {
+    _pageController.dispose();
     context.read<SexualEventsProvider>().removeListener(_onProviderChange);
     super.dispose();
   }
@@ -124,7 +130,6 @@ class _AnalysisPageState extends State<AnalysisPage>
       provider,
       startDate: startDate,
       endDate: endDate,
-      timeWindowLabel: _getTimeWindowLabel(),
     );
 
     _logger.info('Calculated data - ${analysisData.totalEvents} total events');
@@ -133,9 +138,37 @@ class _AnalysisPageState extends State<AnalysisPage>
   }
 
   void _refresh() {
+    _loadDataAsync();
+  }
+
+  Future<void> _loadDataAsync() async {
     setState(() {
-      _refreshKey++;
+      _isLoading = true;
     });
+
+    try {
+      final data = await _loadData();
+      if (mounted) {
+        setState(() {
+          _currentData = data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      _logger.severe('Error loading data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        // Show error to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load analysis data: $e'),
+            action: SnackBarAction(label: 'Retry', onPressed: _refresh),
+          ),
+        );
+      }
+    }
   }
 
   void _showTimeWindowSelector() {
@@ -230,9 +263,9 @@ class _AnalysisPageState extends State<AnalysisPage>
         setState(() {
           _timeWindow = window;
           _selectedYear = null;
-          _refreshKey++;
         });
         Navigator.pop(context);
+        _refresh();
       },
     );
   }
@@ -263,9 +296,9 @@ class _AnalysisPageState extends State<AnalysisPage>
         setState(() {
           _timeWindow = TimeWindow.specificYear;
           _selectedYear = year;
-          _refreshKey++;
         });
         Navigator.pop(context);
+        _refresh();
       },
     );
   }
@@ -284,151 +317,165 @@ class _AnalysisPageState extends State<AnalysisPage>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    // Load data on first build or when refresh is triggered
+    if (_currentData == null && !_isLoading) {
+      _loadDataAsync();
+    }
+
     return Stack(
       children: [
-        FutureBuilder<AnalysisData>(
-          key: ValueKey(_refreshKey),
-          future: _loadData(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load analysis data',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      snapshot.error.toString(),
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _refresh,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (!snapshot.hasData) {
-              return const Center(child: Text('No data available'));
-            }
-
-            final analysisData = snapshot.data!;
-
-            return RefreshIndicator(
-              onRefresh: () async {
-                _refresh();
-                // Wait a frame for the refresh to trigger
-                await Future.delayed(const Duration(milliseconds: 100));
-              },
-              child: ListView(
+        _currentData == null
+            ? const Center(child: CircularProgressIndicator())
+            : _currentData!.totalEvents == 0
+            ? _buildEmptyState()
+            : Column(
                 children: [
-                  // Time window indicator (always show for clarity)
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withOpacity(0.5),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: _currentPage == 4
+                        ? const SizedBox.shrink()
+                        : _buildTimeWindowSelector(),
+                  ),
+                  Expanded(
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: const [
+                            Colors.white,
+                            Colors.white,
+                            Colors.white,
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.85, 0.95, 1.0],
+                        ).createShader(bounds);
+                      },
+                      blendMode: BlendMode.dstIn,
+                      child: RefreshIndicator(
+                        onRefresh: () async {
+                          await _loadDataAsync();
+                        },
+                        child: PageView(
+                          controller: _pageController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentPage = index;
+                            });
+                          },
+                          children: [
+                            _buildOverviewPage(_currentData!),
+                            _buildTimeSeriesPage(_currentData!),
+                            _buildActivityBreakdownPage(_currentData!),
+                            _buildPartnerBreakdownPage(_currentData!),
+                            _buildPeriodComparisonPage(_currentData!),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Viewing ${_getTimeWindowLabel()} data',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                  // Empty state
-                  if (analysisData.totalEvents == 0)
-                    _buildEmptyState()
-                  else ...[
-                    // Overview Stats Cards
-                    OverviewStatsSection(data: analysisData),
+                  _buildPageIndicator(),
+                ],
+              ),
+        if (_isLoading && _currentData != null)
+          Container(
+            color: Colors.black26,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+      ],
+    );
+  }
 
-                    // Monthly Activity Chart
-                    MonthlyActivityChart(data: analysisData),
-
-                    // Time Patterns
-                    TimePatternsSection(data: analysisData),
-
-                    // Period Comparisons (only for Last 12 Months)
-                    PeriodComparisonSection(data: analysisData),
-
-                    // Event Averages
-                    EventAveragesSection(data: analysisData),
-
-                    // Activity Type Distribution
-                    ActivityTypeDistribution(data: analysisData),
-
-                    // Properties by Activity Type
-                    PropertiesByActivitySection(data: analysisData),
-
-                    // Top Partners
-                    TopPartnersSection(data: analysisData),
-
-                    // Partner Diversity by Activity
-                    PropertyPartnerSection(data: analysisData),
-
-                    // Bottom padding
-                    const SizedBox(height: 80),
+  Widget _buildTimeWindowSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.calendar_month,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Period:',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildTimeWindowChip(
+                    TimeWindow.last12Months,
+                    'Last 12 Months',
+                    null,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildTimeWindowChip(TimeWindow.allTime, 'All Time', null),
+                  if (_availableYears.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    ..._availableYears.reversed.map((year) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildTimeWindowChip(
+                          TimeWindow.specificYear,
+                          year.toString(),
+                          year,
+                        ),
+                      );
+                    }),
                   ],
                 ],
               ),
-            );
-          },
-        ),
-        // Floating Action Button
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton.extended(
-            heroTag: 'analysis_time_window_fab',
-            onPressed: _showTimeWindowSelector,
-            icon: const Icon(Icons.calendar_month),
-            label: Text(_getTimeWindowLabel()),
-            tooltip: 'Select time window',
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeWindowChip(TimeWindow window, String label, int? year) {
+    final isSelected =
+        _timeWindow == window &&
+        (year == null ? _selectedYear == null : _selectedYear == year);
+
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _timeWindow = window;
+            _selectedYear = year;
+          });
+          _refresh();
+        }
+      },
+      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+      checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+      labelStyle: TextStyle(
+        fontSize: 13,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 
@@ -466,6 +513,150 @@ class _AnalysisPageState extends State<AnalysisPage>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewPage(AnalysisData data) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        _buildPageTitle(
+          'Overview',
+          Icons.dashboard,
+          'Key stats, streaks, and summary',
+        ),
+        OverviewStatsSection(data: data),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildTimeSeriesPage(AnalysisData data) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        _buildPageTitle(
+          'Time Series',
+          Icons.show_chart,
+          'Charts and patterns over time',
+        ),
+        MonthlyActivityChart(data: data),
+        CumulativeActivitiesChart(data: data),
+        CumulativePropertiesChart(data: data),
+        TimePatternsSection(data: data),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildActivityBreakdownPage(AnalysisData data) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        _buildPageTitle(
+          'Activity Breakdown',
+          Icons.list_alt,
+          'Types, properties, and averages',
+        ),
+        EventAveragesSection(data: data),
+        ActivityTypeDistribution(data: data),
+        PropertiesByActivitySection(data: data),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildPartnerBreakdownPage(AnalysisData data) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        _buildPageTitle(
+          'Partner Breakdown',
+          Icons.people,
+          'Top partners and diversity stats',
+        ),
+        TopPartnersSection(data: data),
+        PropertyPartnerSection(data: data),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildPeriodComparisonPage(AnalysisData data) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        _buildPageTitle(
+          'Period Comparison',
+          Icons.compare_arrows,
+          'Compare any two date ranges',
+        ),
+        PeriodComparisonSection(data: data),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildPageTitle(String title, IconData icon, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: Theme.of(context).colorScheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 40),
+            child: Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(5, (index) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            height: 8,
+            width: _currentPage == index ? 24 : 8,
+            decoration: BoxDecoration(
+              color: _currentPage == index
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          );
+        }),
       ),
     );
   }

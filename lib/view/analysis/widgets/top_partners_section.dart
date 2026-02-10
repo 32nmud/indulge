@@ -5,6 +5,7 @@ import 'package:indulge/data/models.dart';
 import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
 import 'common/expandable_activity_card.dart';
+import 'package:indulge/main.dart';
 
 class TopPartnersSection extends StatefulWidget {
   final AnalysisData data;
@@ -41,13 +42,6 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.data.timeWindowLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
             ),
             const SizedBox(height: 16),
             ...topPartners.map((entry) {
@@ -142,6 +136,22 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w500,
                                               ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          icon: const Icon(Icons.search),
+                                          iconSize: 20,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () {
+                                            NavigationHelper.of(
+                                              context,
+                                            )?.navigateToSearchWithPartner(
+                                              partnerId,
+                                            );
+                                          },
+                                          tooltip:
+                                              'Search events with this person',
                                         ),
                                         const SizedBox(width: 4),
                                         Icon(

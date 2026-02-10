@@ -15,17 +15,10 @@ class AnalysisCalculator {
     SexualEventsProvider provider, {
     DateTime? startDate,
     DateTime? endDate,
-    String timeWindowLabel = 'Last 12 months',
   }) async {
     final providerState = provider.state;
     if (events.isEmpty) {
-      return _emptyAnalysisData(
-        events,
-        providerState,
-        startDate,
-        endDate,
-        timeWindowLabel,
-      );
+      return _emptyAnalysisData(events, providerState, startDate, endDate);
     }
 
     // Sort events by date
@@ -428,7 +421,6 @@ class AnalysisCalculator {
     final daysSinceLastActivity = now.difference(lastEventDate).inDays;
 
     return AnalysisData(
-      timeWindowLabel: timeWindowLabel,
       totalEvents: events.length,
       totalActivities: totalActivities,
       uniquePartners: personCounts.length,
@@ -489,10 +481,8 @@ class AnalysisCalculator {
     EventState providerState,
     DateTime? startDate,
     DateTime? endDate,
-    String timeWindowLabel,
   ) {
     return AnalysisData(
-      timeWindowLabel: timeWindowLabel,
       totalEvents: 0,
       totalActivities: 0,
       uniquePartners: 0,

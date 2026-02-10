@@ -12,6 +12,24 @@ import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
 import 'package:logging/logging.dart';
 
+// InheritedWidget to provide navigation callback
+class NavigationHelper extends InheritedWidget {
+  final void Function(String partnerId) navigateToSearchWithPartner;
+
+  const NavigationHelper({
+    super.key,
+    required this.navigateToSearchWithPartner,
+    required super.child,
+  });
+
+  static NavigationHelper? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<NavigationHelper>();
+  }
+
+  @override
+  bool updateShouldNotify(NavigationHelper oldWidget) => false;
+}
+
 void main() {
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
@@ -64,6 +82,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
+  final GlobalKey<SearchPageState> _searchPageKey =
+      GlobalKey<SearchPageState>();
 
   @override
   void initState() {
@@ -74,61 +94,83 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Method to navigate to search page with partner filter
+  void navigateToSearchWithPartner(String partnerId) {
+    setState(() {
+      currentPageIndex = 1; // Search page index
+    });
+    // Wait for the page to build, then set the filter
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchPageKey.currentState?.setPartnerFilter(partnerId);
+    });
+  }
+
+  @override
   build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      floatingActionButton: _buildFloatingActionButton(),
-      bottomNavigationBar: BottomNavBar(currentPageIndex, (index) {
-        setState(() {
-          currentPageIndex = index;
-        });
-      }),
-      body: FutureBuilder<String>(
-        future: context.read<SexualEventsProvider>().ready,
-        builder: (ctx, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return NavigationHelper(
+      navigateToSearchWithPartner: navigateToSearchWithPartner,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title),
+        ),
+        body: FutureBuilder<String>(
+          future: context.read<SexualEventsProvider>().ready,
+          builder: (ctx, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Error initializing app',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      '${snapshot.error}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Error initializing app',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        '${snapshot.error}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-          return IndexedStack(
-            index: currentPageIndex,
-            children: const [
-              EventViewPage(),
-              SearchPage(),
-              AnalysisPage(),
-              PersonListPage(),
-              SettingsPage(),
-            ],
-          );
-        },
+            return IndexedStack(
+              index: currentPageIndex,
+              children: [
+                const EventViewPage(),
+                SearchPage(key: _searchPageKey),
+                const AnalysisPage(),
+                const PersonListPage(),
+                const SettingsPage(),
+              ],
+            );
+          },
+        ),
+        bottomNavigationBar: BottomNavBar(currentPageIndex, (int index) {
+          setState(() {
+            currentPageIndex = index;
+          });
+        }),
+        floatingActionButton: _buildFloatingActionButton(),
       ),
     );
   }

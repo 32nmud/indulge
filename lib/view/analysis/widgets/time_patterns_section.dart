@@ -28,18 +28,7 @@ class TimePatternsSection extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              data.timeWindowLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Average events per day of week',
+              'Most active days and hours',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

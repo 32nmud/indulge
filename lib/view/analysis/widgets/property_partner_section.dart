@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:indulge/data/models.dart';
 import '../models/analysis_data.dart';
 import 'common/expandable_activity_card.dart';
 
@@ -40,17 +39,6 @@ class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text(
-              widget.data.timeWindowLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 8),
             Text(
               'Number of unique partners per activity and property',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

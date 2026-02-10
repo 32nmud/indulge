@@ -44,13 +44,6 @@ class _PropertiesByActivitySectionState
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Text(
-              widget.data.timeWindowLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
             const SizedBox(height: 16),
             ...sortedActivities.map((entry) {
               final activityTypeId = entry.key;

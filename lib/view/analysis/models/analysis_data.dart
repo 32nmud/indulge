@@ -2,9 +2,6 @@ import 'package:indulge/data/models.dart';
 
 /// Holds all computed analysis statistics
 class AnalysisData {
-  // Time window label
-  final String timeWindowLabel;
-
   // Basic counts
   final int totalEvents;
   final int totalActivities;
@@ -96,7 +93,6 @@ class AnalysisData {
   final List<SexualEvent> events;
 
   const AnalysisData({
-    this.timeWindowLabel = 'Last 12 months',
     required this.totalEvents,
     required this.totalActivities,
     required this.uniquePartners,

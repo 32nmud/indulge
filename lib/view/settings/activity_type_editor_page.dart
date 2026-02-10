@@ -325,7 +325,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,

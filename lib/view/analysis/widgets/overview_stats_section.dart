@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
+import 'marquee_text.dart';
 
 class OverviewStatsSection extends StatelessWidget {
   final AnalysisData data;
@@ -9,9 +10,6 @@ class OverviewStatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine if we're viewing "Last 12 Months" to show month-specific stats
-    final isLast12Months = data.timeWindowLabel == 'Last 12 Months';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -36,7 +34,6 @@ class OverviewStatsSection extends StatelessWidget {
                   label: 'Total Events',
                   value: data.totalEvents.toString(),
                   color: Colors.blue,
-                  subtitle: data.timeWindowLabel,
                 ),
               ),
               const SizedBox(width: 12),
@@ -46,41 +43,38 @@ class OverviewStatsSection extends StatelessWidget {
                   label: 'Unique Partners',
                   value: data.uniquePartners.toString(),
                   color: Colors.purple,
-                  subtitle: data.timeWindowLabel,
                 ),
               ),
             ],
           ),
         ),
 
-        // Row 2: Events/Partners this month & year (only for Last 12 Months)
-        if (isLast12Months) ...[
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.calendar_today,
-                    label: 'Events This Month',
-                    value: data.eventsThisMonth.toString(),
-                    color: Colors.indigo,
-                  ),
+        // Row 2: Events/Partners this month & year
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.calendar_today,
+                  label: 'Events This Month',
+                  value: data.eventsThisMonth.toString(),
+                  color: Colors.indigo,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.groups,
-                    label: 'Partners This Month',
-                    value: data.uniquePartnersThisMonth.toString(),
-                    color: Colors.deepPurple,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.groups,
+                  label: 'Partners This Month',
+                  value: data.uniquePartnersThisMonth.toString(),
+                  color: Colors.deepPurple,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
         const SizedBox(height: 12),
 
         // Row 3: Current Streak & Longest Streak
@@ -94,8 +88,7 @@ class OverviewStatsSection extends StatelessWidget {
                   label: 'Current Streak',
                   value: data.currentStreak.toString(),
                   color: Theme.of(context).colorScheme.tertiary,
-                  subtitle:
-                      '${data.currentStreak} day${data.currentStreak != 1 ? 's' : ''}',
+                  subtitle: data.currentStreak != 1 ? 'days' : 'day',
                 ),
               ),
               const SizedBox(width: 12),
@@ -105,8 +98,7 @@ class OverviewStatsSection extends StatelessWidget {
                   label: 'Longest Streak',
                   value: data.longestStreak.toString(),
                   color: Theme.of(context).colorScheme.secondary,
-                  subtitle:
-                      '${data.longestStreak} day${data.longestStreak != 1 ? 's' : ''}',
+                  subtitle: data.longestStreak != 1 ? 'days' : 'day',
                 ),
               ),
             ],
@@ -143,9 +135,7 @@ class OverviewStatsSection extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        isLast12Months
-                            ? 'Event Types (Last 12 Months)'
-                            : 'Event Types',
+                        'Event Types',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -211,9 +201,7 @@ class OverviewStatsSection extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          isLast12Months
-                              ? 'Records (Last 12 Months)'
-                              : 'Records',
+                          'Records',
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
@@ -419,14 +407,12 @@ class _StatCard extends StatelessWidget {
                 Icon(icon, color: color, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    label,
+                  child: MarqueeText(
+                    text: label,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 11,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

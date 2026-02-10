@@ -62,7 +62,7 @@ class SexualEventRepository {
       GROUP BY DATE(date);
     ''';
     final List<Map<String, Object?>> results = await _db.rawQuery(sql);
-    Map<DateTime, int> normalizedResults = Map();
+    Map<DateTime, int> normalizedResults = {};
     for (final row in results) {
       DateTime? date = DateTime.tryParse(row['date_only'] as String? ?? '');
       int? count = row['count'] as int? ?? 0;

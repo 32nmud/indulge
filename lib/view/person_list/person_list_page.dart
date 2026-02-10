@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
 import 'package:logging/logging.dart';
+import 'package:indulge/main.dart';
 
 class PersonListPage extends StatefulWidget {
   const PersonListPage({super.key});
@@ -240,88 +241,154 @@ class _PersonListPageState extends State<PersonListPage>
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       color: isSelf ? Theme.of(context).colorScheme.primaryContainer : null,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: isSelf
-              ? Theme.of(context).colorScheme.primary
-              : null,
-          child: Icon(
-            isSelf ? Icons.account_circle : Icons.person,
-            color: isSelf ? Theme.of(context).colorScheme.onPrimary : null,
-          ),
-        ),
-        title: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              displayName,
-              style: TextStyle(
-                fontWeight: isSelf ? FontWeight.bold : FontWeight.normal,
-              ),
+            // First row: Avatar, Name, Badge
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: isSelf
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                  child: Icon(
+                    isSelf ? Icons.account_circle : Icons.person,
+                    color: isSelf
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              displayName,
+                              style: TextStyle(
+                                fontWeight: isSelf
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 16,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isSelf) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Me',
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Event count badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.event,
+                        size: 16,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSecondaryContainer,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$eventCount',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            if (isSelf) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(4),
+            const SizedBox(height: 8),
+            // Second row: Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  icon: const Icon(Icons.search, size: 18),
+                  label: const Text('Search'),
+                  onPressed: () {
+                    NavigationHelper.of(
+                      context,
+                    )?.navigateToSearchWithPartner(person.id);
+                  },
                 ),
-                child: Text(
-                  'Me',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Edit'),
+                  onPressed: () => _navigateToEditor(person: person),
                 ),
-              ),
-            ],
-          ],
-        ),
-        subtitle: subtitle != null ? Text(subtitle) : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Event count badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.event,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$eventCount',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                if (!isSelf) ...[
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: const Text('Delete'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
                     ),
+                    onPressed: () => _deletePerson(person),
                   ),
                 ],
-              ),
+              ],
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _navigateToEditor(person: person),
-              tooltip: 'Edit',
-            ),
-            if (!isSelf)
-              IconButton(
-                icon: const Icon(Icons.delete),
-                color: Colors.red,
-                onPressed: () => _deletePerson(person),
-                tooltip: 'Delete',
-              ),
           ],
         ),
       ),

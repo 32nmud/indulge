@@ -563,7 +563,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                     ),
                   );
                 })
-                .toList(),
+                ,
             const Divider(),
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'CREATE_NEW'),
@@ -815,7 +815,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
         else
           ..._workingEvent.activities.asMap().entries.map((entry) {
             return _buildActivityCard(entry.key, entry.value);
-          }).toList(),
+          }),
       ],
     );
   }
@@ -980,7 +980,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                         activity,
                         property,
                       );
-                    }).toList(),
+                    }),
                   ],
                 ],
               ),
@@ -1302,7 +1302,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                         ],
                       );
                     })
-                    .toList(),
+                    ,
               ],
             ),
           ],

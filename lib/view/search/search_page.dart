@@ -5,14 +5,25 @@ import 'package:indulge/data/models.dart';
 import 'package:indulge/view/common/event_card/event_card.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final Set<String>? initialPartnerIds;
+
+  const SearchPage({super.key, this.initialPartnerIds});
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  State<SearchPage> createState() => SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage>
+// Public state class so it can be referenced via GlobalKey
+class SearchPageState extends State<SearchPage>
     with AutomaticKeepAliveClientMixin {
+  // Public method to set partner filter from outside
+  void setPartnerFilter(String partnerId) {
+    setState(() {
+      _selectedPartnerIds = {partnerId};
+    });
+    _performSearch();
+  }
+
   List<SexualEvent> _searchResults = [];
   List<SexualEvent> _displayedResults = [];
   bool _isSearching = false;
@@ -38,6 +49,10 @@ class _SearchPageState extends State<SearchPage>
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Set initial partner filter if provided
+    if (widget.initialPartnerIds != null) {
+      _selectedPartnerIds = widget.initialPartnerIds!;
+    }
     // Listen to provider changes to reload search results
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SexualEventsProvider>().addListener(_onProviderChange);
