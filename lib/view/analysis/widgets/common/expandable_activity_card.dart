@@ -116,10 +116,10 @@ class ExpandableActivityCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...activityCountsMap.entries.map((propEntry) {
-                      final propertyId = propEntry.key;
-                      final count = propEntry.value;
-                      final property = availableActivities[propertyId];
+                    ...activityCountsMap.entries.map((activityEntry) {
+                      final activityId = activityEntry.key;
+                      final count = activityEntry.value;
+                      final activity = availableActivities[activityId];
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -128,7 +128,7 @@ class ExpandableActivityCard extends StatelessWidget {
                             // Risky indicator
                             SizedBox(
                               width: 20,
-                              child: property?.isRisky ?? false
+                              child: activity?.isRisky ?? false
                                   ? Icon(
                                       Icons.warning_amber_rounded,
                                       size: 16,
@@ -142,7 +142,7 @@ class ExpandableActivityCard extends StatelessWidget {
                             // Property name
                             Expanded(
                               child: Text(
-                                property?.name ?? 'Unknown',
+                                activity?.name ?? 'Unknown',
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(fontWeight: FontWeight.w500),
                               ),
