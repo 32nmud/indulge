@@ -347,6 +347,10 @@ class SexualEventsProvider extends ChangeNotifier {
     return await _repository.isActivityCategoryUsed(activityCategoryId);
   }
 
+  Future<int> getUsageCountForCategory(String id) async {
+    return await _repository.getEventCountForActivityCategory(id);
+  }
+
   Future<void> saveSexualActivity(SexualActivity activity) async {
     await _repository.saveSexualActivity(activity);
 
@@ -373,6 +377,10 @@ class SexualEventsProvider extends ChangeNotifier {
 
   Future<bool> isSexualActivityUsed(String activityId) async {
     return await _repository.isSexualActivityUsed(activityId);
+  }
+
+  Future<int> getUsageCountForActivity(String id) async {
+    return await _repository.getEventCountForSexualActivity(id);
   }
 
   /* ########################

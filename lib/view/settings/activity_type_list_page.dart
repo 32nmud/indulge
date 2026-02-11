@@ -135,8 +135,8 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
   ) async {
     final provider = context.read<SexualEventsProvider>();
 
-    // Check if this activity category is used in any events
-    final isUsed = await provider.isActivityCategoryUsed(activityCategory.id);
+    // Check usage count
+    final count = await provider.getUsageCountForCategory(activityCategory.id);
 
     if (!mounted) return;
 
@@ -145,8 +145,8 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Category?'),
         content: Text(
-          isUsed
-              ? 'This category is used in existing events. Deleting it will remove it from all events. This action cannot be undone.'
+          count > 0
+              ? 'This category is used in $count existing event${count == 1 ? '' : 's'}. Deleting it will remove it from all of them. This action cannot be undone.'
               : 'Are you sure you want to delete "${activityCategory.name}"?',
         ),
         actions: [

@@ -3,102 +3,57 @@ import 'package:sqflite/sqflite.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:logging/logging.dart';
+import 'package:archive/archive.dart';
 
 class DatabaseSeed {
   final Database db;
   final Logger _logger = Logger('DatabaseSeed');
-
-  final Map<String, String> seedFiles = {
-    "sexualActivityCategory":
-        "assets/sql/seed_data/sexual_activity_categories.json",
-    "sexualActivity": "assets/sql/seed_data/sexual_activities.json",
-    "person": "assets/sql/seed_data/persons.json",
-  };
-
-  final Map<String, String> tableMap = {
-    "sexualActivityCategory": "sexual_activity_type",
-    "sexualActivity": "sexual_activity_type_property",
-    "sexualEvent": "sexual_event",
-    "location": "location",
-    "person": "person",
-  };
-
-  final Map<String, dynamic> modelMap = {
-    "sexualActivityCategory": SexualActivityCategory,
-    "sexualActivity": SexualActivity,
-    "sexualEvent": SexualEvent,
-    "location": Location,
-    "person": Person,
-  };
+  final String seedZipPath = 'assets/seed.zip';
 
   DatabaseSeed({required this.db});
 
-  /// Load the production seed file(s)
+  /// Load the seed zip file and import data
   Future<void> loadSeeds() async {
-    await _loadSeedsFromMap(seedFiles);
-  }
+    try {
+      final byteData = await rootBundle.load(seedZipPath);
+      final bytes = byteData.buffer.asUint8List();
+      final archive = ZipDecoder().decodeBytes(bytes);
 
-  /// Internal method to load seeds from a file map
-  Future<void> _loadSeedsFromMap(Map<String, String> files) async {
-    for (final entry in files.entries) {
-      final key = entry.key;
-      final filePath = entry.value;
+      await db.transaction((txn) async {
+        for (final file in archive) {
+          if (!file.isFile) continue;
+          if (!file.name.endsWith('.json')) continue;
 
-      try {
-        await _loadAndSeedFile(key, filePath);
-      } catch (e) {
-        _logger.severe('Error loading seed file $filePath: $e');
-        rethrow;
-      }
-    }
-  }
+          final content = utf8.decode(file.content as List<int>);
+          final json = jsonDecode(content) as Map<String, dynamic>;
 
-  /// Load a single seed file and insert into database
-  Future<void> _loadAndSeedFile(String key, String filePath) async {
-    // Load the JSON file from assets
-    final jsonString = await rootBundle.loadString(filePath);
-    final json = jsonDecode(jsonString);
-
-    // Extract the resources array
-    final resources = json['resources'] as List<dynamic>? ?? [];
-
-    if (resources.isEmpty) {
-      _logger.info('No resources found in $filePath');
-      return;
-    }
-
-    // Get the table name and model class
-    final tableName = tableMap[key];
-    if (tableName == null) {
-      throw Exception('No table mapping found for key: $key');
-    }
-
-    // Process each resource based on the key type
-    await db.transaction((txn) async {
-      for (Map<String, dynamic> resourceData in resources) {
-        switch (key) {
-          case "sexualActivityCategory":
-            await _seedSexualActivityCategory(txn, tableName, resourceData);
-            break;
-          case "sexualActivity":
-            await _seedSexualActivity(txn, tableName, resourceData);
-            break;
-          case "sexualEvent":
-            await _seedSexualEvent(txn, tableName, resourceData);
-            break;
-          case "location":
-            await _seedLocation(txn, tableName, resourceData);
-            break;
-          case "person":
-            await _seedPerson(txn, tableName, resourceData);
-            break;
-          default:
-            throw Exception('Unknown seed key: $key');
+          if (file.name.contains('categories/')) {
+            await _seedSexualActivityCategory(
+              txn,
+              'sexual_activity_type',
+              json,
+            );
+          } else if (file.name.contains('activities/')) {
+            await _seedSexualActivity(
+              txn,
+              'sexual_activity_type_property',
+              json,
+            );
+          } else if (file.name.contains('persons/')) {
+            await _seedPerson(txn, 'person', json);
+          } else if (file.name.contains('sexual_events/')) {
+            await _seedSexualEvent(txn, 'sexual_event', json);
+          } else if (file.name.contains('locations/')) {
+            await _seedLocation(txn, 'location', json);
+          }
         }
-      }
-    });
+      });
 
-    _logger.info('Successfully seeded $key from $filePath');
+      _logger.info('Successfully seeded database from $seedZipPath');
+    } catch (e) {
+      _logger.severe('Error loading seed zip: $e');
+      rethrow;
+    }
   }
 
   /// Seed sexual activity categories with their activities

@@ -422,6 +422,72 @@ class AnalysisCalculator {
       });
     });
 
+    // Calculate co-occurrence pairs
+    final categoryPairCounts = <String, int>{};
+    final activityPairCounts = <String, int>{};
+
+    for (final event in sortedEvents) {
+      final eventCategoryIds = <String>{};
+      final eventActivityIds = <String>{};
+
+      for (final activity in event.activities) {
+        eventCategoryIds.add(activity.category.reference);
+        for (final participant in activity.participants) {
+          for (final activityCount in participant.activityCounts) {
+            eventActivityIds.add(activityCount.activityReference.reference);
+          }
+        }
+      }
+
+      // Categories
+      final categoryList = eventCategoryIds.toList()..sort();
+      for (int i = 0; i < categoryList.length; i++) {
+        for (int j = i + 1; j < categoryList.length; j++) {
+          final key = '${categoryList[i]}|${categoryList[j]}';
+          categoryPairCounts[key] = (categoryPairCounts[key] ?? 0) + 1;
+        }
+      }
+
+      // Sexual Activities
+      final activityList = eventActivityIds.toList()..sort();
+      for (int i = 0; i < activityList.length; i++) {
+        for (int j = i + 1; j < activityList.length; j++) {
+          final key = '${activityList[i]}|${activityList[j]}';
+          activityPairCounts[key] = (activityPairCounts[key] ?? 0) + 1;
+        }
+      }
+    }
+
+    final topCategoryPairs = categoryPairCounts.entries.map((e) {
+      final parts = e.key.split('|');
+      final id1 = parts[0];
+      final id2 = parts[1];
+      final name1 = activityCategories[id1]?.name ?? 'Unknown';
+      final name2 = activityCategories[id2]?.name ?? 'Unknown';
+      return CoOccurrencePair(
+        id1: id1,
+        id2: id2,
+        name1: name1,
+        name2: name2,
+        count: e.value,
+      );
+    }).toList()..sort((a, b) => b.count.compareTo(a.count));
+
+    final topActivityPairs = activityPairCounts.entries.map((e) {
+      final parts = e.key.split('|');
+      final id1 = parts[0];
+      final id2 = parts[1];
+      final name1 = sexualActivities[id1]?.name ?? 'Unknown';
+      final name2 = sexualActivities[id2]?.name ?? 'Unknown';
+      return CoOccurrencePair(
+        id1: id1,
+        id2: id2,
+        name1: name1,
+        name2: name2,
+        count: e.value,
+      );
+    }).toList()..sort((a, b) => b.count.compareTo(a.count));
+
     // Days since last risky activity
     final daysSinceLastRiskyActivity = await _calculateDaysSinceLastRisky(
       sortedEvents,
@@ -483,6 +549,8 @@ class AnalysisCalculator {
       averageActivitiesPerEvent: averageActivitiesPerEvent,
       averageSexualActivitiesPerEvent: averageSexualActivitiesPerEvent,
       averageEventsPerDayOfWeek: averageEventsPerDayOfWeekMap,
+      topActivityPairs: topActivityPairs,
+      topCategoryPairs: topCategoryPairs,
       startDate: startDate,
       endDate: endDate,
       events: events,
@@ -497,6 +565,8 @@ class AnalysisCalculator {
   ) {
     return AnalysisData(
       totalEvents: 0,
+      topActivityPairs: const [],
+      topCategoryPairs: const [],
       totalActivities: 0,
       uniquePartners: 0,
       riskyActivityCount: 0,

@@ -16,6 +16,10 @@ import 'widgets/event_averages_section.dart';
 import 'widgets/property_partner_section.dart';
 import 'widgets/cumulative_activities_chart.dart';
 import 'widgets/cumulative_properties_chart.dart';
+import 'widgets/calendar_heatmap.dart';
+import 'widgets/records_section.dart';
+import 'widgets/co_occurrence_section.dart';
+import '../common/navigation_helper.dart';
 
 enum TimeWindow { last12Months, allTime, specificYear }
 
@@ -541,6 +545,27 @@ class _AnalysisPageState extends State<AnalysisPage>
           showCurrentMonthStats: _timeWindow == TimeWindow.last12Months,
         ),
         const SizedBox(height: 16),
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: CalendarHeatmap(
+              dailyCounts: data.dailyCounts,
+              startDate:
+                  data.startDate ??
+                  DateTime.now().subtract(const Duration(days: 365)),
+              endDate: data.endDate ?? DateTime.now(),
+              onDaySelected: (date) {
+                NavigationHelper.of(context)?.navigateToSearch(
+                  dateRange: DateTimeRange(start: date, end: date),
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        RecordsSection(data: data),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -573,6 +598,8 @@ class _AnalysisPageState extends State<AnalysisPage>
           'Categories, activities, and averages',
         ),
         EventAveragesSection(data: data),
+        CoOccurrenceSection(data: data),
+        const SizedBox(height: 16),
         ActivityTypeDistribution(data: data),
         PropertiesByActivitySection(data: data),
         const SizedBox(height: 16),

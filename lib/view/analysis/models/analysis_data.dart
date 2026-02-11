@@ -85,6 +85,10 @@ class AnalysisData {
   // Time patterns
   final Map<int, double> averageEventsPerDayOfWeek; // 1-7 -> average events
 
+  // Co-occurrence
+  final List<CoOccurrencePair> topActivityPairs;
+  final List<CoOccurrencePair> topCategoryPairs;
+
   // Date range
   final DateTime? startDate;
   final DateTime? endDate;
@@ -141,6 +145,8 @@ class AnalysisData {
     required this.averageActivitiesPerEvent,
     required this.averageSexualActivitiesPerEvent,
     required this.averageEventsPerDayOfWeek,
+    required this.topActivityPairs,
+    required this.topCategoryPairs,
     this.startDate,
     this.endDate,
     required this.events,
@@ -179,4 +185,20 @@ class PeriodComparison {
       isIncrease: current > previous,
     );
   }
+}
+
+class CoOccurrencePair {
+  final String id1;
+  final String id2;
+  final String name1;
+  final String name2;
+  final int count;
+
+  const CoOccurrencePair({
+    required this.id1,
+    required this.id2,
+    required this.name1,
+    required this.name2,
+    required this.count,
+  });
 }

@@ -355,7 +355,49 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     });
   }
 
-  void _removeActivity(int index) {
+  Future<void> _removeActivity(int index) async {
+    final activityRow = _activities[index];
+    final id = activityRow.id;
+    final isExisting =
+        widget.activityCategory?.activities.any((ref) => ref.reference == id) ??
+        false;
+
+    if (isExisting) {
+      final provider = context.read<SexualEventsProvider>();
+      final count = await provider.getUsageCountForActivity(id);
+
+      if (!mounted) return;
+
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Delete Activity?'),
+          content: Text(
+            count > 0
+                ? 'This activity is used in $count existing event${count == 1 ? '' : 's'}. Deleting it will remove it from all of them.'
+                : 'Are you sure you want to delete this activity?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      await provider.deleteSexualActivity(id);
+    }
+
+    if (!mounted) return;
+
     setState(() {
       _activities[index].nameController.dispose();
       _activities[index].emojiController.dispose();

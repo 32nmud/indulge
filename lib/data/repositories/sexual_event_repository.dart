@@ -482,6 +482,21 @@ class SexualEventRepository {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Returns the number of events that use a specific activity category
+  Future<int> getEventCountForActivityCategory(String id) async {
+    final rows = await _db.query('sexual_event');
+    int count = 0;
+    for (final row in rows) {
+      final event = SexualEvent.fromJson(
+        jsonDecode(row['json'] as String) as Map<String, dynamic>,
+      );
+      if (event.activities.any((a) => a.category.reference == id)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   /// Deletes an activity category and removes it from all events
   Future<void> deleteActivityCategory(String id) async {
     _logger.info('Deleting activity category: $id');
@@ -546,6 +561,32 @@ class SexualEventRepository {
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  /// Returns the number of events that use a specific sexual activity
+  Future<int> getEventCountForSexualActivity(String id) async {
+    final rows = await _db.query('sexual_event');
+    int count = 0;
+    for (final row in rows) {
+      final event = SexualEvent.fromJson(
+        jsonDecode(row['json'] as String) as Map<String, dynamic>,
+      );
+
+      bool found = false;
+      for (final activity in event.activities) {
+        for (final participant in activity.participants) {
+          if (participant.activityCounts.any(
+            (ac) => ac.activityReference.reference == id,
+          )) {
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (found) count++;
+    }
+    return count;
   }
 
   /// Deletes a sexual activity and removes it from all activity categories
