@@ -27,6 +27,27 @@ class SexualEventsProvider extends ChangeNotifier {
     return "ready!";
   }
 
+  /// Reloads all data from the repository and updates the state.
+  /// Useful after bulk operations like import.
+  Future<void> refreshAllData() async {
+    final counts = await _repository.getDailyEventCount();
+    final categories = await _loadSexualActivityCategories();
+    final activities = await _loadSexualActivities();
+    final myself = await _repository.getMyself();
+
+    _state = _state.copyWith(
+      dailyEventCount: counts,
+      sexualActivityCategories: categories,
+      sexualActivities: activities,
+      myself: myself,
+    );
+
+    // Also reload events for the currently selected date
+    await _loadEventsForDate(_state.selectedDate);
+
+    notifyListeners();
+  }
+
   Future<String> get ready => _ready;
 
   EventState get state => _state;

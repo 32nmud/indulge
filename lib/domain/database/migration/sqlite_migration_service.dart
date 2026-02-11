@@ -80,8 +80,24 @@ class SQLiteMigrationService {
       );
 
       if (result.isEmpty) {
-        _logger.info('No schema_version found, migration needed');
-        return true;
+        // No schema version found.
+        // Check if this is a legacy V1 database (has person table)
+        // or a new empty database.
+        final tables = await database.query(
+          'sqlite_master',
+          where: 'type = ? AND name = ?',
+          whereArgs: ['table', 'person'],
+        );
+
+        if (tables.isNotEmpty) {
+          _logger.info(
+            'No schema_version found but person table exists, migration needed (V1 DB)',
+          );
+          return true;
+        }
+
+        _logger.info('No schema_version and no person table, new DB');
+        return false;
       }
 
       final currentVersion = int.parse(result.first['value'] as String);

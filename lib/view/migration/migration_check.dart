@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -121,6 +122,13 @@ class _MigrationCheckState extends State<MigrationCheck> {
   Future<bool> _checkMigration() async {
     try {
       final dbPath = join(await getDatabasesPath(), 'indulge.db');
+
+      // If database file doesn't exist, it's a new install
+      // Let onCreate handle the initialization
+      if (!await File(dbPath).exists()) {
+        return false;
+      }
+
       final db = await openDatabase(dbPath);
       final needsMigration = await DatabaseEngine.needsMigration(db, dbPath);
       return needsMigration;

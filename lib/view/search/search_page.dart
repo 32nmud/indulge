@@ -52,11 +52,12 @@ class SearchPageState extends State<SearchPage>
     super.initState();
     if (widget.initialPartnerIds != null) {
       _selectedPartnerIds.addAll(widget.initialPartnerIds!);
-      // Auto-search if initial filters provided
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _performSearch();
-      });
     }
+
+    // Auto-search on load to show all events initially
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _performSearch();
+    });
 
     _scrollController.addListener(_onScroll);
 
@@ -76,8 +77,9 @@ class SearchPageState extends State<SearchPage>
   }
 
   void _onProviderChange() {
-    if (_hasSearched) {
-      _performSearch();
+    if (mounted) {
+      // Schedule the search to ensure it doesn't conflict with current build/notify cycle
+      Future.microtask(() => _performSearch());
     }
   }
 

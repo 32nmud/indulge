@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/theme_provider.dart';
+import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
 
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
+import 'package:indulge/services/backup_service.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
-import 'dart:io';
+import 'dart:async';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -167,8 +167,6 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _exportData(BuildContext context) async {
     try {
-      final messenger = ScaffoldMessenger.of(context);
-
       // Show loading indicator
       showDialog(
         context: context,
@@ -177,63 +175,82 @@ class SettingsPage extends StatelessWidget {
       );
 
       final repo = await SexualEventRepository.create();
+      final backupService = BackupService(repo);
 
-      // Get all data
-      final events = await repo.getAllEvents();
-      final persons = await repo.getAllPersons();
-      final activityCategories = await repo.getAllSexualActivityCategories();
-      final activities = await repo.getAllSexualActivities();
-      final locations = await repo.getAllLocations();
-
-      final exportData = {
-        'version': '1.0.0',
-        'exportDate': DateTime.now().toIso8601String(),
-        'data': {
-          'events': events.map((e) => e.toJson()).toList(),
-          'persons': persons.map((p) => p.toJson()).toList(),
-          'activityCategories': activityCategories
-              .map((t) => t.toJson())
-              .toList(),
-          'activities': activities.map((p) => p.toJson()).toList(),
-          'locations': locations.map((l) => l.toJson()).toList(),
-        },
-      };
-
-      // Save to file
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      final file = File('${directory.path}/indulge_export_$timestamp.json');
-      await file.writeAsString(jsonEncode(exportData));
+      await backupService.exportData();
 
       // Close loading dialog
       if (context.mounted) Navigator.of(context).pop();
-
-      // Show success message
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Data exported to: ${file.path}'),
-          duration: const Duration(seconds: 5),
-          action: SnackBarAction(label: 'OK', onPressed: () {}),
-        ),
-      );
     } catch (e) {
       // Close loading dialog if still open
       if (context.mounted) Navigator.of(context).pop();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   Future<void> _importData(BuildContext context) async {
-    // TODO: Implement file picker and import logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Import functionality coming soon')),
+    final streamController = StreamController<String>();
+
+    // Show progress dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Importing Data'),
+        content: StreamBuilder<String>(
+          stream: streamController.stream,
+          initialData: 'Initializing import...',
+          builder: (context, snapshot) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(snapshot.data ?? 'Processing...'),
+              ],
+            );
+          },
+        ),
+      ),
     );
+
+    try {
+      final repo = await SexualEventRepository.create();
+      final backupService = BackupService(repo);
+
+      await for (final update in backupService.importData()) {
+        streamController.add(update);
+      }
+
+      // Refresh the provider data
+      if (context.mounted) {
+        streamController.add('Refreshing app data...');
+        await context.read<SexualEventsProvider>().refreshAllData();
+      }
+
+      streamController.add('Import complete!');
+
+      // Allow user to see "Complete" message briefly
+      await Future.delayed(const Duration(seconds: 1));
+    } catch (e) {
+      streamController.add('Error: $e');
+      // Keep dialog open for a bit so user sees error
+      await Future.delayed(const Duration(seconds: 3));
+    } finally {
+      await streamController.close();
+      // Close dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   Future<void> _confirmResetDatabase(BuildContext context) async {
