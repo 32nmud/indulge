@@ -555,9 +555,9 @@ class _AnalysisPageState extends State<AnalysisPage>
           'Charts and patterns over time',
         ),
         MonthlyActivityChart(data: data),
+        TimePatternsSection(data: data),
         CumulativeActivitiesChart(data: data),
         CumulativePropertiesChart(data: data),
-        TimePatternsSection(data: data),
         const SizedBox(height: 16),
       ],
     );

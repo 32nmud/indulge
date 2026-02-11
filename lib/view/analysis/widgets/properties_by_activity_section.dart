@@ -5,6 +5,7 @@ import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/data/models.dart';
 import '../models/analysis_data.dart';
 import 'common/expandable_activity_card.dart';
+import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 
 class PropertiesByActivitySection extends StatefulWidget {
   final AnalysisData data;
@@ -20,6 +21,7 @@ class _PropertiesByActivitySectionState
     extends State<PropertiesByActivitySection> {
   final Logger _logger = Logger('PropertiesByActivitySection');
   final Set<String> _expandedActivities = {};
+  Set<String> _selectedCategoryIds = {};
 
   @override
   Widget build(BuildContext context) {
@@ -38,60 +40,84 @@ class _PropertiesByActivitySectionState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Activities by Category',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Activities by Category',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _selectedCategoryIds.isEmpty
+                        ? Icons.filter_list
+                        : Icons.filter_list_alt,
+                    color: _selectedCategoryIds.isNotEmpty
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  onPressed: _showCategoryFilter,
+                  tooltip: 'Filter categories',
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            ...sortedActivities.map((entry) {
-              final activityTypeId = entry.key;
-              final activityCount = entry.value;
-              final activityCategory =
-                  widget.data.activityCategories[activityTypeId];
-              final isExpanded = _expandedActivities.contains(activityTypeId);
+            ...sortedActivities
+                .where((entry) {
+                  if (_selectedCategoryIds.isEmpty) return true;
+                  return _selectedCategoryIds.contains(entry.key);
+                })
+                .map((entry) {
+                  final activityTypeId = entry.key;
+                  final activityCount = entry.value;
+                  final activityCategory =
+                      widget.data.activityCategories[activityTypeId];
+                  final isExpanded = _expandedActivities.contains(
+                    activityTypeId,
+                  );
 
-              // Get properties for this activity type from the events
-              final activityProperties = _getPropertiesForActivity(
-                activityTypeId,
-              );
+                  // Get properties for this activity type from the events
+                  final activityProperties = _getPropertiesForActivity(
+                    activityTypeId,
+                  );
 
-              _logger.info(
-                'Activity ${activityCategory?.name} ($activityTypeId): found ${activityProperties.length} properties',
-              );
+                  _logger.info(
+                    'Activity ${activityCategory?.name} ($activityTypeId): found ${activityProperties.length} properties',
+                  );
 
-              // Get enriched properties (from data and provider)
-              final enrichedProperties = _getEnrichedProperties(
-                activityProperties.keys.toSet(),
-              );
+                  // Get enriched properties (from data and provider)
+                  final enrichedProperties = _getEnrichedProperties(
+                    activityProperties.keys.toSet(),
+                  );
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: ExpandableActivityCard(
-                  title: activityCategory?.name ?? 'Unknown',
-                  emoji: activityCategory?.displayCharacter,
-                  subtitle:
-                      '$activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
-                  badgeCount: activityProperties.length,
-                  badgeLabel: activityProperties.length == 1
-                      ? 'activity'
-                      : 'activities',
-                  isExpanded: isExpanded,
-                  onTap: () {
-                    setState(() {
-                      if (isExpanded) {
-                        _expandedActivities.remove(activityTypeId);
-                      } else {
-                        _expandedActivities.add(activityTypeId);
-                      }
-                    });
-                  },
-                  activityCountsMap: activityProperties,
-                  availableActivities: enrichedProperties,
-                ),
-              );
-            }),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: ExpandableActivityCard(
+                      title: activityCategory?.name ?? 'Unknown',
+                      emoji: activityCategory?.displayCharacter,
+                      subtitle:
+                          '$activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
+                      badgeCount: activityProperties.length,
+                      badgeLabel: activityProperties.length == 1
+                          ? 'activity'
+                          : 'activities',
+                      isExpanded: isExpanded,
+                      onTap: () {
+                        setState(() {
+                          if (isExpanded) {
+                            _expandedActivities.remove(activityTypeId);
+                          } else {
+                            _expandedActivities.add(activityTypeId);
+                          }
+                        });
+                      },
+                      activityCountsMap: activityProperties,
+                      availableActivities: enrichedProperties,
+                    ),
+                  );
+                }),
           ],
         ),
       ),
@@ -171,5 +197,23 @@ class _PropertiesByActivitySectionState
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Map.fromEntries(sortedEntries);
+  }
+
+  Future<void> _showCategoryFilter() async {
+    final categories = widget.data.activityCategories.values.toList();
+
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => CategoryFilterDialog(
+        categories: categories,
+        selectedIds: _selectedCategoryIds,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedCategoryIds = result;
+      });
+    }
   }
 }

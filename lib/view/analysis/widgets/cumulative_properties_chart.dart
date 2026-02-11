@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:indulge/data/models.dart';
+import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 import '../models/analysis_data.dart';
 
 class CumulativePropertiesChart extends StatefulWidget {
@@ -13,11 +15,15 @@ class CumulativePropertiesChart extends StatefulWidget {
       _CumulativePropertiesChartState();
 }
 
-class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
+class _CumulativePropertiesChartState extends State<CumulativePropertiesChart>
+    with AutomaticKeepAliveClientMixin {
   String? _selectedActivity;
   Set<String> _selectedProperties = {};
   static const int _maxLines = 5;
   bool _isCumulative = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -26,53 +32,16 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
   }
 
   void _initializeSelection() {
-    // Get the most common activity
-    if (widget.data.activityCounts.isNotEmpty) {
-      final sortedActivities = widget.data.activityCounts.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-      _selectedActivity = sortedActivities.first.key;
-      _updateTopProperties();
-    }
+    // Do not auto-select any activity
   }
 
   void _updateTopProperties() {
-    if (_selectedActivity == null) {
-      _selectedProperties = {};
-      return;
-    }
-
-    // Get properties used with this activity
-    final propertyCountsForActivity = <String, int>{};
-
-    for (final event in widget.data.events) {
-      for (final activity in event.activities) {
-        if (activity.category.reference == _selectedActivity) {
-          for (final participant in activity.participants) {
-            for (final activityCount in participant.activityCounts) {
-              final activityId = activityCount.activityReference.reference;
-              if (activityId.isNotEmpty) {
-                propertyCountsForActivity[activityId] =
-                    (propertyCountsForActivity[activityId] ?? 0) +
-                    activityCount.count;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Select top 5 properties
-    final sortedProperties = propertyCountsForActivity.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    _selectedProperties = sortedProperties
-        .take(_maxLines)
-        .map((e) => e.key)
-        .toSet();
+    _selectedProperties = {};
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (widget.data.events.isEmpty || widget.data.activityCounts.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -108,13 +77,13 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
             if (_selectedActivity != null) ...[
               const SizedBox(height: 12),
               _buildPropertySelector(),
-              if (_selectedProperties.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _buildLegend(),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(height: 300, child: _buildChart(context)),
             ],
+            if (_selectedProperties.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildLegend(),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(height: 300, child: _buildChart(context)),
           ],
         ),
       ),
@@ -122,46 +91,69 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
   }
 
   Widget _buildActivitySelector() {
-    final sortedActivities = widget.data.activityCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final activityName = _selectedActivity != null
+        ? widget.data.activityCategories[_selectedActivity]?.name ?? 'Unknown'
+        : 'None';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Select Activity:',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Activity Category',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                activityName,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: sortedActivities.take(10).map((entry) {
-            final activityId = entry.key;
-            final activityCategory = widget.data.activityCategories[activityId];
-            final displayName = activityCategory?.name ?? 'Unknown';
-            final isSelected = _selectedActivity == activityId;
-
-            return ChoiceChip(
-              label: Text(displayName),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() {
-                    _selectedActivity = activityId;
-                    _updateTopProperties();
-                  });
-                }
-              },
-              selectedColor: Theme.of(context).colorScheme.primaryContainer,
-            );
-          }).toList(),
+        OutlinedButton.icon(
+          onPressed: _showActivityFilter,
+          icon: const Icon(Icons.edit, size: 16),
+          label: const Text('Change'),
         ),
       ],
     );
+  }
+
+  Future<void> _showActivityFilter() async {
+    final categories = widget.data.activityCounts.keys
+        .map((id) => widget.data.activityCategories[id])
+        .whereType<SexualActivityCategory>()
+        .toList();
+
+    // Sort by count
+    categories.sort((a, b) {
+      final countA = widget.data.activityCounts[a.id] ?? 0;
+      final countB = widget.data.activityCounts[b.id] ?? 0;
+      return countB.compareTo(countA);
+    });
+
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => CategoryFilterDialog(
+        categories: categories,
+        selectedIds: _selectedActivity != null ? {_selectedActivity!} : {},
+        singleSelect: true,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedActivity = result.isNotEmpty ? result.first : null;
+        _updateTopProperties();
+      });
+    }
   }
 
   Widget _buildModeToggle() {
@@ -275,51 +267,59 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
       );
     }
 
-    final sortedProperties = propertyCountsForActivity.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'Select Activities (max $_maxLines):',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Specific Activities',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '${_selectedProperties.length} selected (max $_maxLines)',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: sortedProperties.take(15).map((entry) {
-            final propertyId = entry.key;
-            final activity = widget.data.sexualActivities[propertyId];
-            final displayName = activity?.name ?? 'Unknown';
-            final isSelected = _selectedProperties.contains(propertyId);
-
-            return FilterChip(
-              label: Text(displayName),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    if (_selectedProperties.length < _maxLines) {
-                      _selectedProperties.add(propertyId);
-                    }
-                  } else {
-                    _selectedProperties.remove(propertyId);
-                  }
-                });
-              },
-              selectedColor: Theme.of(context).colorScheme.secondaryContainer,
-              checkmarkColor: Theme.of(
-                context,
-              ).colorScheme.onSecondaryContainer,
-            );
-          }).toList(),
+        OutlinedButton.icon(
+          onPressed: () => _showPropertyFilter(
+            propertyCountsForActivity,
+            widget.data.sexualActivities,
+          ),
+          icon: const Icon(Icons.filter_list, size: 16),
+          label: const Text('Filter'),
         ),
       ],
     );
+  }
+
+  Future<void> _showPropertyFilter(
+    Map<String, int> counts,
+    Map<String, SexualActivity> activities,
+  ) async {
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => _PropertyFilterDialog(
+        counts: counts,
+        activities: activities,
+        selectedIds: _selectedProperties,
+        maxSelection: _maxLines,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedProperties = result;
+      });
+    }
   }
 
   Widget _buildChart(BuildContext context) {
@@ -327,7 +327,7 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
       return Center(
         child: Text(
           _selectedActivity == null
-              ? 'Select an activity to view properties'
+              ? 'Select a category to begin'
               : 'Select up to $_maxLines properties to display',
           style: TextStyle(
             color: Theme.of(
@@ -586,7 +586,6 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
 
       final propertyDates = propertyData.keys.toList()..sort();
       final propertyFirstDate = propertyDates.first;
-      final propertyLastDate = propertyDates.last;
 
       var currentDate = DateTime(
         globalFirstDate.year,
@@ -669,5 +668,91 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
     }
 
     return result;
+  }
+}
+
+class _PropertyFilterDialog extends StatefulWidget {
+  final Map<String, int> counts;
+  final Map<String, SexualActivity> activities;
+  final Set<String> selectedIds;
+  final int maxSelection;
+
+  const _PropertyFilterDialog({
+    required this.counts,
+    required this.activities,
+    required this.selectedIds,
+    required this.maxSelection,
+  });
+
+  @override
+  State<_PropertyFilterDialog> createState() => _PropertyFilterDialogState();
+}
+
+class _PropertyFilterDialogState extends State<_PropertyFilterDialog> {
+  late Set<String> _selectedIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = Set.from(widget.selectedIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedProperties = widget.counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return AlertDialog(
+      title: Text('Select Activities (max ${widget.maxSelection})'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView(
+          shrinkWrap: true,
+          children: sortedProperties.map((entry) {
+            final propertyId = entry.key;
+            final count = entry.value;
+            final activity = widget.activities[propertyId];
+            final isSelected = _selectedIds.contains(propertyId);
+            final displayName = activity?.name ?? 'Unknown';
+
+            return CheckboxListTile(
+              title: Text(displayName),
+              subtitle: Text('$count times'),
+              value: isSelected,
+              onChanged: (value) {
+                setState(() {
+                  if (value == true) {
+                    if (_selectedIds.length < widget.maxSelection) {
+                      _selectedIds.add(propertyId);
+                    }
+                  } else {
+                    _selectedIds.remove(propertyId);
+                  }
+                });
+              },
+              enabled: isSelected || _selectedIds.length < widget.maxSelection,
+            );
+          }).toList(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _selectedIds.clear();
+            });
+          },
+          child: const Text('Clear'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(_selectedIds),
+          child: const Text('Apply'),
+        ),
+      ],
+    );
   }
 }

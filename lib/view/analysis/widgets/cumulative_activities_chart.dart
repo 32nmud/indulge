@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:indulge/data/models.dart';
+import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 import '../models/analysis_data.dart';
 
 class CumulativeActivitiesChart extends StatefulWidget {
@@ -13,10 +15,14 @@ class CumulativeActivitiesChart extends StatefulWidget {
       _CumulativeActivitiesChartState();
 }
 
-class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
+class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart>
+    with AutomaticKeepAliveClientMixin {
   Set<String> _selectedActivities = {};
   static const int _maxLines = 5;
   bool _isCumulative = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -25,18 +31,12 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
   }
 
   void _initializeSelectedActivities() {
-    // Get top 5 activities by count
-    final sortedActivities = widget.data.activityCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    _selectedActivities = sortedActivities
-        .take(_maxLines)
-        .map((e) => e.key)
-        .toSet();
+    // Do not auto-select any activity
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (widget.data.events.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -82,37 +82,75 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
   }
 
   Widget _buildActivitySelector() {
-    final sortedActivities = widget.data.activityCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: sortedActivities.take(10).map((entry) {
-        final activityId = entry.key;
-        final activityCategory = widget.data.activityCategories[activityId];
-        final displayName = activityCategory?.name ?? 'Unknown';
-        final isSelected = _selectedActivities.contains(activityId);
-
-        return FilterChip(
-          label: Text(displayName),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                if (_selectedActivities.length < _maxLines) {
-                  _selectedActivities.add(activityId);
-                }
-              } else {
-                _selectedActivities.remove(activityId);
-              }
-            });
-          },
-          selectedColor: Theme.of(context).colorScheme.primaryContainer,
-          checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        );
-      }).toList(),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select Categories (max $_maxLines):',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '${_selectedActivities.length} selected',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        OutlinedButton.icon(
+          onPressed: _showCategoryFilter,
+          icon: const Icon(Icons.filter_list, size: 16),
+          label: const Text('Filter'),
+        ),
+      ],
     );
+  }
+
+  Future<void> _showCategoryFilter() async {
+    final categories = widget.data.activityCounts.keys
+        .map((id) => widget.data.activityCategories[id])
+        .whereType<SexualActivityCategory>()
+        .toList();
+
+    // Sort by count
+    categories.sort((a, b) {
+      final countA = widget.data.activityCounts[a.id] ?? 0;
+      final countB = widget.data.activityCounts[b.id] ?? 0;
+      return countB.compareTo(countA);
+    });
+
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => CategoryFilterDialog(
+        categories: categories,
+        selectedIds: _selectedActivities,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        if (result.length > _maxLines) {
+          _selectedActivities = result.take(_maxLines).toSet();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Maximum selection limit reached (5)'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else {
+          _selectedActivities = result;
+        }
+      });
+    }
   }
 
   Widget _buildModeToggle() {
@@ -196,7 +234,7 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
     if (_selectedActivities.isEmpty) {
       return Center(
         child: Text(
-          'Select up to $_maxLines activities to display',
+          'Select categories to begin',
           style: TextStyle(
             color: Theme.of(
               context,
@@ -453,7 +491,6 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
 
       final activityDates = activityData.keys.toList()..sort();
       final activityFirstDate = activityDates.first;
-      final activityLastDate = activityDates.last;
 
       var currentDate = DateTime(
         globalFirstDate.year,
