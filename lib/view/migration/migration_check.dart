@@ -99,6 +99,14 @@ class _MigrationCheckState extends State<MigrationCheck> {
               return MigrationScreen(
                 database: dbInfo['database'] as Database,
                 databasePath: dbInfo['path'] as String,
+                onComplete: () async {
+                  await (dbInfo['database'] as Database).close();
+                  if (mounted) {
+                    setState(() {
+                      _migrationCheckFuture = _checkMigration();
+                    });
+                  }
+                },
               );
             },
           );

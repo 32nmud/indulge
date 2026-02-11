@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
 import 'package:uuid/uuid.dart';
+import 'package:indulge/view/common/person_avatar.dart';
 import 'widgets/widgets.dart';
 import 'utils/event_validator.dart';
 
@@ -56,6 +57,12 @@ class _EventEditorPageState extends State<EventEditorPage> {
         );
       }
       _isLoading = false;
+    });
+  }
+
+  void _updateNotes(String notes) {
+    setState(() {
+      _workingEvent = _workingEvent.copyWith(notes: notes);
     });
   }
 
@@ -542,6 +549,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   _buildDateTimeSection(),
                   const SizedBox(height: 24),
                   _buildActivitiesSection(),
+                  const SizedBox(height: 24),
+                  _buildNotesSection(),
                 ],
               ),
             ),
@@ -550,6 +559,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   Widget _buildDateTimeSection() {
     return DateTimeSection(dateTime: _workingEvent.date, onTap: _pickDateTime);
+  }
+
+  Widget _buildNotesSection() {
+    return NotesSection(
+      initialNotes: _workingEvent.notes,
+      onNotesChanged: _updateNotes,
+    );
   }
 
   Widget _buildActivitiesSection() {
@@ -878,108 +894,86 @@ class _EventEditorPageState extends State<EventEditorPage> {
               children: [
                 // "Me" checkbox (only show if activity doesn't require partner)
                 if (myself != null && !activityRequiresPartner)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FilterChip(
-                        selected: meHasProperty,
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.account_circle, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              meHasProperty
-                                  ? 'Me (${meActivityCount.count})'
-                                  : 'Me',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (propertyRequiresPartner) ...[
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.lock,
-                                size: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ],
-                          ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PersonAvatar(
+                          person: myself,
+                          radius: 20,
+                          showName: true,
+                          isSelected: meHasProperty,
+                          count: meActivityCount.count > 0
+                              ? meActivityCount.count
+                              : null,
+                          onTap: meCheckboxEnabled
+                              ? () {
+                                  _toggleMyselfForProperty(
+                                    activityIndex,
+                                    sexualActivity.id,
+                                  );
+                                }
+                              : null,
                         ),
-                        onSelected: meCheckboxEnabled
-                            ? (bool selected) {
-                                _toggleMyselfForProperty(
+                        if (meHasProperty && meCheckboxEnabled) ...[
+                          const SizedBox(width: 4),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add_circle_outline,
+                                  size: 20,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () => _incrementPropertyCount(
                                   activityIndex,
                                   sexualActivity.id,
-                                );
-                              }
-                            : null,
-                        selectedColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        backgroundColor: meCheckboxEnabled
-                            ? null
-                            : Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                        checkmarkColor: Theme.of(context).colorScheme.primary,
-                      ),
-                      if (meHasProperty && meCheckboxEnabled) ...[
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove_circle_outline,
-                            size: 20,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => _decrementPropertyCount(
-                            activityIndex,
-                            sexualActivity.id,
-                            myself.id,
-                          ),
-                          tooltip: 'Decrease count',
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline, size: 20),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => _incrementPropertyCount(
-                            activityIndex,
-                            sexualActivity.id,
-                            myself.id,
-                          ),
-                          tooltip: 'Increase count',
-                        ),
-                      ],
-                    ],
-                  ),
-                // Other participants
-                ..._availablePersons
-                    .where((person) {
-                      return myself == null || person.id != myself.id;
-                    })
-                    .map((person) {
-                      final personName =
-                          person.name.nickname ??
-                          person.name.given ??
-                          'Unknown';
-                      final isSelected = participantsWithProperty.contains(
-                        person.id,
-                      );
-                      final participant = currentActivity.participants
-                          .firstWhere(
-                            (p) => p.participant.reference == person.id,
-                            orElse: () => ActivityParticipant(
-                              participant: Reference(
-                                reference: '',
-                                resourceType: 'Person',
+                                  myself.id,
+                                ),
+                                tooltip: 'Increase count',
                               ),
-                              activityCounts: [],
-                            ),
-                          );
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  size: 20,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () => _decrementPropertyCount(
+                                  activityIndex,
+                                  sexualActivity.id,
+                                  myself.id,
+                                ),
+                                tooltip: 'Decrease count',
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                // Other participants (iterate only participants added to this activity)
+                ...currentActivity.participants
+                    .where((p) {
+                      // Filter out "Me" (already handled above)
+                      return myself == null ||
+                          p.participant.reference != myself.id;
+                    })
+                    .map((participant) {
+                      final personId = participant.participant.reference;
+                      // Find person details from available persons
+                      final person = _availablePersons.firstWhere(
+                        (p) => p.id == personId,
+                        orElse: () => Person(
+                          id: personId,
+                          date: DateTime.now(),
+                          name: const Name(given: 'Unknown'),
+                        ),
+                      );
+
                       final activityCount = participant.activityCounts
                           .firstWhere(
                             (ac) =>
@@ -994,60 +988,67 @@ class _EventEditorPageState extends State<EventEditorPage> {
                             ),
                           );
 
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          FilterChip(
-                            selected: isSelected,
-                            label: Text(
-                              isSelected
-                                  ? '$personName (${activityCount.count})'
-                                  : personName,
+                      final isSelected = activityCount.count > 0;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PersonAvatar(
+                              person: person,
+                              radius: 20,
+                              showName: true,
+                              isSelected: isSelected,
+                              count: activityCount.count > 0
+                                  ? activityCount.count
+                                  : null,
+                              onTap: () {
+                                _toggleParticipantForProperty(
+                                  activityIndex,
+                                  sexualActivity.id,
+                                  personId,
+                                );
+                              },
                             ),
-                            onSelected: (bool selected) {
-                              _toggleParticipantForProperty(
-                                activityIndex,
-                                sexualActivity.id,
-                                person.id,
-                              );
-                            },
-                            selectedColor: Colors.white,
-                            checkmarkColor: sexualActivity.isRisky
-                                ? Colors.orange
-                                : Colors.green,
-                          ),
-                          if (isSelected) ...[
-                            const SizedBox(width: 4),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.remove_circle_outline,
-                                size: 20,
+                            if (isSelected) ...[
+                              const SizedBox(width: 4),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle_outline,
+                                      size: 20,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () => _incrementPropertyCount(
+                                      activityIndex,
+                                      sexualActivity.id,
+                                      personId,
+                                    ),
+                                    tooltip: 'Increase count',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                      size: 20,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () => _decrementPropertyCount(
+                                      activityIndex,
+                                      sexualActivity.id,
+                                      personId,
+                                    ),
+                                    tooltip: 'Decrease count',
+                                  ),
+                                ],
                               ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () => _decrementPropertyCount(
-                                activityIndex,
-                                sexualActivity.id,
-                                person.id,
-                              ),
-                              tooltip: 'Decrease count',
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.add_circle_outline,
-                                size: 20,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () => _incrementPropertyCount(
-                                activityIndex,
-                                sexualActivity.id,
-                                person.id,
-                              ),
-                              tooltip: 'Increase count',
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       );
                     }),
               ],

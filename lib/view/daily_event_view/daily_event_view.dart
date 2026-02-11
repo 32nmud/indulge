@@ -50,14 +50,16 @@ class _EventViewPageState extends State<EventViewPage> {
           _navigateToPreviousDay();
         }
       },
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            DayCard(),
-            const SizedBox(height: 8.0),
-            AnimatedEventList(),
-          ],
+      child: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+              DayCard(),
+              const SizedBox(height: 8.0),
+              AnimatedEventList(),
+            ],
+          ),
         ),
       ),
     );

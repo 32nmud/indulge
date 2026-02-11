@@ -83,10 +83,16 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
             ),
         ],
       ),
+      floatingActionButton: _isLoading
+          ? null
+          : FloatingActionButton(
+              onPressed: _addActivity,
+              child: const Icon(Icons.add),
+            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -152,22 +158,12 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Activities',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _addActivity,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Activity'),
-                        ),
-                      ],
+                    const Text(
+                      'Activities',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     if (_activities.isEmpty)

@@ -34,18 +34,44 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
 
   void _syncIfChanged(List<SexualEvent> newEvents) {
     // Only sync if the events list actually changed
-    if (_previousEvents == null ||
-        _previousEvents!.length != newEvents.length ||
-        !_eventsEqual(_previousEvents!, newEvents)) {
+    if (_previousEvents == null) {
       _list.syncWith(newEvents);
       _previousEvents = newEvents;
+      return;
+    }
+
+    // Check if structure (IDs) changed
+    final structureChanged =
+        _previousEvents!.length != newEvents.length ||
+        !_eventIdsEqual(_previousEvents!, newEvents);
+
+    if (structureChanged) {
+      // Structure changed: animate remove/insert
+      _list.syncWith(newEvents);
+      _previousEvents = newEvents;
+    } else {
+      // Check if content changed
+      final contentChanged = !_eventsDeepEqual(_previousEvents!, newEvents);
+      if (contentChanged) {
+        // Content changed but IDs are same: update in place (no animation)
+        _list.updateItems(newEvents);
+        _previousEvents = newEvents;
+      }
     }
   }
 
-  bool _eventsEqual(List<SexualEvent> a, List<SexualEvent> b) {
+  bool _eventIdsEqual(List<SexualEvent> a, List<SexualEvent> b) {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
       if (a[i].id != b[i].id) return false;
+    }
+    return true;
+  }
+
+  bool _eventsDeepEqual(List<SexualEvent> a, List<SexualEvent> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
     }
     return true;
   }
@@ -125,6 +151,13 @@ class ListModel<E> {
 
   int get length => _items.length;
   E operator [](int index) => _items[index];
+
+  /// Updates the items list in place without triggering animations.
+  /// Use this when the list items have changed but the list structure (IDs/order) is the same.
+  void updateItems(Iterable<E> newItems) {
+    _items.clear();
+    _items.addAll(newItems);
+  }
 
   /// Replaces the current items with [newItems], animating removals and insertions.
   void syncWith(Iterable<E> newItems) {

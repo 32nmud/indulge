@@ -116,10 +116,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return NavigationHelper(
       navigateToSearchWithPartner: navigateToSearchWithPartner,
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text(widget.title),
-        ),
         body: FutureBuilder<String>(
           future: context.read<SexualEventsProvider>().ready,
           builder: (ctx, snapshot) {

@@ -323,69 +323,79 @@ class _AnalysisPageState extends State<AnalysisPage>
       _loadDataAsync();
     }
 
-    return Stack(
-      children: [
-        _currentData == null
-            ? const Center(child: CircularProgressIndicator())
-            : _currentData!.totalEvents == 0
-            ? _buildEmptyState()
-            : Column(
-                children: [
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: _currentPage == 4
-                        ? const SizedBox.shrink()
-                        : _buildTimeWindowSelector(),
-                  ),
-                  Expanded(
-                    child: ShaderMask(
-                      shaderCallback: (Rect bounds) {
-                        return LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: const [
-                            Colors.white,
-                            Colors.white,
-                            Colors.white,
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.85, 0.95, 1.0],
-                        ).createShader(bounds);
-                      },
-                      blendMode: BlendMode.dstIn,
-                      child: RefreshIndicator(
-                        onRefresh: () async {
-                          await _loadDataAsync();
+    return SafeArea(
+      child: Stack(
+        children: [
+          _currentData == null
+              ? const Center(child: CircularProgressIndicator())
+              : _currentData!.totalEvents == 0
+              ? _buildEmptyState()
+              : Column(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        'Analysis',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: _currentPage == 4
+                          ? const SizedBox.shrink()
+                          : _buildTimeWindowSelector(),
+                    ),
+                    Expanded(
+                      child: ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: const [
+                              Colors.white,
+                              Colors.white,
+                              Colors.white,
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.85, 0.95, 1.0],
+                          ).createShader(bounds);
                         },
-                        child: PageView(
-                          controller: _pageController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          onPageChanged: (index) {
-                            setState(() {
-                              _currentPage = index;
-                            });
+                        blendMode: BlendMode.dstIn,
+                        child: RefreshIndicator(
+                          onRefresh: () async {
+                            await _loadDataAsync();
                           },
-                          children: [
-                            _buildOverviewPage(_currentData!),
-                            _buildTimeSeriesPage(_currentData!),
-                            _buildActivityBreakdownPage(_currentData!),
-                            _buildPartnerBreakdownPage(_currentData!),
-                            _buildPeriodComparisonPage(_currentData!),
-                          ],
+                          child: PageView(
+                            controller: _pageController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentPage = index;
+                              });
+                            },
+                            children: [
+                              _buildOverviewPage(_currentData!),
+                              _buildTimeSeriesPage(_currentData!),
+                              _buildActivityBreakdownPage(_currentData!),
+                              _buildPartnerBreakdownPage(_currentData!),
+                              _buildPeriodComparisonPage(_currentData!),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  _buildPageIndicator(),
-                ],
-              ),
-        if (_isLoading && _currentData != null)
-          Container(
-            color: Colors.black26,
-            child: const Center(child: CircularProgressIndicator()),
-          ),
-      ],
+                    _buildPageIndicator(),
+                  ],
+                ),
+          if (_isLoading && _currentData != null)
+            Container(
+              color: Colors.black26,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+        ],
+      ),
     );
   }
 

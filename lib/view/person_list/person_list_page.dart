@@ -3,6 +3,7 @@ import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
+import 'package:indulge/view/common/person_avatar.dart';
 import 'package:logging/logging.dart';
 import 'package:indulge/main.dart';
 
@@ -150,16 +151,31 @@ class _PersonListPageState extends State<PersonListPage>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
-      appBar: AppBar(title: const Text('Contacts')),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await _loadPersons();
-        },
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _persons.isEmpty
-            ? _buildEmptyState()
-            : _buildPersonList(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Contacts',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await _loadPersons();
+                },
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _persons.isEmpty
+                    ? _buildEmptyState()
+                    : _buildPersonList(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -249,17 +265,7 @@ class _PersonListPageState extends State<PersonListPage>
             // First row: Avatar, Name, Badge
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: isSelf
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                  child: Icon(
-                    isSelf ? Icons.account_circle : Icons.person,
-                    color: isSelf
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : null,
-                  ),
-                ),
+                PersonAvatar(person: person, radius: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
 import 'common/expandable_activity_card.dart';
 import 'package:indulge/main.dart';
+import 'package:indulge/view/common/person_avatar.dart';
 
 class TopPartnersSection extends StatefulWidget {
   final AnalysisData data;
@@ -92,32 +93,46 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                      child: Row(
                                         children: [
-                                          Text(
-                                            displayName,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w500,
+                                          if (person != null)
+                                            PersonAvatar(
+                                              person: person,
+                                              radius: 20,
+                                            ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  displayName,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            '$activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                  fontSize: 12,
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  '$activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurfaceVariant,
+                                                        fontSize: 12,
+                                                      ),
                                                 ),
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),

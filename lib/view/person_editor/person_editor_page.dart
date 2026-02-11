@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/view/common/notes_section.dart';
+import 'package:indulge/view/person_editor/widgets/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class PersonEditorPage extends StatefulWidget {
@@ -15,37 +17,64 @@ class PersonEditorPage extends StatefulWidget {
 
 class _PersonEditorPageState extends State<PersonEditorPage> {
   final _formKey = GlobalKey<FormState>();
+
+  // Basic Info
   late TextEditingController _givenNameController;
   late TextEditingController _familyNameController;
   late TextEditingController _nicknameController;
   DateTime? _birthday;
   DateTime _dateAdded = DateTime.now();
 
+  // Body Info
+  late TextEditingController _bodyTypeController;
+  late TextEditingController _endowmentController;
+  late TextEditingController _breastSizeController;
+  late TextEditingController _heightController;
+  String? _cutStatus;
+  String? _assignedSexAtBirth;
+
+  // Personal Info
+  late TextEditingController _genderController;
+  late TextEditingController _pronounsController;
+  late TextEditingController _hivStatusController;
+  late TextEditingController _herpesStatusController;
+
+  // Other
+  late List<String> _socialLinks;
+  String? _notes;
+  String? _imageBytes;
+
   @override
   void initState() {
     super.initState();
+    final p = widget.person;
 
-    if (widget.person != null) {
-      // Editing existing person
-      _givenNameController = TextEditingController(
-        text: widget.person!.name.given,
-      );
-      _familyNameController = TextEditingController(
-        text: widget.person!.name.family,
-      );
-      _nicknameController = TextEditingController(
-        text: widget.person!.name.nickname,
-      );
-      _birthday = widget.person!.birthday;
-      _dateAdded = widget.person!.date;
-    } else {
-      // Creating new person
-      _givenNameController = TextEditingController();
-      _familyNameController = TextEditingController();
-      _nicknameController = TextEditingController();
-      _birthday = null;
-      _dateAdded = DateTime.now();
-    }
+    _dateAdded = p?.date ?? DateTime.now();
+    _birthday = p?.birthday;
+
+    // Basic
+    _givenNameController = TextEditingController(text: p?.name.given);
+    _familyNameController = TextEditingController(text: p?.name.family);
+    _nicknameController = TextEditingController(text: p?.name.nickname);
+
+    // Body
+    _bodyTypeController = TextEditingController(text: p?.bodyType);
+    _endowmentController = TextEditingController(text: p?.endowment);
+    _breastSizeController = TextEditingController(text: p?.breastSize);
+    _heightController = TextEditingController(text: p?.height);
+    _cutStatus = p?.cutStatus;
+    _assignedSexAtBirth = p?.assignedSexAtBirth;
+
+    // Personal
+    _genderController = TextEditingController(text: p?.gender);
+    _pronounsController = TextEditingController(text: p?.pronouns);
+    _hivStatusController = TextEditingController(text: p?.hivStatus);
+    _herpesStatusController = TextEditingController(text: p?.herpesStatus);
+
+    // Other
+    _socialLinks = p?.socialLinks ?? [];
+    _notes = p?.notes;
+    _imageBytes = p?.imageBytes;
   }
 
   @override
@@ -53,6 +82,14 @@ class _PersonEditorPageState extends State<PersonEditorPage> {
     _givenNameController.dispose();
     _familyNameController.dispose();
     _nicknameController.dispose();
+    _bodyTypeController.dispose();
+    _endowmentController.dispose();
+    _breastSizeController.dispose();
+    _heightController.dispose();
+    _genderController.dispose();
+    _pronounsController.dispose();
+    _hivStatusController.dispose();
+    _herpesStatusController.dispose();
     super.dispose();
   }
 
@@ -111,7 +148,6 @@ class _PersonEditorPageState extends State<PersonEditorPage> {
             : null,
       );
 
-      // Generate UUID explicitly for new persons
       final personId = widget.person?.id ?? const Uuid().v4();
 
       final person = Person(
@@ -121,6 +157,38 @@ class _PersonEditorPageState extends State<PersonEditorPage> {
         name: name,
         birthday: _birthday,
         isSelf: widget.person?.isSelf ?? false,
+        // Body
+        bodyType: _bodyTypeController.text.trim().isNotEmpty
+            ? _bodyTypeController.text.trim()
+            : null,
+        endowment: _endowmentController.text.trim().isNotEmpty
+            ? _endowmentController.text.trim()
+            : null,
+        breastSize: _breastSizeController.text.trim().isNotEmpty
+            ? _breastSizeController.text.trim()
+            : null,
+        height: _heightController.text.trim().isNotEmpty
+            ? _heightController.text.trim()
+            : null,
+        cutStatus: _cutStatus,
+        assignedSexAtBirth: _assignedSexAtBirth,
+        // Personal
+        gender: _genderController.text.trim().isNotEmpty
+            ? _genderController.text.trim()
+            : null,
+        pronouns: _pronounsController.text.trim().isNotEmpty
+            ? _pronounsController.text.trim()
+            : null,
+        hivStatus: _hivStatusController.text.trim().isNotEmpty
+            ? _hivStatusController.text.trim()
+            : null,
+        herpesStatus: _herpesStatusController.text.trim().isNotEmpty
+            ? _herpesStatusController.text.trim()
+            : null,
+        // Other
+        socialLinks: _socialLinks,
+        notes: _notes,
+        imageBytes: _imageBytes,
       );
 
       final provider = context.read<SexualEventsProvider>();
@@ -151,7 +219,11 @@ class _PersonEditorPageState extends State<PersonEditorPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _savePerson),
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _savePerson,
+            tooltip: 'Save',
+          ),
         ],
       ),
       body: Form(
@@ -159,11 +231,54 @@ class _PersonEditorPageState extends State<PersonEditorPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildNameSection(),
+              PersonImagePicker(
+                initialImageBytes: _imageBytes,
+                onImageChanged: (val) => setState(() => _imageBytes = val),
+              ),
               const SizedBox(height: 24),
-              _buildBirthdaySection(),
+              BasicInfoSection(
+                nicknameController: _nicknameController,
+                givenNameController: _givenNameController,
+                familyNameController: _familyNameController,
+                birthday: _birthday,
+                onPickBirthday: _pickBirthday,
+                onClearBirthday: _clearBirthday,
+              ),
+              const SizedBox(height: 16),
+              BodyInfoSection(
+                bodyTypeController: _bodyTypeController,
+                endowmentController: _endowmentController,
+                breastSizeController: _breastSizeController,
+                heightController: _heightController,
+                cutStatus: _cutStatus,
+                onCutStatusChanged: (val) => setState(() => _cutStatus = val),
+                assignedSexAtBirth: _assignedSexAtBirth,
+                onAssignedSexAtBirthChanged: (val) =>
+                    setState(() => _assignedSexAtBirth = val),
+              ),
+              const SizedBox(height: 16),
+              PersonalInfoSection(
+                genderController: _genderController,
+                pronounsController: _pronounsController,
+                hivStatusController: _hivStatusController,
+                herpesStatusController: _herpesStatusController,
+              ),
+              const SizedBox(height: 16),
+              SocialLinksSection(
+                initialLinks: _socialLinks,
+                onLinksChanged: (val) => setState(() => _socialLinks = val),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: NotesSection(
+                    initialNotes: _notes,
+                    onNotesChanged: (val) => setState(() => _notes = val),
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -176,110 +291,11 @@ class _PersonEditorPageState extends State<PersonEditorPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 48), // Bottom padding
             ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildNameSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Name', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _nicknameController,
-              decoration: const InputDecoration(
-                labelText: 'Nickname',
-                hintText: 'How you refer to them',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _givenNameController,
-              decoration: const InputDecoration(
-                labelText: 'First Name',
-                hintText: 'Given name',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.badge),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _familyNameController,
-              decoration: const InputDecoration(
-                labelText: 'Last Name',
-                hintText: 'Family name',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.family_restroom),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBirthdaySection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Birthday (Optional)',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            if (_birthday == null)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.cake),
-                  label: const Text('Add Birthday'),
-                  onPressed: _pickBirthday,
-                ),
-              )
-            else
-              ListTile(
-                leading: const Icon(Icons.cake),
-                title: Text(_formatDate(_birthday!)),
-                subtitle: Text('Age: ${_calculateAge(_birthday!)} years'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: _clearBirthday,
-                  tooltip: 'Remove birthday',
-                ),
-                onTap: _pickBirthday,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  int _calculateAge(DateTime birthday) {
-    final now = DateTime.now();
-    int age = now.year - birthday.year;
-    if (now.month < birthday.month ||
-        (now.month == birthday.month && now.day < birthday.day)) {
-      age--;
-    }
-    return age;
   }
 }

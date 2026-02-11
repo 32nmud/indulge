@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
+import 'package:indulge/view/common/person_avatar.dart';
 
 class PersonPickerDialog extends StatelessWidget {
   final List<Person> availablePersons;
@@ -66,9 +67,7 @@ class PersonPickerDialog extends StatelessWidget {
               return true;
             })
             .map((person) {
-              final alreadyAdded = existingParticipantIds.contains(
-                person.id ?? '',
-              );
+              final alreadyAdded = existingParticipantIds.contains(person.id);
 
               return SimpleDialogOption(
                 onPressed: alreadyAdded
@@ -76,6 +75,8 @@ class PersonPickerDialog extends StatelessWidget {
                     : () => Navigator.pop(context, person),
                 child: Row(
                   children: [
+                    PersonAvatar(person: person, radius: 20),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         person.name.nickname ?? person.name.given ?? 'Unknown',

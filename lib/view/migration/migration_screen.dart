@@ -7,11 +7,13 @@ import '../../domain/database/database_engine.dart';
 class MigrationScreen extends StatefulWidget {
   final Database database;
   final String databasePath;
+  final VoidCallback onComplete;
 
   const MigrationScreen({
     super.key,
     required this.database,
     required this.databasePath,
+    required this.onComplete,
   });
 
   @override
@@ -122,8 +124,7 @@ class _MigrationScreenState extends State<MigrationScreen> {
 
   void _continue() {
     _logger.info('Migration complete, continuing to app');
-    // Return to caller - they should navigate to main app
-    Navigator.of(context).pop(true);
+    widget.onComplete();
   }
 
   @override

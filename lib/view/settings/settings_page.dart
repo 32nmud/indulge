@@ -15,61 +15,77 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        _buildSectionHeader('Appearance'),
-        _buildThemeSwitchTile(context),
-        const Divider(),
-        _buildSectionHeader('Activity Configuration'),
-        _buildListTile(
-          context,
-          icon: Icons.category,
-          title: 'Manage Categories',
-          subtitle: 'Add, edit, or remove activity categories',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) => const ActivityTypeListPage(),
-              ),
-            );
-          },
-        ),
-        const Divider(),
-        _buildSectionHeader('Data Management'),
-        _buildListTile(
-          context,
-          icon: Icons.download,
-          title: 'Export Data',
-          subtitle: 'Export all data to a JSON file',
-          onTap: () => _exportData(context),
-        ),
-        _buildListTile(
-          context,
-          icon: Icons.upload,
-          title: 'Import Data',
-          subtitle: 'Import data from a JSON file',
-          onTap: () => _importData(context),
-        ),
-        _buildListTile(
-          context,
-          icon: Icons.refresh,
-          title: 'Reset Database',
-          subtitle: 'Delete all data and restore to initial state',
-          onTap: () => _confirmResetDatabase(context),
-          textColor: Colors.red,
-          iconColor: Colors.red,
-        ),
-        const Divider(),
-        _buildSectionHeader('About'),
-        _buildListTile(
-          context,
-          icon: Icons.info,
-          title: 'Version',
-          subtitle: '1.0.0',
-          onTap: null,
-        ),
-      ],
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Settings',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              children: [
+                _buildSectionHeader('Appearance'),
+                _buildThemeSwitchTile(context),
+                const Divider(),
+                _buildSectionHeader('Activity Configuration'),
+                _buildListTile(
+                  context,
+                  icon: Icons.category,
+                  title: 'Manage Categories',
+                  subtitle: 'Add, edit, or remove activity categories',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const ActivityTypeListPage(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                _buildSectionHeader('Data Management'),
+                _buildListTile(
+                  context,
+                  icon: Icons.download,
+                  title: 'Export Data',
+                  subtitle: 'Export all data to a JSON file',
+                  onTap: () => _exportData(context),
+                ),
+                _buildListTile(
+                  context,
+                  icon: Icons.upload,
+                  title: 'Import Data',
+                  subtitle: 'Import data from a JSON file',
+                  onTap: () => _importData(context),
+                ),
+                _buildListTile(
+                  context,
+                  icon: Icons.refresh,
+                  title: 'Reset Database',
+                  subtitle: 'Delete all data and restore to initial state',
+                  onTap: () => _confirmResetDatabase(context),
+                  textColor: Colors.red,
+                  iconColor: Colors.red,
+                ),
+                const Divider(),
+                _buildSectionHeader('About'),
+                _buildListTile(
+                  context,
+                  icon: Icons.info,
+                  title: 'Version',
+                  subtitle: '1.0.0',
+                  onTap: null,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -252,8 +268,6 @@ class SettingsPage extends StatelessWidget {
 
   Future<void> _resetDatabase(BuildContext context) async {
     try {
-      final messenger = ScaffoldMessenger.of(context);
-
       // Show loading indicator
       showDialog(
         context: context,

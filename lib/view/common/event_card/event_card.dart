@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/view/common/person_avatar.dart';
 import 'package:indulge/view/event_editor/event_editor.dart';
 import 'package:provider/provider.dart';
 
@@ -112,6 +114,32 @@ class _EventCardState extends State<EventCard>
             )
           else
             _buildDetailedActivitiesList(activities, persons, eventState),
+          if (widget.event.notes != null &&
+              widget.event.notes!.trim().isNotEmpty) ...[
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Notes",
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    MarkdownBody(data: widget.event.notes!),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const Divider(),
           _buildButtonRow(context),
         ],
@@ -205,10 +233,7 @@ class _EventCardState extends State<EventCard>
                       ),
                       Text(
                         '${activity.participants.length} ${activity.participants.length == 1 ? 'participant' : 'participants'}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black,
-                        ),
+                        style: const TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
@@ -279,28 +304,7 @@ class _EventCardState extends State<EventCard>
               runSpacing: 6,
               children: entry.value.entries.map((personEntry) {
                 final person = personEntry.key;
-                final isSelf = person.isSelf;
-                return Chip(
-                  avatar: isSelf
-                      ? Icon(
-                          Icons.account_circle,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.primary,
-                        )
-                      : null,
-                  label: Text(
-                    person.name.nickname ?? person.name.given ?? 'Unknown',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelf ? FontWeight.bold : null,
-                    ),
-                  ),
-                  backgroundColor: isSelf
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : null,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                );
+                return PersonAvatar(person: person, radius: 16, showName: true);
               }).toList(),
             ),
           );
@@ -345,27 +349,11 @@ class _EventCardState extends State<EventCard>
                     children: entry.value.entries.map((personEntry) {
                       final person = personEntry.key;
                       final count = personEntry.value;
-                      final isSelf = person.isSelf;
-                      return Chip(
-                        avatar: isSelf
-                            ? Icon(
-                                Icons.account_circle,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.primary,
-                              )
-                            : null,
-                        label: Text(
-                          '${person.name.nickname ?? person.name.given ?? 'Unknown'} ($count)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelf ? FontWeight.bold : null,
-                          ),
-                        ),
-                        backgroundColor: isSelf
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : null,
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      return PersonAvatar(
+                        person: person,
+                        radius: 16,
+                        count: count > 1 ? count : null,
+                        showName: true,
                       );
                     }).toList(),
                   ),
