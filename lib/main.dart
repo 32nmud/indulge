@@ -11,25 +11,8 @@ import 'package:indulge/view/settings/settings_page.dart';
 import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
 import 'package:indulge/view/migration/migration_check.dart';
+import 'package:indulge/view/common/navigation_helper.dart';
 import 'package:logging/logging.dart';
-
-// InheritedWidget to provide navigation callback
-class NavigationHelper extends InheritedWidget {
-  final void Function(String partnerId) navigateToSearchWithPartner;
-
-  const NavigationHelper({
-    super.key,
-    required this.navigateToSearchWithPartner,
-    required super.child,
-  });
-
-  static NavigationHelper? of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<NavigationHelper>();
-  }
-
-  @override
-  bool updateShouldNotify(NavigationHelper oldWidget) => false;
-}
 
 void main() {
   Logger.root.level = Level.ALL;
@@ -111,10 +94,52 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Method to navigate to search page with event type filter
+  void navigateToSearchWithEventType(String eventType) {
+    setState(() {
+      currentPageIndex = 1; // Search page index
+    });
+    // Wait for the page to build, then set the filter
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchPageKey.currentState?.setEventTypeFilter(eventType);
+    });
+  }
+
+  // Method to navigate to search page with date range filter
+  void navigateToSearchWithDateRange(DateTimeRange range) {
+    setState(() {
+      currentPageIndex = 1; // Search page index
+    });
+    // Wait for the page to build, then set the filter
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchPageKey.currentState?.setDateRangeFilter(range);
+    });
+  }
+
+  void navigateToSearch({
+    DateTimeRange? dateRange,
+    String? eventType,
+    String? partnerId,
+  }) {
+    setState(() {
+      currentPageIndex = 1; // Search page index
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchPageKey.currentState?.applyFilters(
+        dateRange: dateRange,
+        eventType: eventType,
+        partnerId: partnerId,
+      );
+    });
+  }
+
   @override
   build(BuildContext context) {
     return NavigationHelper(
       navigateToSearchWithPartner: navigateToSearchWithPartner,
+      navigateToSearchWithEventType: navigateToSearchWithEventType,
+      navigateToSearchWithDateRange: navigateToSearchWithDateRange,
+      navigateToSearch: navigateToSearch,
       child: Scaffold(
         body: FutureBuilder<String>(
           future: context.read<SexualEventsProvider>().ready,

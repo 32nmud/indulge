@@ -5,7 +5,7 @@ import 'package:indulge/data/models.dart';
 import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
 import 'common/expandable_activity_card.dart';
-import 'package:indulge/main.dart';
+import 'package:indulge/view/common/navigation_helper.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 
 class TopPartnersSection extends StatefulWidget {
@@ -159,10 +159,20 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
                                           onPressed: () {
+                                            DateTimeRange? range;
+                                            if (widget.data.startDate != null) {
+                                              range = DateTimeRange(
+                                                start: widget.data.startDate!,
+                                                end:
+                                                    widget.data.endDate ??
+                                                    DateTime.now(),
+                                              );
+                                            }
                                             NavigationHelper.of(
                                               context,
-                                            )?.navigateToSearchWithPartner(
-                                              partnerId,
+                                            )?.navigateToSearch(
+                                              partnerId: partnerId,
+                                              dateRange: range,
                                             );
                                           },
                                           tooltip:

@@ -5,7 +5,7 @@ import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:logging/logging.dart';
-import 'package:indulge/main.dart';
+import 'package:indulge/view/common/navigation_helper.dart';
 
 class PersonListPage extends StatefulWidget {
   const PersonListPage({super.key});

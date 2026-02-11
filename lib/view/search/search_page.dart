@@ -25,6 +25,41 @@ class SearchPageState extends State<SearchPage>
     });
   }
 
+  void setEventTypeFilter(String eventType) {
+    setState(() {
+      _selectedEventType = eventType;
+      _performSearch();
+    });
+  }
+
+  void setDateRangeFilter(DateTimeRange range) {
+    setState(() {
+      _dateRange = range;
+      _performSearch();
+    });
+  }
+
+  void applyFilters({
+    DateTimeRange? dateRange,
+    String? eventType,
+    String? partnerId,
+  }) {
+    setState(() {
+      // Clear all existing filters
+      _dateRange = null;
+      _selectedPartnerIds.clear();
+      _selectedCategoryIds.clear();
+      _selectedActivityKeys.clear();
+      _selectedEventType = null;
+      _notesSearchController.clear();
+
+      if (dateRange != null) _dateRange = dateRange;
+      if (eventType != null) _selectedEventType = eventType;
+      if (partnerId != null) _selectedPartnerIds = {partnerId};
+      _performSearch();
+    });
+  }
+
   List<SexualEvent> _searchResults = [];
   List<SexualEvent> _displayedResults = [];
   bool _isSearching = false;
@@ -470,9 +505,11 @@ class SearchPageState extends State<SearchPage>
                       ),
                     ),
                   // Filter chips
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      spacing: 8.0,
+                      runSpacing: 8.0,
                       children: [
                         // Date range chip
                         FilterChip(
@@ -489,7 +526,6 @@ class SearchPageState extends State<SearchPage>
                             color: _dateRange != null ? Colors.blue : null,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         // Partners chip
                         FilterChip(
                           label: Text(
@@ -507,7 +543,6 @@ class SearchPageState extends State<SearchPage>
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         // Event Type chip
                         FilterChip(
                           label: Text(_selectedEventType ?? 'Type'),
@@ -521,7 +556,6 @@ class SearchPageState extends State<SearchPage>
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         // Activity categories chip
                         FilterChip(
                           label: Text(
@@ -539,7 +573,6 @@ class SearchPageState extends State<SearchPage>
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         // Activities chip (grouped)
                         FilterChip(
                           label: Text(
@@ -557,7 +590,6 @@ class SearchPageState extends State<SearchPage>
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         // Clear filters button
                         if (_hasActiveFilters())
                           ActionChip(
@@ -576,12 +608,6 @@ class SearchPageState extends State<SearchPage>
           ],
         ),
       ),
-      floatingActionButton: _hasActiveFilters()
-          ? FloatingActionButton(
-              onPressed: _performSearch,
-              child: const Icon(Icons.search),
-            )
-          : null,
     );
   }
 

@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:indulge/view/common/navigation_helper.dart';
+import 'package:indulge/view/common/event_card/event_card.dart';
 import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
 import 'marquee_text.dart';
 
 class OverviewStatsSection extends StatelessWidget {
   final AnalysisData data;
+  final bool showCurrentMonthStats;
 
-  const OverviewStatsSection({super.key, required this.data});
+  const OverviewStatsSection({
+    super.key,
+    required this.data,
+    this.showCurrentMonthStats = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +41,19 @@ class OverviewStatsSection extends StatelessWidget {
                   label: 'Total Events',
                   value: data.totalEvents.toString(),
                   color: Colors.blue,
+                  subtitle: 'Tap to search',
+                  onTap: () {
+                    DateTimeRange? range;
+                    if (data.startDate != null) {
+                      range = DateTimeRange(
+                        start: data.startDate!,
+                        end: data.endDate ?? DateTime.now(),
+                      );
+                    }
+                    NavigationHelper.of(
+                      context,
+                    )?.navigateToSearch(dateRange: range);
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -50,31 +70,42 @@ class OverviewStatsSection extends StatelessWidget {
         ),
 
         // Row 2: Events/Partners this month & year
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.calendar_today,
-                  label: 'Events This Month',
-                  value: data.eventsThisMonth.toString(),
-                  color: Colors.indigo,
+        if (data.startDate != null && data.endDate == null) ...[
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.calendar_today,
+                    label: 'Events This Month',
+                    value: data.eventsThisMonth.toString(),
+                    color: Colors.indigo,
+                    subtitle: 'Tap to search',
+                    onTap: () {
+                      final now = DateTime.now();
+                      final start = DateTime(now.year, now.month, 1);
+                      final end = DateTime(now.year, now.month + 1, 0);
+                      NavigationHelper.of(context)?.navigateToSearch(
+                        dateRange: DateTimeRange(start: start, end: end),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.groups,
-                  label: 'Partners This Month',
-                  value: data.uniquePartnersThisMonth.toString(),
-                  color: Colors.deepPurple,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.groups,
+                    label: 'Partners This Month',
+                    value: data.uniquePartnersThisMonth.toString(),
+                    color: Colors.deepPurple,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 12),
 
         // Row 3: Current Streak & Longest Streak
@@ -134,11 +165,25 @@ class OverviewStatsSection extends StatelessWidget {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Event Types',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Event Types',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Tap to search',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                  fontSize: 10,
+                                ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -182,43 +227,17 @@ class OverviewStatsSection extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Busiest Day and Event (Last 12 Months)
-        if (data.busiestDay != null || data.busiestEvent != null)
+        if (data.busiestDay != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star,
-                          color: Theme.of(context).colorScheme.secondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Records',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (data.busiestDay != null) ...[
-                      _buildBusiestDayInfo(context),
-                      const SizedBox(height: 8),
-                    ],
-                    if (data.busiestEvent != null) ...[
-                      _buildBusiestEventInfo(context),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            child: Card(elevation: 2, child: _buildBusiestDayInfo(context)),
+          ),
+        if (data.busiestDay != null) const SizedBox(height: 12),
+
+        if (data.busiestEvent != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Card(elevation: 2, child: _buildBusiestEventInfo(context)),
           ),
       ],
     );
@@ -231,87 +250,89 @@ class OverviewStatsSection extends StatelessWidget {
     required int value,
     required Color color,
   }) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 6),
-        Text(
-          value.toString(),
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+    return InkWell(
+      onTap: () {
+        DateTimeRange? range;
+        if (data.startDate != null) {
+          range = DateTimeRange(
+            start: data.startDate!,
+            end: data.endDate ?? DateTime.now(),
+          );
+        }
+
+        NavigationHelper.of(
+          context,
+        )?.navigateToSearch(eventType: label, dateRange: range);
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 6),
+            Text(
+              value.toString(),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 11,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildBusiestDayInfo(BuildContext context) {
     final dateStr = DateFormat('MMM d, yyyy').format(data.busiestDay!);
-    return Row(
-      children: [
-        Icon(
+    final dayEvents = data.events
+        .where((e) => DateUtils.isSameDay(e.date, data.busiestDay!))
+        .toList();
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+        leading: Icon(
           Icons.event_busy,
           color: Theme.of(context).colorScheme.primary,
-          size: 18,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Busiest Day',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                ),
+        title: Text(
+          'Busiest Day',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          '$dateStr • ${data.busiestDayEventCount} events',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: dayEvents
+            .map(
+              (event) => Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: EventCard(event: event),
               ),
-              const SizedBox(height: 2),
-              Text(
-                dateStr,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            '${data.busiestDayEventCount} event${data.busiestDayEventCount != 1 ? 's' : ''}',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-      ],
+            )
+            .toList(),
+      ),
     );
   }
 
   Widget _buildBusiestEventInfo(BuildContext context) {
     final event = data.busiestEvent!;
     final dateStr = DateFormat('MMM d, yyyy').format(event.date);
-    final participantCount = event.activities
-        .expand((a) => a.participants)
-        .map((p) => p.participant.reference)
-        .toSet()
-        .length;
     final activityCount = event.activities
         .expand((a) => a.participants)
         .expand((p) => p.activityCounts)
@@ -319,61 +340,28 @@ class OverviewStatsSection extends StatelessWidget {
         .toSet()
         .length;
 
-    return Row(
-      children: [
-        Icon(
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+        leading: Icon(
           Icons.celebration,
           color: Theme.of(context).colorScheme.secondary,
-          size: 18,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Busiest Event',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                dateStr,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '$participantCount partner${participantCount != 1 ? 's' : ''} • $activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                  fontSize: 10,
-                ),
-              ),
-            ],
+        title: Text(
+          'Busiest Event',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.purple.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            '${data.busiestEventActivityCount} activit${data.busiestEventActivityCount != 1 ? 'ies' : 'y'}',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.purple[700],
-            ),
-          ),
+        subtitle: Text(
+          '$dateStr • $activityCount activities',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
-      ],
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [EventCard(event: event)],
+      ),
     );
   }
 }
@@ -384,6 +372,7 @@ class _StatCard extends StatelessWidget {
   final String value;
   final Color color;
   final String? subtitle;
+  final VoidCallback? onTap;
 
   const _StatCard({
     required this.icon,
@@ -391,53 +380,58 @@ class _StatCard extends StatelessWidget {
     required this.value,
     required this.color,
     this.subtitle,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: MarqueeText(
-                    text: label,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 11,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: color, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: MarqueeText(
+                      text: label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    fontSize: 10,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                subtitle!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                  fontSize: 10,
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

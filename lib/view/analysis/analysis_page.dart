@@ -536,7 +536,10 @@ class _AnalysisPageState extends State<AnalysisPage>
           Icons.dashboard,
           'Key stats, streaks, and summary',
         ),
-        OverviewStatsSection(data: data),
+        OverviewStatsSection(
+          data: data,
+          showCurrentMonthStats: _timeWindow == TimeWindow.last12Months,
+        ),
         const SizedBox(height: 16),
       ],
     );
