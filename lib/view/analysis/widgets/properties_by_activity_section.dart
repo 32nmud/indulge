@@ -87,8 +87,8 @@ class _PropertiesByActivitySectionState
                       }
                     });
                   },
-                  propertyCountsMap: activityProperties,
-                  availableProperties: enrichedProperties,
+                  activityCountsMap: activityProperties,
+                  availableActivities: enrichedProperties,
                 ),
               );
             }),

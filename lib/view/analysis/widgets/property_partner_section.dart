@@ -80,8 +80,8 @@ class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
                       }
                     });
                   },
-                  propertyCountsMap: categoryActivityPartnerCounts,
-                  availableProperties: widget.data.sexualActivities,
+                  activityCountsMap: categoryActivityPartnerCounts,
+                  availableActivities: widget.data.sexualActivities,
                 ),
               );
             }),

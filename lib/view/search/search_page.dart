@@ -42,6 +42,7 @@ class SearchPageState extends State<SearchPage>
   Set<String> _selectedCategoryIds = {};
   // Selected activities are now composite keys: "categoryId:activityId"
   Set<String> _selectedActivityKeys = {};
+  String? _selectedEventType;
   final TextEditingController _notesSearchController = TextEditingController();
 
   @override
@@ -125,6 +126,7 @@ class SearchPageState extends State<SearchPage>
         _selectedPartnerIds.isNotEmpty ||
         _selectedCategoryIds.isNotEmpty ||
         _selectedActivityKeys.isNotEmpty ||
+        _selectedEventType != null ||
         _notesSearchController.text.isNotEmpty;
   }
 
@@ -134,6 +136,7 @@ class SearchPageState extends State<SearchPage>
       _selectedPartnerIds.clear();
       _selectedCategoryIds.clear();
       _selectedActivityKeys.clear();
+      _selectedEventType = null;
       _notesSearchController.clear();
     });
     _performSearch();
@@ -155,6 +158,7 @@ class SearchPageState extends State<SearchPage>
     try {
       final provider = context.read<SexualEventsProvider>();
       final allEvents = await provider.getAllEvents();
+      final myId = provider.state.myself?.id;
 
       final filteredEvents = allEvents.where((event) {
         // Date range filter
@@ -172,6 +176,25 @@ class SearchPageState extends State<SearchPage>
           final query = _notesSearchController.text.toLowerCase();
           final notes = event.notes?.toLowerCase() ?? '';
           if (!notes.contains(query)) {
+            return false;
+          }
+        }
+
+        // Event Type filter
+        if (_selectedEventType != null) {
+          final partnerIds = event.activities
+              .expand((a) => a.participants)
+              .map((p) => p.participant.reference)
+              .where((id) => id != myId)
+              .toSet();
+
+          if (_selectedEventType == 'Solo' && partnerIds.isNotEmpty) {
+            return false;
+          }
+          if (_selectedEventType == 'Couple' && partnerIds.length != 1) {
+            return false;
+          }
+          if (_selectedEventType == 'Group' && partnerIds.length < 2) {
             return false;
           }
         }
@@ -345,6 +368,23 @@ class SearchPageState extends State<SearchPage>
     }
   }
 
+  Future<void> _showEventTypeFilter() async {
+    if (!mounted) return;
+
+    final result = await showDialog<List<String?>>(
+      context: context,
+      builder: (context) =>
+          _EventTypeFilterDialog(selectedType: _selectedEventType),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedEventType = result.first;
+        _performSearch();
+      });
+    }
+  }
+
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year}';
   }
@@ -463,6 +503,20 @@ class SearchPageState extends State<SearchPage>
                             Icons.people,
                             size: 16,
                             color: _selectedPartnerIds.isNotEmpty
+                                ? Colors.blue
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Event Type chip
+                        FilterChip(
+                          label: Text(_selectedEventType ?? 'Type'),
+                          selected: _selectedEventType != null,
+                          onSelected: (selected) => _showEventTypeFilter(),
+                          avatar: Icon(
+                            Icons.group_work,
+                            size: 16,
+                            color: _selectedEventType != null
                                 ? Colors.blue
                                 : null,
                           ),
@@ -649,6 +703,68 @@ class SearchPageState extends State<SearchPage>
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EventTypeFilterDialog extends StatefulWidget {
+  final String? selectedType;
+
+  const _EventTypeFilterDialog({this.selectedType});
+
+  @override
+  State<_EventTypeFilterDialog> createState() => _EventTypeFilterDialogState();
+}
+
+class _EventTypeFilterDialogState extends State<_EventTypeFilterDialog> {
+  String? _selectedType;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedType = widget.selectedType;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final types = ['Solo', 'Couple', 'Group'];
+    return AlertDialog(
+      title: const Text('Select Event Type'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: types.map((type) {
+            return RadioListTile<String>(
+              title: Text(type),
+              value: type,
+              groupValue: _selectedType,
+              onChanged: (value) {
+                setState(() {
+                  _selectedType = value;
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _selectedType = null;
+            });
+          },
+          child: const Text('Clear'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop([_selectedType]),
+          child: const Text('Apply'),
+        ),
+      ],
     );
   }
 }

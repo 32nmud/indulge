@@ -10,8 +10,8 @@ class ExpandableActivityCard extends StatelessWidget {
   final String badgeLabel;
   final bool isExpanded;
   final VoidCallback onTap;
-  final Map<String, int> propertyCountsMap;
-  final Map<String, SexualActivity> availableProperties;
+  final Map<String, int> activityCountsMap;
+  final Map<String, SexualActivity> availableActivities;
   final Widget? additionalContent;
 
   const ExpandableActivityCard({
@@ -23,8 +23,8 @@ class ExpandableActivityCard extends StatelessWidget {
     required this.badgeLabel,
     required this.isExpanded,
     required this.onTap,
-    required this.propertyCountsMap,
-    required this.availableProperties,
+    required this.activityCountsMap,
+    required this.availableActivities,
     this.additionalContent,
   });
 
@@ -110,16 +110,16 @@ class ExpandableActivityCard extends StatelessWidget {
           // Expanded content
           if (isExpanded) ...[
             const Divider(height: 1),
-            if (propertyCountsMap.isNotEmpty)
+            if (activityCountsMap.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...propertyCountsMap.entries.map((propEntry) {
+                    ...activityCountsMap.entries.map((propEntry) {
                       final propertyId = propEntry.key;
                       final count = propEntry.value;
-                      final property = availableProperties[propertyId];
+                      final property = availableActivities[propertyId];
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -155,13 +155,9 @@ class ExpandableActivityCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: property?.isRisky ?? false
-                                    ? Theme.of(
-                                        context,
-                                      ).colorScheme.tertiaryContainer
-                                    : Theme.of(
-                                        context,
-                                      ).colorScheme.secondaryContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.secondaryContainer,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -169,13 +165,9 @@ class ExpandableActivityCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: property?.isRisky ?? false
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.onTertiaryContainer
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSecondaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondaryContainer,
                                 ),
                               ),
                             ),
@@ -190,7 +182,7 @@ class ExpandableActivityCard extends StatelessWidget {
                   ],
                 ),
               ),
-            if (propertyCountsMap.isEmpty)
+            if (activityCountsMap.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(

@@ -350,8 +350,8 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                     }
                   });
                 },
-                propertyCountsMap: propertyCountsForActivity,
-                availableProperties: widget.data.sexualActivities,
+                activityCountsMap: propertyCountsForActivity,
+                availableActivities: widget.data.sexualActivities,
               ),
             );
           }),
