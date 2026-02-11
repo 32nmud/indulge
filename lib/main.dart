@@ -10,6 +10,7 @@ import 'package:indulge/view/person_editor/person_editor_page.dart';
 import 'package:indulge/view/settings/settings_page.dart';
 import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
+import 'package:indulge/view/migration/migration_check.dart';
 import 'package:logging/logging.dart';
 
 // InheritedWidget to provide navigation callback
@@ -41,6 +42,10 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // GlobalKey to maintain MaterialApp state across hot reloads
+  static final GlobalKey<NavigatorState> _navigatorKey =
+      GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -51,6 +56,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
+            navigatorKey: _navigatorKey,
             title: 'Indulge',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
@@ -64,7 +70,7 @@ class MyApp extends StatelessWidget {
               useMaterial3: true,
             ),
             themeMode: themeProvider.themeMode,
-            home: const MyHomePage(title: 'Indulge'),
+            home: const MigrationCheck(child: MyHomePage(title: 'Indulge')),
           );
         },
       ),

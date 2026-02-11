@@ -33,7 +33,7 @@ class AnalysisData {
   // Activity breakdown
   final Map<String, int> activityCounts; // All time
   final Map<String, int> activityCountsThisYear; // Last 12 months
-  final Map<String, SexualActivityType> activityTypes;
+  final Map<String, SexualActivityCategory> activityCategories;
 
   // Streak data
   final int currentStreak;
@@ -46,20 +46,20 @@ class AnalysisData {
   final Map<String, Map<String, int>>
   personPropertyCounts; // Property counts per partner
 
-  // Property breakdown
-  final Map<String, int> propertyCountsTotal;
-  final Map<String, SexualActivityTypeProperty> properties;
+  // Sexual activity breakdown
+  final Map<String, int> sexualActivityCountsTotal;
+  final Map<String, SexualActivity> sexualActivities;
 
-  // Property-partner counts (how many unique partners used each property)
-  final Map<String, int> propertyPartnerCounts;
+  // Sexual activity-partner counts (how many unique partners used each activity)
+  final Map<String, int> sexualActivityPartnerCounts;
 
-  // Last 12 months activity/property partner counts
+  // Last 12 months category/activity partner counts
   final Map<String, int>
-  activityPartnerCountsThisYear; // activity -> unique partner count
+  categoryPartnerCountsThisYear; // category -> unique partner count
   final Map<String, int>
-  propertyPartnerCountsThisYear; // property -> unique partner count
+  sexualActivityPartnerCountsThisYear; // sexual activity -> unique partner count
   final Map<String, Map<String, int>>
-  activityPropertyPartnerCountsThisYear; // activity -> property -> unique partner count
+  categoryActivityPartnerCountsThisYear; // category -> sexual activity -> unique partner count
 
   // Time-based data
   final Map<String, int> dailyCounts; // yyyy-MM-dd -> count
@@ -80,7 +80,7 @@ class AnalysisData {
   final double averageActivitiesPerMonth;
   final double averagePartnersPerEvent;
   final double averageActivitiesPerEvent;
-  final double averagePropertiesPerEvent;
+  final double averageSexualActivitiesPerEvent;
 
   // Time patterns
   final Map<int, double> averageEventsPerDayOfWeek; // 1-7 -> average events
@@ -113,19 +113,19 @@ class AnalysisData {
     required this.busiestEventActivityCount,
     required this.activityCounts,
     required this.activityCountsThisYear,
-    required this.activityTypes,
+    required this.activityCategories,
     required this.longestStreak,
     required this.currentStreak,
     required this.personCounts,
     required this.personEventCounts,
     required this.personEvents,
     required this.personPropertyCounts,
-    required this.propertyCountsTotal,
-    required this.properties,
-    required this.propertyPartnerCounts,
-    required this.activityPartnerCountsThisYear,
-    required this.propertyPartnerCountsThisYear,
-    required this.activityPropertyPartnerCountsThisYear,
+    required this.sexualActivityCountsTotal,
+    required this.sexualActivities,
+    required this.sexualActivityPartnerCounts,
+    required this.categoryPartnerCountsThisYear,
+    required this.sexualActivityPartnerCountsThisYear,
+    required this.categoryActivityPartnerCountsThisYear,
     required this.dailyCounts,
     required this.dayOfWeekCounts,
     required this.monthlyCounts,
@@ -139,7 +139,7 @@ class AnalysisData {
     required this.averageActivitiesPerMonth,
     required this.averagePartnersPerEvent,
     required this.averageActivitiesPerEvent,
-    required this.averagePropertiesPerEvent,
+    required this.averageSexualActivitiesPerEvent,
     required this.averageEventsPerDayOfWeek,
     this.startDate,
     this.endDate,

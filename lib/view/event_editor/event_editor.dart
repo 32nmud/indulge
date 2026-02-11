@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
 import 'package:uuid/uuid.dart';
+import 'widgets/widgets.dart';
+import 'utils/event_validator.dart';
 
 class EventEditorPage extends StatefulWidget {
   final SexualEvent? event;
@@ -19,8 +21,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
   late SexualEvent _workingEvent;
   bool _isLoading = true;
   List<Person> _availablePersons = [];
-  Map<String, SexualActivityType> _availableActivityTypes = {};
-  Map<String, SexualActivityTypeProperty> _availableProperties = {};
+  Map<String, SexualActivityCategory> _availableActivityCategories = {};
+  Map<String, SexualActivity> _availableActivities = {};
   final Set<int> _expandedActivities = {};
 
   @override
@@ -34,13 +36,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
     await provider.ready;
 
     final persons = await provider.getAllPersons();
-    final activityTypes = provider.state.sexualActivityTypes ?? {};
-    final properties = provider.state.sexualActivityTypeProperties ?? {};
+    final activityCategories = provider.state.sexualActivityCategories ?? {};
+    final activities = provider.state.sexualActivities ?? {};
 
     setState(() {
       _availablePersons = persons;
-      _availableActivityTypes = activityTypes;
-      _availableProperties = properties;
+      _availableActivityCategories = activityCategories;
+      _availableActivities = activities;
 
       if (widget.event != null) {
         // Editing existing event
@@ -104,11 +106,11 @@ class _EventEditorPageState extends State<EventEditorPage> {
     }
   }
 
-  void _addActivity(SexualActivityType activityType) {
-    final newActivity = SexualActivity(
-      type: Reference(
-        reference: activityType.id,
-        resourceType: 'SexualActivityType',
+  void _addActivity(SexualActivityCategory activityCategory) {
+    final newActivity = EventActivity(
+      category: Reference(
+        reference: activityCategory.id,
+        resourceType: 'SexualActivityCategory',
       ),
       participants: [],
     );
@@ -123,7 +125,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   void _removeActivity(int activityIndex) {
-    final updatedActivities = List<SexualActivity>.from(
+    final updatedActivities = List<EventActivity>.from(
       _workingEvent.activities,
     );
     updatedActivities.removeAt(activityIndex);
@@ -147,7 +149,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   void _addParticipant(int activityIndex, Person person) {
-    final updatedActivities = List<SexualActivity>.from(
+    final updatedActivities = List<EventActivity>.from(
       _workingEvent.activities,
     );
     final activity = updatedActivities[activityIndex];
@@ -170,9 +172,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
       return;
     }
 
-    final participant = SexualActivityParticipant(
+    final participant = ActivityParticipant(
       participant: Reference(reference: person.id, resourceType: 'Person'),
-      propertyCounts: [],
+      activityCounts: [],
     );
 
     updatedActivities[activityIndex] = activity.copyWith(
@@ -185,12 +187,12 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   void _removeParticipant(int activityIndex, int participantIndex) {
-    final updatedActivities = List<SexualActivity>.from(
+    final updatedActivities = List<EventActivity>.from(
       _workingEvent.activities,
     );
     final activity = updatedActivities[activityIndex];
 
-    final updatedParticipants = List<SexualActivityParticipant>.from(
+    final updatedParticipants = List<ActivityParticipant>.from(
       activity.participants,
     );
     updatedParticipants.removeAt(participantIndex);
@@ -204,13 +206,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
     });
   }
 
-  void _toggleMyselfForProperty(int activityIndex, String propertyId) {
+  void _toggleMyselfForProperty(int activityIndex, String activityId) {
     final provider = context.read<SexualEventsProvider>();
     final myself = provider.state.myself;
     if (myself == null) return;
 
     setState(() {
-      final updatedActivities = List<SexualActivity>.from(
+      final updatedActivities = List<EventActivity>.from(
         _workingEvent.activities,
       );
       final activity = updatedActivities[activityIndex];
@@ -220,17 +222,17 @@ class _EventEditorPageState extends State<EventEditorPage> {
         (p) => p.participant.reference == myself.id,
       );
 
-      List<SexualActivityParticipant> updatedParticipants;
+      List<ActivityParticipant> updatedParticipants;
 
       if (meParticipantIndex == -1) {
-        // Create "Me" participant with this property
-        final newParticipant = SexualActivityParticipant(
+        // Create "Me" participant with this activity
+        final newParticipant = ActivityParticipant(
           participant: Reference(reference: myself.id, resourceType: 'Person'),
-          propertyCounts: [
-            PropertyCount(
-              propertyReference: Reference(
-                reference: propertyId,
-                resourceType: 'SexualActivityTypeProperty',
+          activityCounts: [
+            ActivityCount(
+              activityReference: Reference(
+                reference: activityId,
+                resourceType: 'SexualActivity',
               ),
               count: 1,
             ),
@@ -238,43 +240,43 @@ class _EventEditorPageState extends State<EventEditorPage> {
         );
         updatedParticipants = [...activity.participants, newParticipant];
       } else {
-        // Toggle property for existing "Me" participant
+        // Toggle activity for existing "Me" participant
         final meParticipant = activity.participants[meParticipantIndex];
-        final hasProperty = meParticipant.propertyCounts.any(
-          (pc) => pc.propertyReference.reference == propertyId,
+        final hasActivity = meParticipant.activityCounts.any(
+          (ac) => ac.activityReference.reference == activityId,
         );
 
-        List<PropertyCount> updatedProperties;
-        if (hasProperty) {
-          // Remove this property
-          updatedProperties = meParticipant.propertyCounts
-              .where((pc) => pc.propertyReference.reference != propertyId)
+        List<ActivityCount> updatedActivities;
+        if (hasActivity) {
+          // Remove this activity
+          updatedActivities = meParticipant.activityCounts
+              .where((ac) => ac.activityReference.reference != activityId)
               .toList();
         } else {
-          // Add this property
-          updatedProperties = [
-            ...meParticipant.propertyCounts,
-            PropertyCount(
-              propertyReference: Reference(
-                reference: propertyId,
-                resourceType: 'SexualActivityTypeProperty',
+          // Add this activity
+          updatedActivities = [
+            ...meParticipant.activityCounts,
+            ActivityCount(
+              activityReference: Reference(
+                reference: activityId,
+                resourceType: 'SexualActivity',
               ),
               count: 1,
             ),
           ];
         }
 
-        updatedParticipants = List<SexualActivityParticipant>.from(
+        updatedParticipants = List<ActivityParticipant>.from(
           activity.participants,
         );
 
-        if (updatedProperties.isEmpty) {
-          // Remove "Me" participant if no properties
+        if (updatedActivities.isEmpty) {
+          // Remove "Me" participant if no activities
           updatedParticipants.removeAt(meParticipantIndex);
         } else {
-          // Update "Me" participant with new properties
+          // Update "Me" participant with new activities
           updatedParticipants[meParticipantIndex] = meParticipant.copyWith(
-            propertyCounts: updatedProperties,
+            activityCounts: updatedActivities,
           );
         }
       }
@@ -289,15 +291,15 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   void _toggleParticipantForProperty(
     int activityIndex,
-    String propertyId,
+    String activityId,
     String personId,
   ) {
-    final updatedActivities = List<SexualActivity>.from(
+    final updatedActivities = List<EventActivity>.from(
       _workingEvent.activities,
     );
     final activity = updatedActivities[activityIndex];
 
-    final updatedParticipants = <SexualActivityParticipant>[];
+    final updatedParticipants = <ActivityParticipant>[];
 
     for (var participant in activity.participants) {
       if (participant.participant.reference != personId) {
@@ -306,24 +308,24 @@ class _EventEditorPageState extends State<EventEditorPage> {
       }
 
       // This is the participant we're updating
-      final currentPropertyIds = participant.propertyCounts
-          .map((pc) => pc.propertyReference.reference)
+      final currentActivityIds = participant.activityCounts
+          .map((ac) => ac.activityReference.reference)
           .toSet();
 
-      List<PropertyCount> newPropertyCounts;
-      if (currentPropertyIds.contains(propertyId)) {
-        // Remove property
-        newPropertyCounts = participant.propertyCounts
-            .where((pc) => pc.propertyReference.reference != propertyId)
+      List<ActivityCount> newActivityCounts;
+      if (currentActivityIds.contains(activityId)) {
+        // Remove activity
+        newActivityCounts = participant.activityCounts
+            .where((ac) => ac.activityReference.reference != activityId)
             .toList();
       } else {
-        // Add property
-        newPropertyCounts = [
-          ...participant.propertyCounts,
-          PropertyCount(
-            propertyReference: Reference(
-              reference: propertyId,
-              resourceType: 'SexualActivityTypeProperty',
+        // Add activity
+        newActivityCounts = [
+          ...participant.activityCounts,
+          ActivityCount(
+            activityReference: Reference(
+              reference: activityId,
+              resourceType: 'SexualActivity',
             ),
             count: 1,
           ),
@@ -331,7 +333,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
       }
 
       updatedParticipants.add(
-        participant.copyWith(propertyCounts: newPropertyCounts),
+        participant.copyWith(activityCounts: newActivityCounts),
       );
     }
 
@@ -346,15 +348,15 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   void _incrementPropertyCount(
     int activityIndex,
-    String propertyId,
+    String activityId,
     String personId,
   ) {
-    final updatedActivities = List<SexualActivity>.from(
+    final updatedActivities = List<EventActivity>.from(
       _workingEvent.activities,
     );
     final activity = updatedActivities[activityIndex];
 
-    final updatedParticipants = <SexualActivityParticipant>[];
+    final updatedParticipants = <ActivityParticipant>[];
 
     for (var participant in activity.participants) {
       if (participant.participant.reference != personId) {
@@ -362,16 +364,16 @@ class _EventEditorPageState extends State<EventEditorPage> {
         continue;
       }
 
-      // Find the property count to increment
-      final updatedPropertyCounts = participant.propertyCounts.map((pc) {
-        if (pc.propertyReference.reference == propertyId) {
-          return pc.copyWith(count: pc.count + 1);
+      // Find the activity count to increment
+      final updatedActivityCounts = participant.activityCounts.map((ac) {
+        if (ac.activityReference.reference == activityId) {
+          return ac.copyWith(count: ac.count + 1);
         }
-        return pc;
+        return ac;
       }).toList();
 
       updatedParticipants.add(
-        participant.copyWith(propertyCounts: updatedPropertyCounts),
+        participant.copyWith(activityCounts: updatedActivityCounts.toList()),
       );
     }
 
@@ -386,15 +388,15 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   void _decrementPropertyCount(
     int activityIndex,
-    String propertyId,
+    String activityId,
     String personId,
   ) {
-    final updatedActivities = List<SexualActivity>.from(
+    final updatedActivities = List<EventActivity>.from(
       _workingEvent.activities,
     );
     final activity = updatedActivities[activityIndex];
 
-    final updatedParticipants = <SexualActivityParticipant>[];
+    final updatedParticipants = <ActivityParticipant>[];
 
     for (var participant in activity.participants) {
       if (participant.participant.reference != personId) {
@@ -402,22 +404,22 @@ class _EventEditorPageState extends State<EventEditorPage> {
         continue;
       }
 
-      // Find the property count to decrement
-      final updatedPropertyCounts = <PropertyCount>[];
-      for (var pc in participant.propertyCounts) {
-        if (pc.propertyReference.reference == propertyId) {
-          if (pc.count > 1) {
+      // Find the activity count to decrement or remove
+      final updatedActivityCounts = <ActivityCount>[];
+      for (var ac in participant.activityCounts) {
+        if (ac.activityReference.reference == activityId) {
+          if (ac.count > 1) {
             // Decrement count
-            updatedPropertyCounts.add(pc.copyWith(count: pc.count - 1));
+            updatedActivityCounts.add(ac.copyWith(count: ac.count - 1));
           }
-          // If count is 1, don't add it (remove the property)
+          // If count is 1, don't add it (remove the activity)
         } else {
-          updatedPropertyCounts.add(pc);
+          updatedActivityCounts.add(ac);
         }
       }
 
       updatedParticipants.add(
-        participant.copyWith(propertyCounts: updatedPropertyCounts),
+        participant.copyWith(activityCounts: updatedActivityCounts),
       );
     }
 
@@ -431,37 +433,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   Future<void> _showActivityPicker() async {
-    final activityType = await showDialog<SexualActivityType>(
+    final activityCategory = await ActivityPickerDialog.show(
       context: context,
-      builder: (BuildContext context) {
-        return SimpleDialog(
-          title: const Text('Select Activity Type'),
-          children: _availableActivityTypes.values.map((type) {
-            return SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, type),
-              child: Row(
-                children: [
-                  Text(
-                    type.displayCharacter ?? '❔',
-                    style: const TextStyle(fontSize: 32),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      type.name,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        );
-      },
+      availableCategories: _availableActivityCategories,
     );
 
-    if (activityType != null) {
-      _addActivity(activityType);
+    if (activityCategory != null) {
+      _addActivity(activityCategory);
     }
   }
 
@@ -469,124 +447,21 @@ class _EventEditorPageState extends State<EventEditorPage> {
     final provider = context.read<SexualEventsProvider>();
     final myself = provider.state.myself;
 
-    // Get current participants for this activity
-    final activity = _workingEvent.activities[activityIndex];
+    // Get all participants for this activity
+    final EventActivity activity = _workingEvent.activities[activityIndex];
     final existingParticipantIds = activity.participants
         .map((p) => p.participant.reference)
         .toSet();
 
-    final result = await showDialog<dynamic>(
+    final result = await PersonPickerDialog.show(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return SimpleDialog(
-          title: const Text('Select Person'),
-          children: [
-            // Anonymous participant option first
-            Builder(
-              builder: (context) {
-                final anonymous = _availablePersons.firstWhere(
-                  (p) => p.id == 'anonymous',
-                  orElse: () => _availablePersons.first,
-                );
-                final alreadyAdded = existingParticipantIds.contains(
-                  anonymous.id,
-                );
-
-                return SimpleDialogOption(
-                  onPressed: alreadyAdded
-                      ? null
-                      : () => Navigator.pop(context, anonymous),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.help_outline, color: Colors.grey),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Anonymous',
-                          style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      if (alreadyAdded)
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const Divider(),
-            ..._availablePersons
-                .where((person) {
-                  // Filter out anonymous
-                  if (person.id == 'anonymous') return false;
-
-                  // Never show "Me" in picker - only add via property checkboxes
-                  if (myself != null && person.id == myself.id) {
-                    return false;
-                  }
-
-                  // Show all other persons
-                  return true;
-                })
-                .map((person) {
-                  final alreadyAdded = existingParticipantIds.contains(
-                    person.id,
-                  );
-
-                  return SimpleDialogOption(
-                    onPressed: alreadyAdded
-                        ? null
-                        : () => Navigator.pop(context, person),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            person.name.nickname ??
-                                person.name.given ??
-                                'Unknown',
-                          ),
-                        ),
-                        if (alreadyAdded)
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 20,
-                          ),
-                      ],
-                    ),
-                  );
-                })
-                ,
-            const Divider(),
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, 'CREATE_NEW'),
-              child: const Row(
-                children: [
-                  Icon(Icons.person_add, color: Colors.blue),
-                  SizedBox(width: 12),
-                  Text(
-                    'Create New Person',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+      availablePersons: _availablePersons,
+      existingParticipantIds: existingParticipantIds,
+      myself: myself,
+      onAddNew: () {},
     );
 
-    if (result == 'CREATE_NEW') {
+    if (result == 'ADD_NEW') {
       // Navigate to person editor and wait for result
       final newPerson = await Navigator.push<Person>(
         context,
@@ -608,60 +483,15 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   bool _validateEvent() {
-    // Must have at least one activity
-    if (_workingEvent.activities.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add at least one activity'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return false;
-    }
-
     final provider = context.read<SexualEventsProvider>();
     final myself = provider.state.myself;
 
-    // Each activity must have at least one participant (can be "Me" or others)
-    for (var i = 0; i < _workingEvent.activities.length; i++) {
-      final activity = _workingEvent.activities[i];
-      final activityType = _availableActivityTypes[activity.type.reference];
-
-      // Check if activity requires a partner
-      if (activityType?.requiresPartner == true) {
-        // For activities requiring a partner, must have at least one non-self participant
-        final nonSelfCount = activity.participants.where((p) {
-          return myself == null || p.participant.reference != myself.id;
-        }).length;
-
-        if (nonSelfCount == 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Activity "${activityType?.name ?? 'Unknown'}" requires at least one partner',
-              ),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return false;
-        }
-      } else {
-        // For solo-capable activities, must have at least one participant (including "Me")
-        if (activity.participants.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Activity "${activityType?.name ?? 'Unknown'}" must have at least one participant (you or someone else)',
-              ),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return false;
-        }
-      }
-    }
-
-    return true;
+    return EventValidator.validateEvent(
+      context: context,
+      event: _workingEvent,
+      availableActivityCategories: _availableActivityCategories,
+      myself: myself,
+    );
   }
 
   Future<void> _saveEvent() async {
@@ -719,99 +549,17 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   Widget _buildDateTimeSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Date & Time',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: _pickDateTime,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '${_workingEvent.date.year}-${_workingEvent.date.month.toString().padLeft(2, '0')}-${_workingEvent.date.day.toString().padLeft(2, '0')}',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    const Icon(Icons.access_time, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${_workingEvent.date.hour.toString().padLeft(2, '0')}:${_workingEvent.date.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return DateTimeSection(dateTime: _workingEvent.date, onTap: _pickDateTime);
   }
 
   Widget _buildActivitiesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Activities',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            ElevatedButton.icon(
-              onPressed: _showActivityPicker,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Activity'),
-            ),
-          ],
-        ),
+        ActivitiesListHeader(onAddActivity: _showActivityPicker),
         const SizedBox(height: 12),
         if (_workingEvent.activities.isEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.category_outlined,
-                      size: 48,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withOpacity(0.5),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No activities added yet',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
+          const EmptyActivitiesState()
         else
           ..._workingEvent.activities.asMap().entries.map((entry) {
             return _buildActivityCard(entry.key, entry.value);
@@ -820,19 +568,20 @@ class _EventEditorPageState extends State<EventEditorPage> {
     );
   }
 
-  Widget _buildActivityCard(int activityIndex, SexualActivity activity) {
-    final activityType = _availableActivityTypes[activity.type.reference];
-    final emoji = activityType?.displayCharacter ?? '❔';
-    final name = activityType?.name ?? 'Unknown';
+  Widget _buildActivityCard(int activityIndex, EventActivity activity) {
+    final activityCategory =
+        _availableActivityCategories[activity.category.reference];
+    final emoji = activityCategory?.displayCharacter ?? '❔';
+    final name = activityCategory?.name ?? 'Unknown';
     final isExpanded = _expandedActivities.contains(activityIndex);
 
     // Get available properties for this activity type
-    final availableProperties = <SexualActivityTypeProperty>[];
-    if (activityType != null) {
-      for (var propRef in activityType.properties) {
-        final property = _availableProperties[propRef.reference];
-        if (property != null) {
-          availableProperties.add(property);
+    final availableSexualActivities = <SexualActivity>[];
+    if (activityCategory != null) {
+      for (var activityRef in activityCategory.activities) {
+        final sexualActivity = _availableActivities[activityRef.reference];
+        if (sexualActivity != null) {
+          availableSexualActivities.add(sexualActivity);
         }
       }
     }
@@ -873,7 +622,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (activityType?.requiresPartner == true)
+                          if (activityCategory?.requiresPartner == true)
                             const Text(
                               'Requires partner',
                               style: TextStyle(
@@ -949,7 +698,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              activityType?.requiresPartner == true
+                              activityCategory?.requiresPartner == true
                                   ? 'Add at least one partner to continue'
                                   : 'Add other participants, or toggle properties below to track your own participation',
                               style: TextStyle(
@@ -962,23 +711,23 @@ class _EventEditorPageState extends State<EventEditorPage> {
                       ),
                     )
                   else
-                    _buildParticipantsList(activityIndex, activity),
+                    _buildParticipantSection(activityIndex, activity),
                   // Properties section (show even with no participants for solo-capable activities)
-                  if (availableProperties.isNotEmpty) ...[
+                  if (availableSexualActivities.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     const Text(
-                      'Properties',
+                      'Activities',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ...availableProperties.map((property) {
+                    ...availableSexualActivities.map((sexualActivity) {
                       return _buildPropertyRow(
                         activityIndex,
                         activity,
-                        property,
+                        sexualActivity,
                       );
                     }),
                   ],
@@ -991,7 +740,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     );
   }
 
-  Widget _buildParticipantsList(int activityIndex, SexualActivity activity) {
+  Widget _buildParticipantSection(int activityIndex, EventActivity activity) {
     final provider = context.watch<SexualEventsProvider>();
     final myself = provider.state.myself;
 
@@ -1034,12 +783,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   Widget _buildPropertyRow(
     int activityIndex,
-    SexualActivity activity,
-    SexualActivityTypeProperty property,
+    EventActivity activity,
+    SexualActivity sexualActivity,
   ) {
     final provider = context.read<SexualEventsProvider>();
     final myself = provider.state.myself;
-    final activityType = _availableActivityTypes[activity.type.reference];
+    final activityCategory =
+        _availableActivityCategories[activity.category.reference];
 
     // Use the current working activity state (not from provider)
     final currentActivity = _workingEvent.activities[activityIndex];
@@ -1047,26 +797,26 @@ class _EventEditorPageState extends State<EventEditorPage> {
     // Check if "Me" has this property
     final meParticipant = currentActivity.participants.firstWhere(
       (p) => myself != null && p.participant.reference == myself.id,
-      orElse: () => SexualActivityParticipant(
+      orElse: () => ActivityParticipant(
         participant: Reference(reference: '', resourceType: 'Person'),
-        propertyCounts: [],
+        activityCounts: [],
       ),
     );
-    final mePropertyCount = meParticipant.propertyCounts.firstWhere(
-      (pc) => pc.propertyReference.reference == property.id,
-      orElse: () => PropertyCount(
-        propertyReference: Reference(
+    final meActivityCount = meParticipant.activityCounts.firstWhere(
+      (ac) => ac.activityReference.reference == sexualActivity.id,
+      orElse: () => ActivityCount(
+        activityReference: Reference(
           reference: '',
-          resourceType: 'SexualActivityTypeProperty',
+          resourceType: 'SexualActivity',
         ),
         count: 0,
       ),
     );
-    final meHasProperty = mePropertyCount.count > 0;
+    final meHasProperty = meActivityCount.count > 0;
 
     // Determine if "Me" checkbox should be enabled
-    final activityRequiresPartner = activityType?.requiresPartner ?? false;
-    final propertyRequiresPartner = property.requiresPartner;
+    final activityRequiresPartner = activityCategory?.requiresPartner ?? false;
+    final propertyRequiresPartner = sexualActivity.requiresPartner;
     final meCheckboxEnabled =
         !activityRequiresPartner && !propertyRequiresPartner;
 
@@ -1076,24 +826,24 @@ class _EventEditorPageState extends State<EventEditorPage> {
       if (myself != null && participant.participant.reference == myself.id) {
         continue; // Skip "Me"
       }
-      final propertyCount = participant.propertyCounts.firstWhere(
-        (pc) => pc.propertyReference.reference == property.id,
-        orElse: () => PropertyCount(
-          propertyReference: Reference(
+      final activityCount = participant.activityCounts.firstWhere(
+        (ac) => ac.activityReference.reference == sexualActivity.id,
+        orElse: () => ActivityCount(
+          activityReference: Reference(
             reference: '',
-            resourceType: 'SexualActivityTypeProperty',
+            resourceType: 'SexualActivity',
           ),
           count: 0,
         ),
       );
-      if (propertyCount.count > 0) {
+      if (activityCount.count > 0) {
         participantsWithProperty.add(participant.participant.reference);
       }
     }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: property.isRisky
+      color: sexualActivity.isRisky
           ? Theme.of(context).colorScheme.tertiaryContainer
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Padding(
@@ -1104,25 +854,19 @@ class _EventEditorPageState extends State<EventEditorPage> {
             Row(
               children: [
                 Text(
-                  property.displayCharacter,
+                  sexualActivity.displayCharacter,
                   style: const TextStyle(fontSize: 24),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    property.name,
+                    sexualActivity.name,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                if (property.isRisky)
-                  Icon(
-                    Icons.warning,
-                    color: Theme.of(context).colorScheme.tertiary,
-                    size: 20,
-                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1146,7 +890,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                             const SizedBox(width: 4),
                             Text(
                               meHasProperty
-                                  ? 'Me (${mePropertyCount.count})'
+                                  ? 'Me (${meActivityCount.count})'
                                   : 'Me',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
@@ -1168,7 +912,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                             ? (bool selected) {
                                 _toggleMyselfForProperty(
                                   activityIndex,
-                                  property.id,
+                                  sexualActivity.id,
                                 );
                               }
                             : null,
@@ -1193,7 +937,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                           constraints: const BoxConstraints(),
                           onPressed: () => _decrementPropertyCount(
                             activityIndex,
-                            property.id,
+                            sexualActivity.id,
                             myself.id,
                           ),
                           tooltip: 'Decrease count',
@@ -1204,7 +948,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                           constraints: const BoxConstraints(),
                           onPressed: () => _incrementPropertyCount(
                             activityIndex,
-                            property.id,
+                            sexualActivity.id,
                             myself.id,
                           ),
                           tooltip: 'Increase count',
@@ -1213,19 +957,11 @@ class _EventEditorPageState extends State<EventEditorPage> {
                     ],
                   ),
                 // Other participants
-                ...currentActivity.participants
-                    .where((p) {
-                      return myself == null ||
-                          p.participant.reference != myself.id;
+                ..._availablePersons
+                    .where((person) {
+                      return myself == null || person.id != myself.id;
                     })
-                    .map((participant) {
-                      final person = _availablePersons.firstWhere(
-                        (p) => p.id == participant.participant.reference,
-                        orElse: () => Person(
-                          date: DateTime.now(),
-                          name: const Name(given: 'Unknown'),
-                        ),
-                      );
+                    .map((person) {
                       final personName =
                           person.name.nickname ??
                           person.name.given ??
@@ -1233,14 +969,26 @@ class _EventEditorPageState extends State<EventEditorPage> {
                       final isSelected = participantsWithProperty.contains(
                         person.id,
                       );
-                      final propertyCount = participant.propertyCounts
+                      final participant = currentActivity.participants
                           .firstWhere(
-                            (pc) =>
-                                pc.propertyReference.reference == property.id,
-                            orElse: () => PropertyCount(
-                              propertyReference: Reference(
+                            (p) => p.participant.reference == person.id,
+                            orElse: () => ActivityParticipant(
+                              participant: Reference(
                                 reference: '',
-                                resourceType: 'SexualActivityTypeProperty',
+                                resourceType: 'Person',
+                              ),
+                              activityCounts: [],
+                            ),
+                          );
+                      final activityCount = participant.activityCounts
+                          .firstWhere(
+                            (ac) =>
+                                ac.activityReference.reference ==
+                                sexualActivity.id,
+                            orElse: () => ActivityCount(
+                              activityReference: Reference(
+                                reference: '',
+                                resourceType: 'SexualActivity',
                               ),
                               count: 0,
                             ),
@@ -1253,18 +1001,18 @@ class _EventEditorPageState extends State<EventEditorPage> {
                             selected: isSelected,
                             label: Text(
                               isSelected
-                                  ? '$personName (${propertyCount.count})'
+                                  ? '$personName (${activityCount.count})'
                                   : personName,
                             ),
                             onSelected: (bool selected) {
                               _toggleParticipantForProperty(
                                 activityIndex,
-                                property.id,
+                                sexualActivity.id,
                                 person.id,
                               );
                             },
                             selectedColor: Colors.white,
-                            checkmarkColor: property.isRisky
+                            checkmarkColor: sexualActivity.isRisky
                                 ? Colors.orange
                                 : Colors.green,
                           ),
@@ -1279,7 +1027,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                               constraints: const BoxConstraints(),
                               onPressed: () => _decrementPropertyCount(
                                 activityIndex,
-                                property.id,
+                                sexualActivity.id,
                                 person.id,
                               ),
                               tooltip: 'Decrease count',
@@ -1293,7 +1041,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                               constraints: const BoxConstraints(),
                               onPressed: () => _incrementPropertyCount(
                                 activityIndex,
-                                property.id,
+                                sexualActivity.id,
                                 person.id,
                               ),
                               tooltip: 'Increase count',
@@ -1301,8 +1049,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
                           ],
                         ],
                       );
-                    })
-                    ,
+                    }),
               ],
             ),
           ],

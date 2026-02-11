@@ -312,10 +312,10 @@ class OverviewStatsSection extends StatelessWidget {
         .map((p) => p.participant.reference)
         .toSet()
         .length;
-    final propertyCount = event.activities
+    final activityCount = event.activities
         .expand((a) => a.participants)
-        .expand((p) => p.propertyCounts)
-        .map((pc) => pc.propertyReference.reference)
+        .expand((p) => p.activityCounts)
+        .map((ac) => ac.activityReference.reference)
         .toSet()
         .length;
 
@@ -347,7 +347,7 @@ class OverviewStatsSection extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '$participantCount partner${participantCount != 1 ? 's' : ''} • $propertyCount propert${propertyCount != 1 ? 'ies' : 'y'}',
+                '$participantCount partner${participantCount != 1 ? 's' : ''} • $activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,

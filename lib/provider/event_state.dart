@@ -2,12 +2,11 @@ import 'package:indulge/data/models.dart';
 
 class EventState {
   final SexualEvent? selectedEvent;
-  final List<SexualActivityParticipant>?
-  selectedEventSexualActivityParticipants;
+  final List<ActivityParticipant>? selectedEventSexualActivityParticipants;
   final List<Person>? selectedEventParticipants;
   final Map<String, List<Person>>? selectedEventActivityParticipants;
-  final Map<String, SexualActivityType>? sexualActivityTypes;
-  final Map<String, SexualActivityTypeProperty>? sexualActivityTypeProperties;
+  final Map<String, SexualActivityCategory>? sexualActivityCategories;
+  final Map<String, SexualActivity>? sexualActivities;
   final List<SexualEvent>? currentEvents;
   final DateTime? selectedDate;
   final Map<DateTime, int>? dailyEventCount;
@@ -18,8 +17,8 @@ class EventState {
     this.selectedEventSexualActivityParticipants,
     this.selectedEventParticipants,
     this.selectedEventActivityParticipants,
-    this.sexualActivityTypes,
-    this.sexualActivityTypeProperties,
+    this.sexualActivityCategories,
+    this.sexualActivities,
     this.currentEvents,
     this.selectedDate,
     this.dailyEventCount,
@@ -28,11 +27,11 @@ class EventState {
 
   EventState copyWith({
     SexualEvent? selectedEvent,
-    List<SexualActivityParticipant>? selectedEventSexualActivityParticipants,
+    List<ActivityParticipant>? selectedEventSexualActivityParticipants,
     List<Person>? selectedEventParticipants,
     Map<String, List<Person>>? selectedEventActivityParticipants,
-    Map<String, SexualActivityType>? sexualActivityTypes,
-    Map<String, SexualActivityTypeProperty>? sexualActivityTypeProperties,
+    Map<String, SexualActivityCategory>? sexualActivityCategories,
+    Map<String, SexualActivity>? sexualActivities,
     List<SexualEvent>? currentEvents,
     DateTime? selectedDate,
     Map<DateTime, int>? dailyEventCount,
@@ -48,9 +47,9 @@ class EventState {
       selectedEventActivityParticipants:
           selectedEventActivityParticipants ??
           this.selectedEventActivityParticipants,
-      sexualActivityTypes: sexualActivityTypes ?? this.sexualActivityTypes,
-      sexualActivityTypeProperties:
-          sexualActivityTypeProperties ?? this.sexualActivityTypeProperties,
+      sexualActivityCategories:
+          sexualActivityCategories ?? this.sexualActivityCategories,
+      sexualActivities: sexualActivities ?? this.sexualActivities,
       currentEvents: currentEvents ?? this.currentEvents,
       selectedDate: selectedDate ?? this.selectedDate,
       dailyEventCount: dailyEventCount ?? this.dailyEventCount,

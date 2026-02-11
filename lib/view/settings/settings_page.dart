@@ -24,8 +24,8 @@ class SettingsPage extends StatelessWidget {
         _buildListTile(
           context,
           icon: Icons.category,
-          title: 'Manage Activity Types',
-          subtitle: 'Add, edit, or remove activity types',
+          title: 'Manage Categories',
+          subtitle: 'Add, edit, or remove activity categories',
           onTap: () {
             Navigator.push(
               context,
@@ -165,8 +165,8 @@ class SettingsPage extends StatelessWidget {
       // Get all data
       final events = await repo.getAllEvents();
       final persons = await repo.getAllPersons();
-      final activityTypes = await repo.getAllSexualActivityTypes();
-      final properties = await repo.getAllSexualActivityTypeProperties();
+      final activityCategories = await repo.getAllSexualActivityCategories();
+      final activities = await repo.getAllSexualActivities();
       final locations = await repo.getAllLocations();
 
       final exportData = {
@@ -175,8 +175,10 @@ class SettingsPage extends StatelessWidget {
         'data': {
           'events': events.map((e) => e.toJson()).toList(),
           'persons': persons.map((p) => p.toJson()).toList(),
-          'activityTypes': activityTypes.map((t) => t.toJson()).toList(),
-          'activityProperties': properties.map((p) => p.toJson()).toList(),
+          'activityCategories': activityCategories
+              .map((t) => t.toJson())
+              .toList(),
+          'activities': activities.map((p) => p.toJson()).toList(),
           'locations': locations.map((l) => l.toJson()).toList(),
         },
       };
@@ -227,7 +229,7 @@ class SettingsPage extends StatelessWidget {
           'This will permanently delete all your data including events, '
           'contacts, and custom activities. This action cannot be undone.\n\n'
           'The database will be restored to its initial state with default '
-          'activity types and the anonymous contact.',
+          'categories and the anonymous contact.',
         ),
         actions: [
           TextButton(

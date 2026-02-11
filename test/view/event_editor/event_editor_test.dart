@@ -10,12 +10,12 @@ void main() {
         date: DateTime.now(),
       );
 
-      final activity = SexualActivity(
-        type: const Reference(reference: 'oral'),
+      final activity = EventActivity(
+        category: const Reference(reference: 'oral'),
         participants: [
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'person1'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
         ],
       );
@@ -35,12 +35,12 @@ void main() {
         date: DateTime.now(),
       );
 
-      final activity = SexualActivity(
-        type: const Reference(reference: 'oral'),
+      final activity = EventActivity(
+        category: const Reference(reference: 'oral'),
         participants: [
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'anonymous'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
         ],
       );
@@ -54,16 +54,16 @@ void main() {
     });
 
     test('different participants can be added to same activity', () {
-      final activity = SexualActivity(
-        type: const Reference(reference: 'oral'),
+      final activity = EventActivity(
+        category: const Reference(reference: 'oral'),
         participants: [
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'person1'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'person2'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
         ],
       );
@@ -84,58 +84,58 @@ void main() {
       expect(activity.participants.length, equals(2));
     });
 
-    test('participant can have multiple property counts', () {
-      const participant = SexualActivityParticipant(
+    test('participant can have multiple activity counts', () {
+      const participant = ActivityParticipant(
         participant: Reference(reference: 'person1'),
-        propertyCounts: [
-          PropertyCount(
-            propertyReference: Reference(reference: 'condom'),
+        activityCounts: [
+          ActivityCount(
+            activityReference: Reference(reference: 'giving'),
             count: 1,
           ),
-          PropertyCount(
-            propertyReference: Reference(reference: 'lube'),
+          ActivityCount(
+            activityReference: Reference(reference: 'receiving'),
             count: 2,
           ),
         ],
       );
 
-      expect(participant.propertyCounts.length, equals(2));
-      expect(participant.propertyCounts[0].count, equals(1));
-      expect(participant.propertyCounts[1].count, equals(2));
+      expect(participant.activityCounts.length, equals(2));
+      expect(participant.activityCounts[0].count, equals(1));
+      expect(participant.activityCounts[1].count, equals(2));
     });
 
-    test('property count can be incremented for same participant', () {
-      const originalPropertyCount = PropertyCount(
-        propertyReference: Reference(reference: 'condom'),
+    test('activity count can be incremented for same participant', () {
+      const originalActivityCount = ActivityCount(
+        activityReference: Reference(reference: 'giving'),
         count: 1,
       );
 
-      final incrementedPropertyCount = originalPropertyCount.copyWith(
-        count: originalPropertyCount.count + 1,
+      final incrementedActivityCount = originalActivityCount.copyWith(
+        count: originalActivityCount.count + 1,
       );
 
-      expect(incrementedPropertyCount.count, equals(2));
+      expect(incrementedActivityCount.count, equals(2));
       expect(
-        incrementedPropertyCount.propertyReference.reference,
-        equals('condom'),
+        incrementedActivityCount.activityReference.reference,
+        equals('giving'),
       );
     });
 
     test('participant list should be unique by person id', () {
-      final activity = SexualActivity(
-        type: const Reference(reference: 'oral'),
+      final activity = EventActivity(
+        category: const Reference(reference: 'oral'),
         participants: [
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'person1'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'person2'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'person3'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
         ],
       );
@@ -150,33 +150,33 @@ void main() {
       expect(activity.participants.length, equals(3));
     });
 
-    test('incrementing property count should not duplicate participant', () {
-      final participant = const SexualActivityParticipant(
+    test('incrementing activity count should not duplicate participant', () {
+      const participant = ActivityParticipant(
         participant: Reference(reference: 'person1'),
-        propertyCounts: [
-          PropertyCount(
-            propertyReference: Reference(reference: 'condom'),
+        activityCounts: [
+          ActivityCount(
+            activityReference: Reference(reference: 'giving'),
             count: 1,
           ),
         ],
       );
 
       // Simulate incrementing the count
-      final updatedPropertyCounts = participant.propertyCounts.map((pc) {
-        if (pc.propertyReference.reference == 'condom') {
-          return pc.copyWith(count: pc.count + 1);
+      final updatedActivityCounts = participant.activityCounts.map((ac) {
+        if (ac.activityReference.reference == 'giving') {
+          return ac.copyWith(count: ac.count + 1);
         }
-        return pc;
+        return ac;
       }).toList();
 
       final updatedParticipant = participant.copyWith(
-        propertyCounts: updatedPropertyCounts,
+        activityCounts: updatedActivityCounts,
       );
 
       // Should still be the same participant
       expect(updatedParticipant.participant.reference, equals('person1'));
-      expect(updatedParticipant.propertyCounts.length, equals(1));
-      expect(updatedParticipant.propertyCounts[0].count, equals(2));
+      expect(updatedParticipant.activityCounts.length, equals(1));
+      expect(updatedParticipant.activityCounts[0].count, equals(2));
     });
 
     test('multiple activities can have same participant', () {
@@ -184,21 +184,21 @@ void main() {
         id: 'event1',
         date: DateTime.now(),
         activities: [
-          SexualActivity(
-            type: const Reference(reference: 'oral'),
+          const EventActivity(
+            category: Reference(reference: 'oral'),
             participants: [
-              const SexualActivityParticipant(
+              ActivityParticipant(
                 participant: Reference(reference: 'person1'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
             ],
           ),
-          SexualActivity(
-            type: const Reference(reference: 'vaginal'),
+          EventActivity(
+            category: Reference(reference: 'vaginal'),
             participants: [
-              const SexualActivityParticipant(
+              ActivityParticipant(
                 participant: Reference(reference: 'person1'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
             ],
           ),
@@ -219,13 +219,13 @@ void main() {
 
     test('can check if participant exists before adding', () {
       final existingParticipants = [
-        const SexualActivityParticipant(
+        const ActivityParticipant(
           participant: Reference(reference: 'person1'),
-          propertyCounts: [],
+          activityCounts: [],
         ),
-        const SexualActivityParticipant(
+        const ActivityParticipant(
           participant: Reference(reference: 'person2'),
-          propertyCounts: [],
+          activityCounts: [],
         ),
       ];
 

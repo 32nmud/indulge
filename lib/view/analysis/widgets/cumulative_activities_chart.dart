@@ -50,8 +50,8 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
           children: [
             Text(
               _isCumulative
-                  ? 'Cumulative Activities Over Time'
-                  : 'Activity Trends Over Time',
+                  ? 'Cumulative Categories Over Time'
+                  : 'Category Trends Over Time',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -59,8 +59,8 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
             const SizedBox(height: 4),
             Text(
               _isCumulative
-                  ? 'Track how each activity accumulates over the period'
-                  : 'View activity counts for each time period',
+                  ? 'Track how each category accumulates over the period'
+                  : 'View category counts for each time period',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -90,8 +90,8 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
       runSpacing: 8,
       children: sortedActivities.take(10).map((entry) {
         final activityId = entry.key;
-        final activityType = widget.data.activityTypes[activityId];
-        final displayName = activityType?.name ?? 'Unknown';
+        final activityCategory = widget.data.activityCategories[activityId];
+        final displayName = activityCategory?.name ?? 'Unknown';
         final isSelected = _selectedActivities.contains(activityId);
 
         return FilterChip(
@@ -165,8 +165,8 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
       children: _selectedActivities.toList().asMap().entries.map((entry) {
         final index = entry.key;
         final activityId = entry.value;
-        final activityType = widget.data.activityTypes[activityId];
-        final displayName = activityType?.name ?? 'Unknown';
+        final activityCategory = widget.data.activityCategories[activityId];
+        final displayName = activityCategory?.name ?? 'Unknown';
 
         return Row(
           mainAxisSize: MainAxisSize.min,
@@ -392,8 +392,9 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
                 return touchedSpots.map((spot) {
                   final activityId = _selectedActivities
                       .toList()[spot.barIndex];
-                  final activityType = widget.data.activityTypes[activityId];
-                  final displayName = activityType?.name ?? 'Unknown';
+                  final activityCategory =
+                      widget.data.activityCategories[activityId];
+                  final displayName = activityCategory?.name ?? 'Unknown';
                   final date = allDates[spot.x.toInt()];
                   final count = spot.y.toInt();
 
@@ -497,7 +498,7 @@ class _CumulativeActivitiesChartState extends State<CumulativeActivitiesChart> {
       final monthDate = DateTime(event.date.year, event.date.month, 1);
 
       for (final activity in event.activities) {
-        final activityId = activity.type.reference;
+        final activityId = activity.category.reference;
         if (_selectedActivities.contains(activityId)) {
           result[activityId]![monthDate] =
               (result[activityId]![monthDate] ?? 0) + 1;

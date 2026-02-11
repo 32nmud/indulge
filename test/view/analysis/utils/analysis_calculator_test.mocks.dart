@@ -80,7 +80,7 @@ class MockSexualEventsProvider extends _i1.Mock
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> removeActivity(_i6.SexualActivity? activity) =>
+  _i4.Future<void> removeActivity(_i6.EventActivity? activity) =>
       (super.noSuchMethod(
             Invocation.method(#removeActivity, [activity]),
             returnValue: _i4.Future<void>.value(),
@@ -98,9 +98,9 @@ class MockSexualEventsProvider extends _i1.Mock
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> removeActivityFromEdit(String? activityTypeId) =>
+  _i4.Future<void> removeActivityFromEdit(String? activityCategoryId) =>
       (super.noSuchMethod(
-            Invocation.method(#removeActivityFromEdit, [activityTypeId]),
+            Invocation.method(#removeActivityFromEdit, [activityCategoryId]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
@@ -116,19 +116,18 @@ class MockSexualEventsProvider extends _i1.Mock
           as _i4.Future<void>);
 
   @override
-  List<_i6.SexualActivityTypeProperty>
-  getSexualActivityTypePropertiesForPersonAndActivity(
+  List<_i6.SexualActivity> getSexualActivitiesForPersonAndActivity(
     _i6.Person? person,
-    _i6.SexualActivity? activity,
+    _i6.EventActivity? activity,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #getSexualActivityTypePropertiesForPersonAndActivity,
-              [person, activity],
-            ),
-            returnValue: <_i6.SexualActivityTypeProperty>[],
+            Invocation.method(#getSexualActivitiesForPersonAndActivity, [
+              person,
+              activity,
+            ]),
+            returnValue: <_i6.SexualActivity>[],
           )
-          as List<_i6.SexualActivityTypeProperty>);
+          as List<_i6.SexualActivity>);
 
   @override
   _i4.Future<List<_i6.Person>> getPersonsForEvent(String? eventId) =>
@@ -140,7 +139,7 @@ class MockSexualEventsProvider extends _i1.Mock
 
   @override
   _i4.Future<List<_i6.Person>> getPersonsForActivity(
-    _i6.SexualActivity? activity,
+    _i6.EventActivity? activity,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#getPersonsForActivity, [activity]),
@@ -211,55 +210,55 @@ class MockSexualEventsProvider extends _i1.Mock
           as _i4.Future<List<_i6.SexualEvent>>);
 
   @override
-  _i4.Future<void> saveActivityType(_i6.SexualActivityType? activityType) =>
+  _i4.Future<void> saveActivityCategory(
+    _i6.SexualActivityCategory? activityCategory,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#saveActivityType, [activityType]),
+            Invocation.method(#saveActivityCategory, [activityCategory]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> deleteActivityType(String? id) =>
+  _i4.Future<void> deleteActivityCategory(String? id) =>
       (super.noSuchMethod(
-            Invocation.method(#deleteActivityType, [id]),
+            Invocation.method(#deleteActivityCategory, [id]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
 
   @override
-  _i4.Future<bool> isActivityTypeUsed(String? activityTypeId) =>
+  _i4.Future<bool> isActivityCategoryUsed(String? activityCategoryId) =>
       (super.noSuchMethod(
-            Invocation.method(#isActivityTypeUsed, [activityTypeId]),
+            Invocation.method(#isActivityCategoryUsed, [activityCategoryId]),
             returnValue: _i4.Future<bool>.value(false),
           )
           as _i4.Future<bool>);
 
   @override
-  _i4.Future<void> saveActivityProperty(
-    _i6.SexualActivityTypeProperty? property,
-  ) =>
+  _i4.Future<void> saveSexualActivity(_i6.SexualActivity? activity) =>
       (super.noSuchMethod(
-            Invocation.method(#saveActivityProperty, [property]),
+            Invocation.method(#saveSexualActivity, [activity]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> deleteActivityProperty(String? id) =>
+  _i4.Future<void> deleteSexualActivity(String? id) =>
       (super.noSuchMethod(
-            Invocation.method(#deleteActivityProperty, [id]),
+            Invocation.method(#deleteSexualActivity, [id]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
 
   @override
-  _i4.Future<bool> isActivityPropertyUsed(String? propertyId) =>
+  _i4.Future<bool> isSexualActivityUsed(String? activityId) =>
       (super.noSuchMethod(
-            Invocation.method(#isActivityPropertyUsed, [propertyId]),
+            Invocation.method(#isSexualActivityUsed, [activityId]),
             returnValue: _i4.Future<bool>.value(false),
           )
           as _i4.Future<bool>);

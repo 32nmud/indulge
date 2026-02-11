@@ -57,13 +57,13 @@ class EventAveragesSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Activity Averages
+            // Category Averages
             Row(
               children: [
                 Expanded(
                   child: _buildAverageItem(
                     context,
-                    label: 'Activities/Week',
+                    label: 'Categories/Week',
                     value: data.averageActivitiesPerWeek.toStringAsFixed(1),
                     icon: Icons.event_note,
                   ),
@@ -72,7 +72,7 @@ class EventAveragesSection extends StatelessWidget {
                 Expanded(
                   child: _buildAverageItem(
                     context,
-                    label: 'Activities/Month',
+                    label: 'Categories/Month',
                     value: data.averageActivitiesPerMonth.toStringAsFixed(1),
                     icon: Icons.event_available,
                   ),
@@ -95,7 +95,7 @@ class EventAveragesSection extends StatelessWidget {
                 Expanded(
                   child: _buildAverageItem(
                     context,
-                    label: 'Activities/Event',
+                    label: 'Categories/Event',
                     value: data.averageActivitiesPerEvent.toStringAsFixed(1),
                     icon: Icons.event_note,
                   ),
@@ -105,8 +105,8 @@ class EventAveragesSection extends StatelessWidget {
             const SizedBox(height: 12),
             _buildAverageItem(
               context,
-              label: 'Properties/Event',
-              value: data.averagePropertiesPerEvent.toStringAsFixed(1),
+              label: 'Activities/Event',
+              value: data.averageSexualActivitiesPerEvent.toStringAsFixed(1),
               icon: Icons.label,
             ),
           ],

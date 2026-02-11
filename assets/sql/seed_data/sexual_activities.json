@@ -1,0 +1,533 @@
+{
+  "resources": [
+    {
+      "id": "1",
+      "name": "Bareback",
+      "displayCharacter": "\ud83c\udf4c",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "2",
+      "name": "Condom",
+      "displayCharacter": "\ud83d\udee1\ufe0f",
+      "canHaveMultipleParticipants": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "3",
+      "name": "Came inside",
+      "displayCharacter": "\ud83d\udca6",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "4",
+      "name": "Broken condom",
+      "displayCharacter": "\ud83d\udc94",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "5",
+      "name": "Bondage",
+      "displayCharacter": "\ud83e\udea2",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "6",
+      "name": "Fisting",
+      "displayCharacter": "\ud83d\udc4a",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "7",
+      "name": "Pet Play",
+      "displayCharacter": "\ud83d\udc36",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "8",
+      "name": "Biting",
+      "displayCharacter": "\ud83e\uddb7",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "9",
+      "name": "Breath control",
+      "displayCharacter": "\ud83d\udca8",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "10",
+      "name": "Cock & ball torture",
+      "displayCharacter": "\ud83c\udf52",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "11",
+      "name": "Chastity",
+      "displayCharacter": "\ud83d\udd10",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "12",
+      "name": "Consensual non consent",
+      "displayCharacter": "\ud83e\udd1d",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "13",
+      "name": "Edging",
+      "displayCharacter": "\ud83d\udcd0",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "14",
+      "name": "Estim",
+      "displayCharacter": "\ud83d\uddf2",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "15",
+      "name": "Exhibition/Voyer",
+      "displayCharacter": "\ud83d\udc40",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "16",
+      "name": "Escort/John",
+      "displayCharacter": "\ud83d\udcb0",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "17",
+      "name": "Feet",
+      "displayCharacter": "\ud83d\udc63",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "18",
+      "name": "Flogging",
+      "displayCharacter": "\ud83d\udca5",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "19",
+      "name": "Piss Play",
+      "displayCharacter": "\ud83c\udf0a",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "20",
+      "name": "Heat/Fire/Wax",
+      "displayCharacter": "\u2764\ufe0f\u200d\ud83d\udd25",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "21",
+      "name": "Humiliation",
+      "displayCharacter": "\ud83e\udd2d",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "22",
+      "name": "Hypnosis",
+      "displayCharacter": "\ud83d\ude35\u200d\ud83d\udcab",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "23",
+      "name": "Nipple Play",
+      "displayCharacter": "\ud83d\udc4c",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "24",
+      "name": "Public Play",
+      "displayCharacter": "\ud83c\udf33",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "25",
+      "name": "Age Play",
+      "displayCharacter": "\ud83d\udc76",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "26",
+      "name": "Sensory Deprivation",
+      "displayCharacter": "\ud83d\ude48",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "27",
+      "name": "Musk Play",
+      "displayCharacter": "\ud83d\udc3d",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "28",
+      "name": "Single tail/Whip",
+      "displayCharacter": "\ud83d\udca5",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "29",
+      "name": "Spanking/Paddling",
+      "displayCharacter": "\ud83c\udfd2",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "30",
+      "name": "Toys",
+      "displayCharacter": "\ud83e\udd52",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "31",
+      "name": "Wrestling",
+      "displayCharacter": "\ud83e\udd3c",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "32",
+      "name": "Foodplay",
+      "displayCharacter": "\ud83c\udf69",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "33",
+      "name": "Feeding",
+      "displayCharacter": "\ud83c\udf7d\ufe0f",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "34",
+      "name": "Cuckholding",
+      "displayCharacter": "\u274c",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "35",
+      "name": "Pay Play",
+      "displayCharacter": "\ud83d\udcb8",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "36",
+      "name": "Smoked cannabis",
+      "displayCharacter": "\ud83c\udf3f",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "37",
+      "name": "Drank alcohol",
+      "displayCharacter": "\ud83c\udf7a",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "38",
+      "name": "Used poppers",
+      "displayCharacter": "\ud83d\udca8",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "39",
+      "name": "On PrEP",
+      "displayCharacter": "\ud83d\udc8a",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "40",
+      "name": "Molly/MDMA",
+      "displayCharacter": "\ud83d\udc8a",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "41",
+      "name": "LSD",
+      "displayCharacter": "\ud83c\udf08",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "42",
+      "name": "Cocaine",
+      "displayCharacter": "\u2744\ufe0f",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "43",
+      "name": "Ketamine",
+      "displayCharacter": "\ud83d\udc34",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "44",
+      "name": "GHB",
+      "displayCharacter": "\ud83d\udca7",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "45",
+      "name": "Meth",
+      "displayCharacter": "\ud83d\udc8e",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "46",
+      "name": "Mushrooms",
+      "displayCharacter": "\ud83c\udf44",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": false,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "47",
+      "name": "Kissing/Makeout",
+      "displayCharacter": "\ud83d\ude18",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "48",
+      "name": "Received head",
+      "displayCharacter": "\ud83e\uddd2",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "49",
+      "name": "Gave head",
+      "displayCharacter": "\ud83e\uddd2",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "50",
+      "name": "They swallowed",
+      "displayCharacter": "\ud83d\udca6",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "51",
+      "name": "I swallowed",
+      "displayCharacter": "\ud83d\udca6",
+      "canHaveMultipleParticipants": true,
+      "isRisky": true,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "52",
+      "name": "I rimmed",
+      "displayCharacter": "\ud83c\udf69",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    },
+    {
+      "id": "53",
+      "name": "I was rimmed",
+      "displayCharacter": "\ud83c\udf69",
+      "canHaveMultipleParticipants": true,
+      "isRisky": false,
+      "requiresPartner": true,
+      "version": 2,
+      "resourceType": "SexualActivity"
+    }
+  ]
+}

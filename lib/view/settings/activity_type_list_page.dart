@@ -15,19 +15,19 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<SexualEventsProvider>();
-    final activityTypes =
-        provider.state.sexualActivityTypes?.values.toList() ?? [];
+    final activityCategories =
+        provider.state.sexualActivityCategories?.values.toList() ?? [];
 
     // Sort alphabetically
-    activityTypes.sort((a, b) => a.name.compareTo(b.name));
+    activityCategories.sort((a, b) => a.name.compareTo(b.name));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Activity Types'),
+        title: const Text('Manage Activity Categories'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       floatingActionButton: FloatingActionButton(
-        heroTag: 'activity_types_add_fab',
+        heroTag: 'activity_categories_add_fab',
         onPressed: () async {
           final result = await Navigator.push<bool>(
             context,
@@ -41,7 +41,7 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
         },
         child: const Icon(Icons.add),
       ),
-      body: activityTypes.isEmpty
+      body: activityCategories.isEmpty
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -49,17 +49,17 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
                   Icon(Icons.category_outlined, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
                   Text(
-                    'No activity types found',
+                    'No categories found',
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
             )
           : ListView.builder(
-              itemCount: activityTypes.length,
+              itemCount: activityCategories.length,
               itemBuilder: (context, index) {
-                final activityType = activityTypes[index];
-                final propertyCount = activityType.properties.length;
+                final activityCategory = activityCategories[index];
+                final activityCount = activityCategory.activities.length;
 
                 return Card(
                   margin: const EdgeInsets.symmetric(
@@ -68,24 +68,24 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
                   ),
                   child: ListTile(
                     leading: Text(
-                      activityType.displayCharacter ?? '❓',
+                      activityCategory.displayCharacter ?? '❓',
                       style: const TextStyle(fontSize: 32),
                     ),
                     title: Row(
                       children: [
                         Expanded(
                           child: Text(
-                            activityType.name,
+                            activityCategory.name,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (activityType.requiresPartner) ...[
+                        if (activityCategory.requiresPartner) ...[
                           const SizedBox(width: 8),
                           const Icon(Icons.group, size: 16, color: Colors.blue),
                         ],
                       ],
                     ),
-                    subtitle: activityType.requiresPartner
+                    subtitle: activityCategory.requiresPartner
                         ? const Text(
                             'Requires partner',
                             style: TextStyle(fontSize: 11, color: Colors.blue),
@@ -94,10 +94,10 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (propertyCount > 0)
+                        if (activityCount > 0)
                           Chip(
                             label: Text(
-                              '$propertyCount ${propertyCount == 1 ? 'property' : 'properties'}',
+                              '$activityCount ${activityCount == 1 ? 'activity' : 'activities'}',
                             ),
                             visualDensity: VisualDensity.compact,
                           ),
@@ -105,7 +105,7 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () =>
-                              _confirmDelete(context, activityType),
+                              _confirmDelete(context, activityCategory),
                         ),
                       ],
                     ),
@@ -114,7 +114,7 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => ActivityTypeEditorPage(
-                            activityType: activityType,
+                            activityCategory: activityCategory,
                           ),
                         ),
                       );
@@ -131,23 +131,23 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
 
   Future<void> _confirmDelete(
     BuildContext context,
-    SexualActivityType activityType,
+    SexualActivityCategory activityCategory,
   ) async {
     final provider = context.read<SexualEventsProvider>();
 
-    // Check if this activity type is used in any events
-    final isUsed = await provider.isActivityTypeUsed(activityType.id);
+    // Check if this activity category is used in any events
+    final isUsed = await provider.isActivityCategoryUsed(activityCategory.id);
 
     if (!mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Activity Type?'),
+        title: const Text('Delete Category?'),
         content: Text(
           isUsed
-              ? 'This activity type is used in existing events. Deleting it will remove it from all events. This action cannot be undone.'
-              : 'Are you sure you want to delete "${activityType.name}"?',
+              ? 'This category is used in existing events. Deleting it will remove it from all events. This action cannot be undone.'
+              : 'Are you sure you want to delete "${activityCategory.name}"?',
         ),
         actions: [
           TextButton(
@@ -165,10 +165,10 @@ class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
 
     if (confirmed == true && mounted) {
       try {
-        await provider.deleteActivityType(activityType.id);
+        await provider.deleteActivityCategory(activityCategory.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${activityType.name} deleted')),
+            SnackBar(content: Text('${activityCategory.name} deleted')),
           );
           setState(() {});
         }

@@ -29,14 +29,14 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Activity Type Breakdown',
+              'Category Breakdown',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              'Total count of each activity type you\'ve done',
+              'Total count of each category you\'ve done',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -154,7 +154,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
       itemCount: sortedEntries.length,
       itemBuilder: (context, index) {
         final entry = sortedEntries[index];
-        final activityType = widget.data.activityTypes[entry.key];
+        final activityCategory = widget.data.activityCategories[entry.key];
         final color = colors[index % colors.length];
         final percentage = (entry.value / totalActivitiesThisYear * 100)
             .round();
@@ -174,11 +174,11 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      activityType?.displayCharacter ?? '❓',
+                      activityCategory?.displayCharacter ?? '❓',
                       style: const TextStyle(fontSize: 14),
                     ),
                     Text(
-                      activityType?.name ?? 'Unknown',
+                      activityCategory?.name ?? 'Unknown',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontSize: 10,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,

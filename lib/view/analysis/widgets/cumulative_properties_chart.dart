@@ -46,14 +46,14 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
 
     for (final event in widget.data.events) {
       for (final activity in event.activities) {
-        if (activity.type.reference == _selectedActivity) {
+        if (activity.category.reference == _selectedActivity) {
           for (final participant in activity.participants) {
-            for (final propertyCount in participant.propertyCounts) {
-              final propertyId = propertyCount.propertyReference.reference;
-              if (propertyId.isNotEmpty) {
-                propertyCountsForActivity[propertyId] =
-                    (propertyCountsForActivity[propertyId] ?? 0) +
-                    propertyCount.count;
+            for (final activityCount in participant.activityCounts) {
+              final activityId = activityCount.activityReference.reference;
+              if (activityId.isNotEmpty) {
+                propertyCountsForActivity[activityId] =
+                    (propertyCountsForActivity[activityId] ?? 0) +
+                    activityCount.count;
               }
             }
           }
@@ -86,8 +86,8 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
           children: [
             Text(
               _isCumulative
-                  ? 'Cumulative Properties Over Time'
-                  : 'Property Trends Over Time',
+                  ? 'Cumulative Activities Over Time'
+                  : 'Activity Trends Over Time',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -95,8 +95,8 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
             const SizedBox(height: 4),
             Text(
               _isCumulative
-                  ? 'Track property usage for each activity over time'
-                  : 'View property counts for each time period',
+                  ? 'Track activity usage for each category over time'
+                  : 'View activity counts for each time period',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -141,8 +141,8 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
           runSpacing: 8,
           children: sortedActivities.take(10).map((entry) {
             final activityId = entry.key;
-            final activityType = widget.data.activityTypes[activityId];
-            final displayName = activityType?.name ?? 'Unknown';
+            final activityCategory = widget.data.activityCategories[activityId];
+            final displayName = activityCategory?.name ?? 'Unknown';
             final isSelected = _selectedActivity == activityId;
 
             return ChoiceChip(
@@ -214,8 +214,8 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
       children: _selectedProperties.toList().asMap().entries.map((entry) {
         final index = entry.key;
         final propertyId = entry.value;
-        final property = widget.data.properties[propertyId];
-        final displayName = property?.name ?? 'Unknown';
+        final activity = widget.data.sexualActivities[propertyId];
+        final displayName = activity?.name ?? 'Unknown';
 
         return Row(
           mainAxisSize: MainAxisSize.min,
@@ -247,14 +247,14 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
 
     for (final event in widget.data.events) {
       for (final activity in event.activities) {
-        if (activity.type.reference == _selectedActivity) {
+        if (activity.category.reference == _selectedActivity) {
           for (final participant in activity.participants) {
-            for (final propertyCount in participant.propertyCounts) {
-              final propertyId = propertyCount.propertyReference.reference;
-              if (propertyId.isNotEmpty) {
-                propertyCountsForActivity[propertyId] =
-                    (propertyCountsForActivity[propertyId] ?? 0) +
-                    propertyCount.count;
+            for (final activityCount in participant.activityCounts) {
+              final activityId = activityCount.activityReference.reference;
+              if (activityId.isNotEmpty) {
+                propertyCountsForActivity[activityId] =
+                    (propertyCountsForActivity[activityId] ?? 0) +
+                    activityCount.count;
               }
             }
           }
@@ -282,11 +282,10 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Select Properties (up to $_maxLines):',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          'Select Activities (max $_maxLines):',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -294,8 +293,8 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
           runSpacing: 8,
           children: sortedProperties.take(15).map((entry) {
             final propertyId = entry.key;
-            final property = widget.data.properties[propertyId];
-            final displayName = property?.name ?? 'Unknown';
+            final activity = widget.data.sexualActivities[propertyId];
+            final displayName = activity?.name ?? 'Unknown';
             final isSelected = _selectedProperties.contains(propertyId);
 
             return FilterChip(
@@ -525,8 +524,8 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
                 return touchedSpots.map((spot) {
                   final propertyId = _selectedProperties
                       .toList()[spot.barIndex];
-                  final property = widget.data.properties[propertyId];
-                  final displayName = property?.name ?? 'Unknown';
+                  final activity = widget.data.sexualActivities[propertyId];
+                  final displayName = activity?.name ?? 'Unknown';
                   final date = allDates[spot.x.toInt()];
                   final count = spot.y.toInt();
 
@@ -634,13 +633,13 @@ class _CumulativePropertiesChartState extends State<CumulativePropertiesChart> {
       final monthDate = DateTime(event.date.year, event.date.month, 1);
 
       for (final activity in event.activities) {
-        if (activity.type.reference == _selectedActivity) {
+        if (activity.category.reference == _selectedActivity) {
           for (final participant in activity.participants) {
-            for (final propertyCount in participant.propertyCounts) {
-              final propertyId = propertyCount.propertyReference.reference;
-              if (_selectedProperties.contains(propertyId)) {
-                result[propertyId]![monthDate] =
-                    (result[propertyId]![monthDate] ?? 0) + propertyCount.count;
+            for (final activityCount in participant.activityCounts) {
+              final activityId = activityCount.activityReference.reference;
+              if (_selectedProperties.contains(activityId)) {
+                result[activityId]![monthDate] =
+                    (result[activityId]![monthDate] ?? 0) + activityCount.count;
               }
             }
           }

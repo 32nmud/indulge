@@ -8,12 +8,12 @@ class PropertyUsageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (data.propertyCountsTotal.isEmpty) {
+    if (data.sexualActivityCountsTotal.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Sort properties by count and take top 15
-    final sortedProperties = data.propertyCountsTotal.entries.toList()
+    // Sort sexual activities by count and take top 15
+    final sortedProperties = data.sexualActivityCountsTotal.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final topProperties = sortedProperties.take(15).toList();
 
@@ -25,14 +25,14 @@ class PropertyUsageSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Most Used Properties',
+              'Most Used Activities',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Top properties across all activities',
+              'Top activities across all events',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
@@ -41,7 +41,7 @@ class PropertyUsageSection extends StatelessWidget {
             ...topProperties.asMap().entries.map((entry) {
               final index = entry.key;
               final propertyEntry = entry.value;
-              final property = data.properties[propertyEntry.key];
+              final activity = data.sexualActivities[propertyEntry.key];
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -71,7 +71,7 @@ class PropertyUsageSection extends StatelessWidget {
                     Expanded(
                       child: Row(
                         children: [
-                          if (property?.isRisky ?? false)
+                          if (activity?.isRisky ?? false)
                             Padding(
                               padding: const EdgeInsets.only(right: 6.0),
                               child: Icon(
@@ -82,7 +82,7 @@ class PropertyUsageSection extends StatelessWidget {
                             ),
                           Expanded(
                             child: Text(
-                              property?.name ?? 'Unknown',
+                              activity?.name ?? 'Unknown',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(fontWeight: FontWeight.w500),
                               overflow: TextOverflow.ellipsis,

@@ -1,11 +1,9 @@
-export 'models/person/person.dart';
-export 'models/address/address.dart';
-export 'models/location/location.dart';
-export 'models/sexual_activity/sexual_activity.dart';
-export 'models/sexual_event/sexual_event.dart';
-export 'models/name/name.dart';
-export 'models/reference/reference.dart';
-export 'models/sexual_activity_type/sexual_activity_type.dart';
-export 'models/sexual_activity_type_property/sexual_activity_type_property.dart';
-export 'models/sexual_activity_participant/sexual_activity_participant.dart';
-export 'models/property_count/property_count.dart';
+// Export v2 models as the default
+// Note: v1 models are NOT exported here to avoid naming conflicts.
+// To use v1 models (for migration), import directly:
+// import 'package:indulge/data/models/v1/models.dart' as v1;
+
+export 'models/v2/models.dart';
+
+// Export versioned model interface
+export 'models/versioned_model.dart';

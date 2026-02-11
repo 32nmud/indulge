@@ -28,27 +28,27 @@ class AnalysisCalculator {
     // Calculate basic counts
     final activityCounts = <String, int>{}; // All time for backwards compat
     final activityCountsThisYear = <String, int>{}; // Last 12 months
-    final activityTypes = <String, SexualActivityType>{};
+    final activityCategories = <String, SexualActivityCategory>{};
     final personCounts = <String, int>{};
     final personEventCounts = <String, int>{};
     final personEvents = <String, List<SexualEvent>>{};
     final personPropertyCounts = <String, Map<String, int>>{};
-    final propertyCountsTotal = <String, int>{};
-    final properties = <String, SexualActivityTypeProperty>{};
-    final propertyPartnerCounts =
+    final sexualActivityCountsTotal = <String, int>{};
+    final sexualActivities = <String, SexualActivity>{};
+    final sexualActivityPartnerCounts =
         <
           String,
           Set<String>
-        >{}; // Track unique partners per property (all time)
+        >{}; // Track unique partners per sexual activity (all time)
 
-    // Track activity-partner and property-partner counts for last 12 months
-    final activityPartnerCountsThisYear = <String, Set<String>>{};
-    final propertyPartnerCountsThisYear = <String, Set<String>>{};
-    final activityPropertyPartnerCountsThisYear =
+    // Track category-partner and sexual activity-partner counts for last 12 months
+    final categoryPartnerCountsThisYear = <String, Set<String>>{};
+    final sexualActivityPartnerCountsThisYear = <String, Set<String>>{};
+    final categoryActivityPartnerCountsThisYear =
         <
           String,
           Map<String, Set<String>>
-        >{}; // activity -> property -> partners
+        >{}; // category -> sexual activity -> partners
 
     int totalActivities = 0;
     int riskyActivityCount = 0;
@@ -89,16 +89,17 @@ class AnalysisCalculator {
         eventActivitiesCount++;
         totalActivities++;
 
-        // Activity type counts
-        final activityTypeId = activity.type.reference;
-        activityCounts[activityTypeId] =
-            (activityCounts[activityTypeId] ?? 0) + 1;
-        final activityType = providerState.sexualActivityTypes?[activityTypeId];
-        if (activityType != null) {
-          activityTypes[activityTypeId] = activityType;
+        // Activity category counts
+        final activityCategoryId = activity.category.reference;
+        activityCounts[activityCategoryId] =
+            (activityCounts[activityCategoryId] ?? 0) + 1;
+        final activityCategory =
+            providerState.sexualActivityCategories?[activityCategoryId];
+        if (activityCategory != null) {
+          activityCategories[activityCategoryId] = activityCategory;
         }
 
-        // Check if activity is risky (has any risky properties)
+        // Check if activity is risky (has any risky sexual activities)
         bool hasRiskyProperty = false;
 
         for (final participant in activity.participants) {
@@ -119,36 +120,37 @@ class AnalysisCalculator {
             anonymousPartnerInstances++;
           }
 
-          // Count properties
-          for (final propertyCount in participant.propertyCounts) {
-            final propertyId = propertyCount.propertyReference.reference;
-            final count = propertyCount.count;
+          // Count sexual activities
+          for (final activityCount in participant.activityCounts) {
+            final sexualActivityId = activityCount.activityReference.reference;
+            final count = activityCount.count;
 
-            propertyCountsTotal[propertyId] =
-                (propertyCountsTotal[propertyId] ?? 0) + count;
-            final property =
-                providerState.sexualActivityTypeProperties?[propertyId];
-            if (property != null) {
-              properties[propertyId] = property;
+            sexualActivityCountsTotal[sexualActivityId] =
+                (sexualActivityCountsTotal[sexualActivityId] ?? 0) + count;
+            final sexualActivity =
+                providerState.sexualActivities?[sexualActivityId];
+            if (sexualActivity != null) {
+              sexualActivities[sexualActivityId] = sexualActivity;
 
-              // Check if this property is risky
-              if (property.isRisky) {
+              // Check if this sexual activity is risky
+              if (sexualActivity.isRisky) {
                 _logger.fine(
-                  'Found risky property: ${property.name} (${property.id})',
+                  'Found risky sexual activity: ${sexualActivity.name} (${sexualActivity.id})',
                 );
                 hasRiskyProperty = true;
               }
             }
-            eventProperties += count; // Track properties in this event
+            eventProperties += count; // Track sexual activities in this event
 
-            // Track properties per partner
+            // Track sexual activities per partner
             personPropertyCounts.putIfAbsent(personId, () => {});
-            personPropertyCounts[personId]![propertyId] =
-                (personPropertyCounts[personId]![propertyId] ?? 0) + count;
+            personPropertyCounts[personId]![sexualActivityId] =
+                (personPropertyCounts[personId]![sexualActivityId] ?? 0) +
+                count;
 
-            // Track unique partners per property
-            propertyPartnerCounts.putIfAbsent(propertyId, () => {});
-            propertyPartnerCounts[propertyId]!.add(personId);
+            // Track unique partners per sexual activity
+            sexualActivityPartnerCounts.putIfAbsent(sexualActivityId, () => {});
+            sexualActivityPartnerCounts[sexualActivityId]!.add(personId);
           }
         }
 
@@ -242,11 +244,11 @@ class AnalysisCalculator {
         // Count partners in this event (excluding me)
         final eventPartnersNoMe = <String>{};
         for (final activity in event.activities) {
-          final activityTypeId = activity.type.reference;
+          final activityCategoryId = activity.category.reference;
 
           // Track activity counts for last 12 months
-          activityCountsThisYear[activityTypeId] =
-              (activityCountsThisYear[activityTypeId] ?? 0) + 1;
+          activityCountsThisYear[activityCategoryId] =
+              (activityCountsThisYear[activityCategoryId] ?? 0) + 1;
 
           for (final participant in activity.participants) {
             final personId = participant.participant.reference;
@@ -260,25 +262,34 @@ class AnalysisCalculator {
             }
             eventPartnersNoMe.add(personId);
 
-            // Track unique partners per activity type (last 12 months)
-            activityPartnerCountsThisYear.putIfAbsent(activityTypeId, () => {});
-            activityPartnerCountsThisYear[activityTypeId]!.add(personId);
+            // Track unique partners per activity category (last 12 months)
+            categoryPartnerCountsThisYear.putIfAbsent(
+              activityCategoryId,
+              () => {},
+            );
+            categoryPartnerCountsThisYear[activityCategoryId]!.add(personId);
 
-            // Track unique partners per property (last 12 months)
-            for (final propertyCount in participant.propertyCounts) {
-              final propertyId = propertyCount.propertyReference.reference;
+            // Track unique partners per sexual activity (last 12 months)
+            for (final activityCount in participant.activityCounts) {
+              final sexualActivityId =
+                  activityCount.activityReference.reference;
 
-              propertyPartnerCountsThisYear.putIfAbsent(propertyId, () => {});
-              propertyPartnerCountsThisYear[propertyId]!.add(personId);
-
-              // Track unique partners per property within each activity type
-              activityPropertyPartnerCountsThisYear.putIfAbsent(
-                activityTypeId,
+              sexualActivityPartnerCountsThisYear.putIfAbsent(
+                sexualActivityId,
                 () => {},
               );
-              activityPropertyPartnerCountsThisYear[activityTypeId]!
-                  .putIfAbsent(propertyId, () => {});
-              activityPropertyPartnerCountsThisYear[activityTypeId]![propertyId]!
+              sexualActivityPartnerCountsThisYear[sexualActivityId]!.add(
+                personId,
+              );
+
+              // Track unique partners per sexual activity within each activity category
+              categoryActivityPartnerCountsThisYear.putIfAbsent(
+                activityCategoryId,
+                () => {},
+              );
+              categoryActivityPartnerCountsThisYear[activityCategoryId]!
+                  .putIfAbsent(sexualActivityId, () => {});
+              categoryActivityPartnerCountsThisYear[activityCategoryId]![sexualActivityId]!
                   .add(personId);
             }
           }
@@ -369,49 +380,50 @@ class AnalysisCalculator {
               eventActivityCounts.length
         : 0.0;
 
-    final averagePropertiesPerEvent = eventPropertyCounts.isNotEmpty
+    final averageSexualActivitiesPerEvent = eventPropertyCounts.isNotEmpty
         ? eventPropertyCounts.reduce((a, b) => a + b) /
               eventPropertyCounts.length
         : 0.0;
 
     // Calculate average events per day of week (based on last 12 months)
-    final averageEventsPerDayOfWeek = <int, double>{};
+    final averageEventsPerDayOfWeekMap = <int, double>{};
     for (int day = 1; day <= 7; day++) {
       final count = dayOfWeekCounts[day] ?? 0;
-      averageEventsPerDayOfWeek[day] = count / distinctWeeksThisYear;
+      averageEventsPerDayOfWeekMap[day] = count / distinctWeeksThisYear;
     }
 
-    // Convert property-partner counts to final map (all time)
-    final propertyPartnerCountsMap = <String, int>{};
-    propertyPartnerCounts.forEach((propertyId, partners) {
-      propertyPartnerCountsMap[propertyId] = partners.length;
+    // Convert sexual activity-partner counts to final map (all time)
+    final sexualActivityPartnerCountsMap = <String, int>{};
+    sexualActivityPartnerCounts.forEach((sexualActivityId, partners) {
+      sexualActivityPartnerCountsMap[sexualActivityId] = partners.length;
     });
 
-    // Convert activity-partner counts for last 12 months
-    final activityPartnerCountsThisYearMap = <String, int>{};
-    activityPartnerCountsThisYear.forEach((activityId, partners) {
-      activityPartnerCountsThisYearMap[activityId] = partners.length;
+    // Convert category-partner counts for last 12 months
+    final categoryPartnerCountsThisYearMap = <String, int>{};
+    categoryPartnerCountsThisYear.forEach((categoryId, partners) {
+      categoryPartnerCountsThisYearMap[categoryId] = partners.length;
     });
 
-    // Convert property-partner counts for last 12 months
-    final propertyPartnerCountsThisYearMap = <String, int>{};
-    propertyPartnerCountsThisYear.forEach((propertyId, partners) {
-      propertyPartnerCountsThisYearMap[propertyId] = partners.length;
+    // Convert sexual activity-partner counts for last 12 months
+    final sexualActivityPartnerCountsThisYearMap = <String, int>{};
+    sexualActivityPartnerCountsThisYear.forEach((sexualActivityId, partners) {
+      sexualActivityPartnerCountsThisYearMap[sexualActivityId] =
+          partners.length;
     });
 
-    // Convert activity-property-partner counts for last 12 months
-    final activityPropertyPartnerCountsThisYearMap =
+    // Convert category-sexual activity-partner counts for last 12 months
+    final categoryActivityPartnerCountsThisYearMap =
         <String, Map<String, int>>{};
-    activityPropertyPartnerCountsThisYear.forEach((activityId, propertyMap) {
-      activityPropertyPartnerCountsThisYearMap[activityId] = {};
-      propertyMap.forEach((propertyId, partners) {
-        activityPropertyPartnerCountsThisYearMap[activityId]![propertyId] =
+    categoryActivityPartnerCountsThisYear.forEach((categoryId, activityMap) {
+      categoryActivityPartnerCountsThisYearMap[categoryId] = {};
+      activityMap.forEach((sexualActivityId, partners) {
+        categoryActivityPartnerCountsThisYearMap[categoryId]![sexualActivityId] =
             partners.length;
       });
     });
 
     // Days since last risky activity
-    final daysSinceLastRiskyActivity = _calculateDaysSinceLastRisky(
+    final daysSinceLastRiskyActivity = await _calculateDaysSinceLastRisky(
       sortedEvents,
       providerState,
     );
@@ -441,20 +453,21 @@ class AnalysisCalculator {
       groupEventsThisYear: groupEventsThisYear,
       activityCounts: activityCounts,
       activityCountsThisYear: activityCountsThisYear,
-      activityTypes: activityTypes,
+      activityCategories: activityCategories,
       longestStreak: longestStreak,
       currentStreak: currentStreak,
       personCounts: personCounts,
       personEventCounts: personEventCounts,
       personEvents: personEvents,
       personPropertyCounts: personPropertyCounts,
-      propertyCountsTotal: propertyCountsTotal,
-      properties: properties,
-      propertyPartnerCounts: propertyPartnerCountsMap,
-      activityPartnerCountsThisYear: activityPartnerCountsThisYearMap,
-      propertyPartnerCountsThisYear: propertyPartnerCountsThisYearMap,
-      activityPropertyPartnerCountsThisYear:
-          activityPropertyPartnerCountsThisYearMap,
+      sexualActivityCountsTotal: sexualActivityCountsTotal,
+      sexualActivities: sexualActivities,
+      sexualActivityPartnerCounts: sexualActivityPartnerCountsMap,
+      categoryPartnerCountsThisYear: categoryPartnerCountsThisYearMap,
+      sexualActivityPartnerCountsThisYear:
+          sexualActivityPartnerCountsThisYearMap,
+      categoryActivityPartnerCountsThisYear:
+          categoryActivityPartnerCountsThisYearMap,
       dailyCounts: dailyCounts,
       dayOfWeekCounts: dayOfWeekCounts,
       monthlyCounts: monthlyCounts,
@@ -468,8 +481,8 @@ class AnalysisCalculator {
       averageActivitiesPerMonth: averageActivitiesPerMonth,
       averagePartnersPerEvent: averagePartnersPerEvent,
       averageActivitiesPerEvent: averageActivitiesPerEvent,
-      averagePropertiesPerEvent: averagePropertiesPerEvent,
-      averageEventsPerDayOfWeek: averageEventsPerDayOfWeek,
+      averageSexualActivitiesPerEvent: averageSexualActivitiesPerEvent,
+      averageEventsPerDayOfWeek: averageEventsPerDayOfWeekMap,
       startDate: startDate,
       endDate: endDate,
       events: events,
@@ -503,19 +516,19 @@ class AnalysisCalculator {
       groupEventsThisYear: 0,
       activityCounts: {},
       activityCountsThisYear: {},
-      activityTypes: {},
+      activityCategories: {},
       longestStreak: 0,
       currentStreak: 0,
       personCounts: {},
       personEventCounts: {},
       personEvents: {},
       personPropertyCounts: {},
-      propertyCountsTotal: {},
-      properties: {},
-      propertyPartnerCounts: {},
-      activityPartnerCountsThisYear: {},
-      propertyPartnerCountsThisYear: {},
-      activityPropertyPartnerCountsThisYear: {},
+      sexualActivityCountsTotal: {},
+      sexualActivities: {},
+      sexualActivityPartnerCounts: {},
+      categoryPartnerCountsThisYear: {},
+      sexualActivityPartnerCountsThisYear: {},
+      categoryActivityPartnerCountsThisYear: {},
       dailyCounts: {},
       dayOfWeekCounts: {},
       monthlyCounts: {},
@@ -539,7 +552,7 @@ class AnalysisCalculator {
       averageActivitiesPerMonth: 0.0,
       averagePartnersPerEvent: 0.0,
       averageActivitiesPerEvent: 0.0,
-      averagePropertiesPerEvent: 0.0,
+      averageSexualActivitiesPerEvent: 0.0,
       averageEventsPerDayOfWeek: {},
       startDate: startDate,
       endDate: endDate,
@@ -681,25 +694,25 @@ class AnalysisCalculator {
     return PeriodComparison.calculate(thisMonthCount, lastMonthCount);
   }
 
-  static int _calculateDaysSinceLastRisky(
+  static Future<int> _calculateDaysSinceLastRisky(
     List<SexualEvent> sortedEvents,
     EventState providerState,
-  ) {
+  ) async {
     final now = DateTime.now();
     DateTime? lastRiskyDate;
 
     for (final event in sortedEvents.reversed) {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
-          for (final propertyCount in participant.propertyCounts) {
-            final propertyId = propertyCount.propertyReference.reference;
-            final property =
-                providerState.sexualActivityTypeProperties?[propertyId];
+          for (final activityCount in participant.activityCounts) {
+            final sexualActivityId = activityCount.activityReference.reference;
+            final sexualActivity =
+                providerState.sexualActivities?[sexualActivityId];
 
-            if (property?.isRisky ?? false) {
+            if (sexualActivity?.isRisky ?? false) {
               lastRiskyDate = event.date;
               _logger.fine(
-                'Last risky activity found on ${event.date} with property ${property?.name}',
+                'Last risky activity found on ${event.date} with sexual activity ${sexualActivity?.name}',
               );
               break;
             }

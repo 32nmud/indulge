@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
 
-/// A reusable expandable card widget for displaying activities with their properties
+/// A reusable expandable card widget for displaying categories with their activities
 class ExpandableActivityCard extends StatelessWidget {
   final String title;
   final String? emoji;
@@ -11,7 +11,7 @@ class ExpandableActivityCard extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback onTap;
   final Map<String, int> propertyCountsMap;
-  final Map<String, SexualActivityTypeProperty> availableProperties;
+  final Map<String, SexualActivity> availableProperties;
   final Widget? additionalContent;
 
   const ExpandableActivityCard({
@@ -194,7 +194,7 @@ class ExpandableActivityCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(
-                  'No properties recorded',
+                  'No activities recorded',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(
                       context,

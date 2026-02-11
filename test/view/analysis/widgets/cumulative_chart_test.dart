@@ -29,7 +29,7 @@ void main() {
 
       for (final event in events) {
         final monthDate = DateTime(event.date.year, event.date.month, 1);
-        final activityId = event.activities.first.type.reference;
+        final activityId = event.activities.first.category.reference;
         monthlyData[activityId]![monthDate] =
             (monthlyData[activityId]![monthDate] ?? 0) + 1;
       }
@@ -192,8 +192,8 @@ void main() {
           final monthDate = DateTime(event.date.year, event.date.month, 1);
           for (final activity in event.activities) {
             for (final participant in activity.participants) {
-              for (final propertyCount in participant.propertyCounts) {
-                final propertyId = propertyCount.propertyReference.reference;
+              for (final propertyCount in participant.activityCounts) {
+                final propertyId = propertyCount.activityReference.reference;
                 if (monthlyData.containsKey(propertyId)) {
                   monthlyData[propertyId]![monthDate] =
                       (monthlyData[propertyId]![monthDate] ?? 0) +
@@ -248,8 +248,8 @@ SexualEvent _createEventWithActivity(String activityId, DateTime date) {
     id: 'event_${date.millisecondsSinceEpoch}',
     date: date,
     activities: [
-      SexualActivity(
-        type: Reference(reference: activityId),
+      EventActivity(
+        category: Reference(reference: activityId),
         participants: [],
       ),
     ],
@@ -265,14 +265,14 @@ SexualEvent _createEventWithProperty(
     id: 'event_${date.millisecondsSinceEpoch}',
     date: date,
     activities: [
-      SexualActivity(
-        type: Reference(reference: 'activity_1'),
+      EventActivity(
+        category: Reference(reference: 'activity_1'),
         participants: [
-          SexualActivityParticipant(
+          ActivityParticipant(
             participant: Reference(reference: 'person_1'),
-            propertyCounts: [
-              PropertyCount(
-                propertyReference: Reference(reference: propertyId),
+            activityCounts: [
+              ActivityCount(
+                activityReference: Reference(reference: propertyId),
                 count: count,
               ),
             ],

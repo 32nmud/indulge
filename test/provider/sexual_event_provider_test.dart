@@ -17,8 +17,8 @@ void main() {
         expect(state.selectedEventSexualActivityParticipants, isNull);
         expect(state.selectedEventParticipants, isNull);
         expect(state.selectedEventActivityParticipants, isNull);
-        expect(state.sexualActivityTypes, isNull);
-        expect(state.sexualActivityTypeProperties, isNull);
+        expect(state.sexualActivityCategories, isNull);
+        expect(state.sexualActivities, isNull);
         expect(state.currentEvents, isNull);
         expect(state.selectedDate, isNull);
         expect(state.dailyEventCount, isNull);
@@ -56,37 +56,40 @@ void main() {
       });
 
       test('stores sexual activity types as map', () {
-        const type1 = SexualActivityType(id: 'oral', name: 'Oral');
-        const type2 = SexualActivityType(id: 'vaginal', name: 'Vaginal');
-
-        final state = EventState(
-          sexualActivityTypes: {'oral': type1, 'vaginal': type2},
+        const category1 = SexualActivityCategory(id: 'oral', name: 'Oral');
+        const category2 = SexualActivityCategory(
+          id: 'vaginal',
+          name: 'Vaginal',
         );
 
-        expect(state.sexualActivityTypes!['oral'], equals(type1));
-        expect(state.sexualActivityTypes!['vaginal'], equals(type2));
-        expect(state.sexualActivityTypes!.length, equals(2));
+        final state = EventState(
+          sexualActivityCategories: {'oral': category1, 'vaginal': category2},
+        );
+
+        expect(state.sexualActivityCategories!['oral'], equals(category1));
+        expect(state.sexualActivityCategories!['vaginal'], equals(category2));
+        expect(state.sexualActivityCategories!.length, equals(2));
       });
 
       test('stores sexual activity type properties as map', () {
-        const prop1 = SexualActivityTypeProperty(
-          id: 'condom',
-          name: 'Condom',
+        const activity1 = SexualActivity(
+          id: 'giving',
+          name: 'Giving',
           isRisky: false,
         );
-        const prop2 = SexualActivityTypeProperty(
-          id: 'risky',
-          name: 'Risky',
+        const activity2 = SexualActivity(
+          id: 'receiving',
+          name: 'Receiving',
           isRisky: true,
         );
 
         final state = EventState(
-          sexualActivityTypeProperties: {'condom': prop1, 'risky': prop2},
+          sexualActivities: {'giving': activity1, 'receiving': activity2},
         );
 
-        expect(state.sexualActivityTypeProperties!['condom'], equals(prop1));
-        expect(state.sexualActivityTypeProperties!['risky'], equals(prop2));
-        expect(state.sexualActivityTypeProperties!.length, equals(2));
+        expect(state.sexualActivities!['giving'], equals(activity1));
+        expect(state.sexualActivities!['receiving'], equals(activity2));
+        expect(state.sexualActivities!.length, equals(2));
       });
 
       test('stores current events list', () {
@@ -123,12 +126,10 @@ void main() {
           id: 'event1',
           date: testDate,
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            const EventActivity(
+              category: Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
-                  participant: Reference(reference: 'p1'),
-                ),
+                ActivityParticipant(participant: Reference(reference: 'p1')),
               ],
             ),
           ],
@@ -244,14 +245,11 @@ void main() {
           currentEvents: [testEvent],
           selectedEventParticipants: [person],
           dailyEventCount: {testDate: 1},
-          sexualActivityTypes: {
-            'oral': const SexualActivityType(id: 'oral', name: 'Oral'),
+          sexualActivityCategories: {
+            'oral': const SexualActivityCategory(id: 'oral', name: 'Oral'),
           },
-          sexualActivityTypeProperties: {
-            'condom': const SexualActivityTypeProperty(
-              id: 'condom',
-              name: 'Condom',
-            ),
+          sexualActivities: {
+            'giving': const SexualActivity(id: 'giving', name: 'Giving'),
           },
         );
 
@@ -260,8 +258,8 @@ void main() {
         expect(state.currentEvents!.length, equals(1));
         expect(state.selectedEventParticipants!.length, equals(1));
         expect(state.dailyEventCount![testDate], equals(1));
-        expect(state.sexualActivityTypes!.length, equals(1));
-        expect(state.sexualActivityTypeProperties!.length, equals(1));
+        expect(state.sexualActivityCategories!.length, equals(1));
+        expect(state.sexualActivities!.length, equals(1));
       });
     });
   });

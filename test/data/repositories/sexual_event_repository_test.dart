@@ -48,13 +48,13 @@ void main() {
           id: 'event1',
           date: DateTime.now(),
           activities: [
-            SexualActivity(type: const Reference(reference: 'oral')),
+            const EventActivity(category: Reference(reference: 'oral')),
           ],
         );
 
         final newActivities = [
-          SexualActivity(type: const Reference(reference: 'oral')),
-          SexualActivity(type: const Reference(reference: 'vaginal')),
+          const EventActivity(category: Reference(reference: 'oral')),
+          const EventActivity(category: Reference(reference: 'vaginal')),
         ];
 
         final copied = original.copyWith(activities: newActivities);
@@ -70,35 +70,35 @@ void main() {
           id: 'complex-event',
           date: DateTime(2024, 1, 15),
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            const EventActivity(
+              category: Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                ActivityParticipant(
                   participant: Reference(reference: 'p1'),
-                  propertyCounts: [
-                    PropertyCount(
-                      propertyReference: Reference(reference: 'condom'),
+                  activityCounts: [
+                    ActivityCount(
+                      activityReference: Reference(reference: 'giving'),
                       count: 1,
                     ),
                   ],
                 ),
               ],
             ),
-            SexualActivity(
-              type: const Reference(reference: 'vaginal'),
+            EventActivity(
+              category: Reference(reference: 'vaginal'),
               participants: [
-                const SexualActivityParticipant(
+                ActivityParticipant(
                   participant: Reference(reference: 'p1'),
-                  propertyCounts: [
-                    PropertyCount(
-                      propertyReference: Reference(reference: 'condom'),
+                  activityCounts: [
+                    ActivityCount(
+                      activityReference: Reference(reference: 'receiving'),
                       count: 2,
                     ),
                   ],
                 ),
-                const SexualActivityParticipant(
+                ActivityParticipant(
                   participant: Reference(reference: 'p2'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
@@ -108,7 +108,7 @@ void main() {
         expect(event.id, equals('complex-event'));
         expect(event.activities.length, equals(2));
         expect(
-          event.activities[0].participants[0].propertyCounts.length,
+          event.activities[0].participants[0].activityCounts.length,
           equals(1),
         );
         expect(event.activities[1].participants.length, equals(2));
@@ -130,34 +130,34 @@ void main() {
         expect(person.birthday, isNotNull);
       });
 
-      test('SexualActivityType can be created', () {
-        const activityType = SexualActivityType(
+      test('SexualActivityCategory can be created', () {
+        const activityCategory = SexualActivityCategory(
           id: 'oral',
           name: 'Oral',
           displayCharacter: '👄',
-          minParticipants: 1,
-          maxParticipants: 2,
+          requiresPartner: true,
         );
 
-        expect(activityType.id, equals('oral'));
-        expect(activityType.name, equals('Oral'));
-        expect(activityType.displayCharacter, equals('👄'));
-        expect(activityType.minParticipants, equals(1));
-        expect(activityType.maxParticipants, equals(2));
+        expect(activityCategory.id, equals('oral'));
+        expect(activityCategory.name, equals('Oral'));
+        expect(activityCategory.displayCharacter, equals('👄'));
+        expect(activityCategory.requiresPartner, isTrue);
       });
 
-      test('SexualActivityTypeProperty can be created', () {
-        const property = SexualActivityTypeProperty(
-          id: 'condom',
-          name: 'Condom',
+      test('SexualActivity can be created', () {
+        const activity = SexualActivity(
+          id: 'giving',
+          name: 'Giving',
+          displayCharacter: '👅',
           isRisky: false,
           requiresPartner: true,
         );
 
-        expect(property.id, equals('condom'));
-        expect(property.name, equals('Condom'));
-        expect(property.isRisky, isFalse);
-        expect(property.requiresPartner, isTrue);
+        expect(activity.id, equals('giving'));
+        expect(activity.name, equals('Giving'));
+        expect(activity.displayCharacter, equals('👅'));
+        expect(activity.isRisky, isFalse);
+        expect(activity.requiresPartner, isTrue);
       });
 
       test('Reference can be created', () {
@@ -167,17 +167,20 @@ void main() {
         expect(ref.resourceType, equals('Person'));
       });
 
-      test('PropertyCount can be created', () {
-        const propCount = PropertyCount(
-          propertyReference: Reference(
-            reference: 'prop-id',
-            resourceType: 'SexualActivityTypeProperty',
+      test('ActivityCount can be created', () {
+        const activityCount = ActivityCount(
+          activityReference: Reference(
+            reference: 'activity-id',
+            resourceType: 'SexualActivity',
           ),
           count: 3,
         );
 
-        expect(propCount.propertyReference.reference, equals('prop-id'));
-        expect(propCount.count, equals(3));
+        expect(
+          activityCount.activityReference.reference,
+          equals('activity-id'),
+        );
+        expect(activityCount.count, equals(3));
       });
 
       test('Name can be created', () {
@@ -201,22 +204,25 @@ void main() {
       });
 
       test(
-        'SexualActivityType resourceType is always "SexualActivityType"',
+        'SexualActivityCategory resourceType is always "SexualActivityCategory"',
         () {
-          const activityType = SexualActivityType(id: 'test', name: 'Test');
+          const activityCategory = SexualActivityCategory(
+            id: 'test',
+            name: 'Test',
+          );
 
-          expect(activityType.resourceType, equals('SexualActivityType'));
+          expect(
+            activityCategory.resourceType,
+            equals('SexualActivityCategory'),
+          );
         },
       );
 
-      test(
-        'SexualActivityTypeProperty resourceType is always "SexualActivityTypeProperty"',
-        () {
-          const property = SexualActivityTypeProperty(id: 'test', name: 'Test');
+      test('SexualActivity resourceType is always "SexualActivity"', () {
+        const activity = SexualActivity(id: 'test', name: 'Test');
 
-          expect(property.resourceType, equals('SexualActivityTypeProperty'));
-        },
-      );
+        expect(activity.resourceType, equals('SexualActivity'));
+      });
 
       test('Event with no activities can be created', () {
         final event = SexualEvent(
@@ -229,29 +235,29 @@ void main() {
         expect(event.activities, isEmpty);
       });
 
-      test('Multiple property counts can be added to participant', () {
-        const participant = SexualActivityParticipant(
+      test('Multiple activity counts can be added to participant', () {
+        const participant = ActivityParticipant(
           participant: Reference(reference: 'p1'),
-          propertyCounts: [
-            PropertyCount(
-              propertyReference: Reference(reference: 'prop1'),
+          activityCounts: [
+            ActivityCount(
+              activityReference: Reference(reference: 'activity1'),
               count: 1,
             ),
-            PropertyCount(
-              propertyReference: Reference(reference: 'prop2'),
+            ActivityCount(
+              activityReference: Reference(reference: 'activity2'),
               count: 2,
             ),
-            PropertyCount(
-              propertyReference: Reference(reference: 'prop3'),
+            ActivityCount(
+              activityReference: Reference(reference: 'activity3'),
               count: 3,
             ),
           ],
         );
 
-        expect(participant.propertyCounts.length, equals(3));
-        expect(participant.propertyCounts[0].count, equals(1));
-        expect(participant.propertyCounts[1].count, equals(2));
-        expect(participant.propertyCounts[2].count, equals(3));
+        expect(participant.activityCounts.length, equals(3));
+        expect(participant.activityCounts[0].count, equals(1));
+        expect(participant.activityCounts[1].count, equals(2));
+        expect(participant.activityCounts[2].count, equals(3));
       });
     });
   });

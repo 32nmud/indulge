@@ -186,12 +186,12 @@ class SearchPageState extends State<SearchPage>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Activity types chip
+                      // Activity categories chip
                       FilterChip(
                         label: Text(
                           _selectedActivityTypeIds.isEmpty
-                              ? 'Activities'
-                              : 'Activities (${_selectedActivityTypeIds.length})',
+                              ? 'Categories'
+                              : 'Categories (${_selectedActivityTypeIds.length})',
                         ),
                         selected: _selectedActivityTypeIds.isNotEmpty,
                         onSelected: (selected) => _showActivityTypeFilter(),
@@ -204,12 +204,12 @@ class SearchPageState extends State<SearchPage>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Properties chip
+                      // Activities chip
                       FilterChip(
                         label: Text(
                           _selectedPropertyIds.isEmpty
-                              ? 'Properties'
-                              : 'Properties (${_selectedPropertyIds.length})',
+                              ? 'Activities'
+                              : 'Activities (${_selectedPropertyIds.length})',
                         ),
                         selected: _selectedPropertyIds.isNotEmpty,
                         onSelected: (selected) => _showPropertyFilter(),
@@ -460,36 +460,36 @@ class SearchPageState extends State<SearchPage>
           }
         }
 
-        // Activity type filter
+        // Activity category filter
         if (_selectedActivityTypeIds.isNotEmpty) {
-          final eventActivityTypeIds = event.activities
-              .map((a) => a.type.reference)
+          final eventActivityCategoryIds = event.activities
+              .map((a) => a.category.reference)
               .toSet();
           if (!_selectedActivityTypeIds.any(
-            (id) => eventActivityTypeIds.contains(id),
+            (id) => eventActivityCategoryIds.contains(id),
           )) {
             return false;
           }
         }
 
-        // Property filter
+        // Activity filter
         if (_selectedPropertyIds.isNotEmpty) {
-          bool hasMatchingProperty = false;
+          bool hasMatchingActivity = false;
           for (var activity in event.activities) {
             for (var participant in activity.participants) {
-              for (var propCount in participant.propertyCounts) {
+              for (var activityCount in participant.activityCounts) {
                 if (_selectedPropertyIds.contains(
-                  propCount.propertyReference.reference,
+                  activityCount.activityReference.reference,
                 )) {
-                  hasMatchingProperty = true;
+                  hasMatchingActivity = true;
                   break;
                 }
               }
-              if (hasMatchingProperty) break;
+              if (hasMatchingActivity) break;
             }
-            if (hasMatchingProperty) break;
+            if (hasMatchingActivity) break;
           }
-          if (!hasMatchingProperty) return false;
+          if (!hasMatchingActivity) return false;
         }
 
         // Risky filter
@@ -497,12 +497,12 @@ class SearchPageState extends State<SearchPage>
           bool hasRiskyActivity = false;
           for (var activity in event.activities) {
             for (var participant in activity.participants) {
-              for (var propCount in participant.propertyCounts) {
-                final property =
-                    provider.state.sexualActivityTypeProperties?[propCount
-                        .propertyReference
+              for (var activityCount in participant.activityCounts) {
+                final sexualActivity =
+                    provider.state.sexualActivities?[activityCount
+                        .activityReference
                         .reference];
-                if (property?.isRisky == true) {
+                if (sexualActivity?.isRisky == true) {
                   hasRiskyActivity = true;
                   break;
                 }
@@ -589,15 +589,15 @@ class SearchPageState extends State<SearchPage>
 
   Future<void> _showActivityTypeFilter() async {
     final provider = context.read<SexualEventsProvider>();
-    final activityTypes =
-        provider.state.sexualActivityTypes?.values.toList() ?? [];
+    final activityCategories =
+        provider.state.sexualActivityCategories?.values.toList() ?? [];
 
     if (!mounted) return;
 
     final selected = await showDialog<Set<String>>(
       context: context,
       builder: (context) => _ActivityTypeFilterDialog(
-        activityTypes: activityTypes,
+        activityCategories: activityCategories,
         selectedIds: _selectedActivityTypeIds,
       ),
     );
@@ -612,15 +612,14 @@ class SearchPageState extends State<SearchPage>
 
   Future<void> _showPropertyFilter() async {
     final provider = context.read<SexualEventsProvider>();
-    final properties =
-        provider.state.sexualActivityTypeProperties?.values.toList() ?? [];
+    final activities = provider.state.sexualActivities?.values.toList() ?? [];
 
     if (!mounted) return;
 
     final selected = await showDialog<Set<String>>(
       context: context,
       builder: (context) => _PropertyFilterDialog(
-        properties: properties,
+        activities: activities,
         selectedIds: _selectedPropertyIds,
       ),
     );
@@ -783,13 +782,13 @@ class _PartnerFilterDialogState extends State<_PartnerFilterDialog> {
   }
 }
 
-// Property filter dialog
+// Activity filter dialog
 class _PropertyFilterDialog extends StatefulWidget {
-  final List<SexualActivityTypeProperty> properties;
+  final List<SexualActivity> activities;
   final Set<String> selectedIds;
 
   const _PropertyFilterDialog({
-    required this.properties,
+    required this.activities,
     required this.selectedIds,
   });
 
@@ -809,23 +808,23 @@ class _PropertyFilterDialogState extends State<_PropertyFilterDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Filter by Properties'),
+      title: const Text('Filter by Activities'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
           shrinkWrap: true,
-          children: widget.properties.map((property) {
-            final isSelected = _selectedIds.contains(property.id);
+          children: widget.activities.map((activity) {
+            final isSelected = _selectedIds.contains(activity.id);
             return CheckboxListTile(
               title: Row(
                 children: [
                   Text(
-                    property.displayCharacter,
+                    activity.displayCharacter,
                     style: const TextStyle(fontSize: 20),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(property.name)),
-                  if (property.isRisky) ...[
+                  Expanded(child: Text(activity.name)),
+                  if (activity.isRisky) ...[
                     const SizedBox(width: 4),
                     const Icon(Icons.warning, size: 16, color: Colors.orange),
                   ],
@@ -835,9 +834,9 @@ class _PropertyFilterDialogState extends State<_PropertyFilterDialog> {
               onChanged: (value) {
                 setState(() {
                   if (value == true) {
-                    _selectedIds.add(property.id);
+                    _selectedIds.add(activity.id);
                   } else {
-                    _selectedIds.remove(property.id);
+                    _selectedIds.remove(activity.id);
                   }
                 });
               },
@@ -867,13 +866,13 @@ class _PropertyFilterDialogState extends State<_PropertyFilterDialog> {
   }
 }
 
-// Activity type filter dialog
+// Activity category filter dialog
 class _ActivityTypeFilterDialog extends StatefulWidget {
-  final List<SexualActivityType> activityTypes;
+  final List<SexualActivityCategory> activityCategories;
   final Set<String> selectedIds;
 
   const _ActivityTypeFilterDialog({
-    required this.activityTypes,
+    required this.activityCategories,
     required this.selectedIds,
   });
 
@@ -894,31 +893,31 @@ class _ActivityTypeFilterDialogState extends State<_ActivityTypeFilterDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Filter by Activity Types'),
+      title: const Text('Filter by Activity Categories'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
           shrinkWrap: true,
-          children: widget.activityTypes.map((activityType) {
-            final isSelected = _selectedIds.contains(activityType.id);
+          children: widget.activityCategories.map((category) {
+            final isSelected = _selectedIds.contains(category.id);
             return CheckboxListTile(
               title: Row(
                 children: [
                   Text(
-                    activityType.displayCharacter ?? '❔',
+                    category.displayCharacter ?? '❔',
                     style: const TextStyle(fontSize: 20),
                   ),
                   const SizedBox(width: 8),
-                  Text(activityType.name),
+                  Text(category.name),
                 ],
               ),
               value: isSelected,
               onChanged: (value) {
                 setState(() {
                   if (value == true) {
-                    _selectedIds.add(activityType.id);
+                    _selectedIds.add(category.id);
                   } else {
-                    _selectedIds.remove(activityType.id);
+                    _selectedIds.remove(category.id);
                   }
                 });
               },

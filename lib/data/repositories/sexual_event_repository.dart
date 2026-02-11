@@ -107,11 +107,11 @@ class SexualEventRepository {
     return locations;
   }
 
-  Future<List<Person>> getPersonsFromActivity(SexualActivity activity) async {
+  Future<List<Person>> getPersonsFromActivity(EventActivity activity) async {
     _logger.info('Getting persons from activity: $activity');
 
     List<String> personIds = [];
-    for (SexualActivityParticipant participant in activity.participants) {
+    for (ActivityParticipant participant in activity.participants) {
       if (participant.participant.resourceType == "Person") {
         personIds.add(participant.participant.reference);
       }
@@ -141,13 +141,13 @@ class SexualEventRepository {
   }
 
   Future<List<Person>> getPersonsFromActivities(
-    List<SexualActivity> activities,
+    List<EventActivity> activities,
   ) async {
     _logger.info('Getting persons from activities: $activities');
 
     List<String> personIds = [];
-    for (SexualActivity a in activities) {
-      for (SexualActivityParticipant participant in a.participants) {
+    for (EventActivity a in activities) {
+      for (ActivityParticipant participant in a.participants) {
         if (participant.participant.resourceType == "Person") {
           personIds.add(participant.participant.reference);
         }
@@ -177,41 +177,40 @@ class SexualEventRepository {
     return persons;
   }
 
-  Future<List<SexualActivityType>> getAllSexualActivityTypes() async {
+  Future<List<SexualActivityCategory>> getAllSexualActivityCategories() async {
     final rows = await _db.query('sexual_activity_type');
 
-    final List<SexualActivityType> types = [];
+    final List<SexualActivityCategory> categories = [];
     for (final row in rows) {
-      types.add(
-        SexualActivityType.fromJson(
+      categories.add(
+        SexualActivityCategory.fromJson(
           jsonDecode(row['json'] as String) as Map<String, dynamic>,
         ),
       );
     }
 
-    return types;
+    return categories;
   }
 
-  Future<List<SexualActivityTypeProperty>>
-  getAllSexualActivityTypeProperties() async {
+  Future<List<SexualActivity>> getAllSexualActivities() async {
     final rows = await _db.query('sexual_activity_type_property');
 
-    final List<SexualActivityTypeProperty> properties = [];
+    final List<SexualActivity> activities = [];
     for (final row in rows) {
-      properties.add(
-        SexualActivityTypeProperty.fromJson(
+      activities.add(
+        SexualActivity.fromJson(
           jsonDecode(row['json'] as String) as Map<String, dynamic>,
         ),
       );
     }
 
-    return properties;
+    return activities;
   }
 
-  Future<List<SexualActivityType>> getSexualActivityTypesByIds(
+  Future<List<SexualActivityCategory>> getSexualActivityCategoriesByIds(
     List<String> ids,
   ) async {
-    _logger.info('Getting sexual activity types by ids: $ids');
+    _logger.info('Getting sexual activity categories by ids: $ids');
 
     if (ids.isEmpty) return [];
     ids = ids.toSet().toList();
@@ -223,16 +222,16 @@ class SexualEventRepository {
       whereArgs: ids,
     );
 
-    final List<SexualActivityType> types = [];
+    final List<SexualActivityCategory> categories = [];
     for (final row in rows) {
-      types.add(
-        SexualActivityType.fromJson(
+      categories.add(
+        SexualActivityCategory.fromJson(
           jsonDecode(row['json'] as String) as Map<String, dynamic>,
         ),
       );
     }
 
-    return types;
+    return categories;
   }
 
   Future<void> save(SexualEvent event) async {
@@ -252,50 +251,49 @@ class SexualEventRepository {
     await _db.delete('sexual_event', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<List<SexualActivityTypeProperty>>
-  getSexualActivityTypePropertiesForParticipant(
-    SexualActivityParticipant participant,
+  Future<List<SexualActivity>> getSexualActivitiesForParticipant(
+    ActivityParticipant participant,
   ) async {
     _logger.info(
-      'Getting sexual activity type properties for participant: ${participant.participant.reference}',
+      'Getting sexual activities for participant: ${participant.participant.reference}',
     );
 
-    if (participant.propertyCounts.isEmpty) return [];
+    if (participant.activityCounts.isEmpty) return [];
 
-    final List<SexualActivityTypeProperty> properties = [];
-    for (var propertyCount in participant.propertyCounts) {
+    final List<SexualActivity> activities = [];
+    for (var activityCount in participant.activityCounts) {
       final rows = await _db.query(
         'sexual_activity_type_property',
         where: 'id = ?',
-        whereArgs: [propertyCount.propertyReference.reference],
+        whereArgs: [activityCount.activityReference.reference],
       );
 
       for (final row in rows) {
-        properties.add(
-          SexualActivityTypeProperty.fromJson(
+        activities.add(
+          SexualActivity.fromJson(
             jsonDecode(row['json'] as String) as Map<String, dynamic>,
           ),
         );
       }
     }
 
-    return properties;
+    return activities;
   }
 
-  /// Removes all activities of a specific type from an event
-  Future<void> removeActivityByTypeId(
+  /// Removes all activities of a specific category from an event
+  Future<void> removeActivityByCategoryId(
     String eventId,
-    String activityTypeId,
+    String activityCategoryId,
   ) async {
     _logger.info(
-      'Removing activities with type $activityTypeId from event $eventId',
+      'Removing activities with category $activityCategoryId from event $eventId',
     );
 
     final event = await getById(eventId);
     if (event == null) return;
 
     final updatedActivities = event.activities
-        .where((activity) => activity.type.reference != activityTypeId)
+        .where((activity) => activity.category.reference != activityCategoryId)
         .toList();
 
     final updatedEvent = event.copyWith(
@@ -313,7 +311,7 @@ class SexualEventRepository {
     final event = await getById(eventId);
     if (event == null) return;
 
-    final updatedActivities = <SexualActivity>[];
+    final updatedActivities = <EventActivity>[];
     for (final activity in event.activities) {
       final updatedParticipants = activity.participants
           .where((participant) => participant.participant.reference != personId)
@@ -433,10 +431,10 @@ class SexualEventRepository {
       );
 
       bool eventModified = false;
-      final updatedActivities = <SexualActivity>[];
+      final updatedActivities = <EventActivity>[];
 
       for (final activity in event.activities) {
-        final updatedParticipants = <SexualActivityParticipant>[];
+        final updatedParticipants = <ActivityParticipant>[];
 
         for (final participant in activity.participants) {
           if (participant.participant.reference == oldPersonId) {
@@ -472,19 +470,21 @@ class SexualEventRepository {
   }
 
   /// Saves an activity type to the database
-  Future<void> saveActivityType(SexualActivityType activityType) async {
-    _logger.info('Saving activity type: ${activityType.id}');
+  Future<void> saveActivityCategory(
+    SexualActivityCategory activityCategory,
+  ) async {
+    _logger.info('Saving activity category: ${activityCategory.id}');
 
     await _db.insert('sexual_activity_type', {
-      'id': activityType.id,
+      'id': activityCategory.id,
       'last_modified': DateTime.now().toIso8601String(),
-      'json': jsonEncode(activityType.toJson()),
+      'json': jsonEncode(activityCategory.toJson()),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  /// Deletes an activity type and removes it from all events
-  Future<void> deleteActivityType(String id) async {
-    _logger.info('Deleting activity type: $id');
+  /// Deletes an activity category and removes it from all events
+  Future<void> deleteActivityCategory(String id) async {
+    _logger.info('Deleting activity category: $id');
 
     // First, remove all activities of this type from all events
     final rows = await _db.query('sexual_event');
@@ -495,7 +495,7 @@ class SexualEventRepository {
       );
 
       final updatedActivities = event.activities
-          .where((activity) => activity.type.reference != id)
+          .where((activity) => activity.category.reference != id)
           .toList();
 
       // Only save if activities were removed
@@ -508,13 +508,13 @@ class SexualEventRepository {
       }
     }
 
-    // Then delete the activity type
+    // Then delete the activity category
     await _db.delete('sexual_activity_type', where: 'id = ?', whereArgs: [id]);
   }
 
-  /// Checks if an activity type is used in any events
-  Future<bool> isActivityTypeUsed(String activityTypeId) async {
-    _logger.info('Checking if activity type is used: $activityTypeId');
+  /// Checks if an activity category is used in any events
+  Future<bool> isActivityCategoryUsed(String activityCategoryId) async {
+    _logger.info('Checking if activity category is used: $activityCategoryId');
 
     final rows = await _db.query('sexual_event');
 
@@ -524,7 +524,7 @@ class SexualEventRepository {
       );
 
       for (final activity in event.activities) {
-        if (activity.type.reference == activityTypeId) {
+        if (activity.category.reference == activityCategoryId) {
           return true;
         }
       }
@@ -533,47 +533,47 @@ class SexualEventRepository {
     return false;
   }
 
-  /// Saves an activity property to the database
-  Future<void> saveActivityProperty(SexualActivityTypeProperty property) async {
-    _logger.info('Saving activity property: ${property.id}');
+  /// Saves a sexual activity to the database
+  Future<void> saveSexualActivity(SexualActivity activity) async {
+    _logger.info('Saving sexual activity: ${activity.id}');
 
     await _db.insert(
       'sexual_activity_type_property',
       {
-        'id': property.id,
+        'id': activity.id,
         'last_modified': DateTime.now().toIso8601String(),
-        'json': jsonEncode(property.toJson()),
+        'json': jsonEncode(activity.toJson()),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  /// Deletes an activity property and removes it from all activity types
-  Future<void> deleteActivityProperty(String id) async {
-    _logger.info('Deleting activity property: $id');
+  /// Deletes a sexual activity and removes it from all activity categories
+  Future<void> deleteSexualActivity(String id) async {
+    _logger.info('Deleting sexual activity: $id');
 
-    // First, remove this property from all activity types
-    final activityTypeRows = await _db.query('sexual_activity_type');
+    // First, remove this activity from all activity categories
+    final activityCategoryRows = await _db.query('sexual_activity_type');
 
-    for (final row in activityTypeRows) {
-      final activityType = SexualActivityType.fromJson(
+    for (final row in activityCategoryRows) {
+      final activityCategory = SexualActivityCategory.fromJson(
         jsonDecode(row['json'] as String) as Map<String, dynamic>,
       );
 
-      final updatedProperties = activityType.properties
+      final updatedActivities = activityCategory.activities
           .where((ref) => ref.reference != id)
           .toList();
 
-      // Only save if properties were removed
-      if (updatedProperties.length != activityType.properties.length) {
-        final updatedType = activityType.copyWith(
-          properties: updatedProperties,
+      // Only save if activities were removed
+      if (updatedActivities.length != activityCategory.activities.length) {
+        final updatedCategory = activityCategory.copyWith(
+          activities: updatedActivities,
         );
-        await saveActivityType(updatedType);
+        await saveActivityCategory(updatedCategory);
       }
     }
 
-    // Second, remove this property from all event activities
+    // Second, remove this activity from all event activities
     final eventRows = await _db.query('sexual_event');
 
     for (final row in eventRows) {
@@ -582,23 +582,23 @@ class SexualEventRepository {
       );
 
       bool eventModified = false;
-      final updatedActivities = <SexualActivity>[];
+      final updatedActivities = <EventActivity>[];
 
       for (final activity in event.activities) {
-        final updatedParticipants = <SexualActivityParticipant>[];
+        final updatedParticipants = <ActivityParticipant>[];
 
         for (final participant in activity.participants) {
-          // Remove the property reference from this participant
-          final updatedPropertyCounts = participant.propertyCounts
-              .where((pc) => pc.propertyReference.reference != id)
+          // Remove the activity reference from this participant
+          final updatedActivityCounts = participant.activityCounts
+              .where((ac) => ac.activityReference.reference != id)
               .toList();
 
-          // Check if properties were removed
-          if (updatedPropertyCounts.length !=
-              participant.propertyCounts.length) {
+          // Check if activities were removed
+          if (updatedActivityCounts.length !=
+              participant.activityCounts.length) {
             eventModified = true;
             updatedParticipants.add(
-              participant.copyWith(propertyCounts: updatedPropertyCounts),
+              participant.copyWith(activityCounts: updatedActivityCounts),
             );
           } else {
             updatedParticipants.add(participant);
@@ -620,7 +620,7 @@ class SexualEventRepository {
       }
     }
 
-    // Finally, delete the property
+    // Finally, delete the activity
     await _db.delete(
       'sexual_activity_type_property',
       where: 'id = ?',
@@ -628,19 +628,19 @@ class SexualEventRepository {
     );
   }
 
-  /// Checks if an activity property is used in any activity types
-  Future<bool> isActivityPropertyUsed(String propertyId) async {
-    _logger.info('Checking if activity property is used: $propertyId');
+  /// Checks if a sexual activity is used in any activity categories
+  Future<bool> isSexualActivityUsed(String activityId) async {
+    _logger.info('Checking if sexual activity is used: $activityId');
 
     final rows = await _db.query('sexual_activity_type');
 
     for (final row in rows) {
-      final activityType = SexualActivityType.fromJson(
+      final activityCategory = SexualActivityCategory.fromJson(
         jsonDecode(row['json'] as String) as Map<String, dynamic>,
       );
 
-      for (final property in activityType.properties) {
-        if (property.reference == propertyId) {
+      for (final activity in activityCategory.activities) {
+        if (activity.reference == activityId) {
           return true;
         }
       }

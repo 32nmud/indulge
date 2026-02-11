@@ -15,13 +15,13 @@ class SexualEventsProvider extends ChangeNotifier {
   Future<String> _initProvider() async {
     _repository = await SexualEventRepository.create();
     final counts = await _repository.getDailyEventCount();
-    final types = await _loadSexualActivityTypes();
-    final properties = await _loadSexualActivityTypeProperties();
+    final categories = await _loadSexualActivityCategories();
+    final activities = await _loadSexualActivities();
     final myself = await _repository.getMyself();
     _state = _state.copyWith(
       dailyEventCount: counts,
-      sexualActivityTypes: types,
-      sexualActivityTypeProperties: properties,
+      sexualActivityCategories: categories,
+      sexualActivities: activities,
       myself: myself,
     );
     return "ready!";
@@ -51,13 +51,13 @@ class SexualEventsProvider extends ChangeNotifier {
       final eventParticipants = participants;
 
       // Map<String, List<Person>> selectedEventActivityParticipants
-      // Key: Activity Type ID
+      // Key: Activity Category ID
       final activityParticipantsMap = <String, List<Person>>{};
       final personMap = {for (var p in participants) p.id: p};
 
       for (var activity in event.activities) {
-        final typeId = activity.type.reference;
-        final currentList = activityParticipantsMap[typeId] ?? [];
+        final categoryId = activity.category.reference;
+        final currentList = activityParticipantsMap[categoryId] ?? [];
 
         for (var participant in activity.participants) {
           if (participant.participant.resourceType == 'Person' &&
@@ -68,19 +68,19 @@ class SexualEventsProvider extends ChangeNotifier {
             }
           }
         }
-        activityParticipantsMap[typeId] = currentList;
+        activityParticipantsMap[categoryId] = currentList;
       }
 
-      // List<SexualActivityParticipant>
+      // List<ActivityParticipant>
       // Aggregate participation counts
-      final sapMap = <String, SexualActivityParticipant>{};
+      final sapMap = <String, ActivityParticipant>{};
 
       for (var activity in event.activities) {
-        final typeId = activity.type.reference;
+        final categoryId = activity.category.reference;
         for (var participant in activity.participants) {
           if (participant.participant.resourceType != 'Person') continue;
 
-          final key = '${participant.participant.reference}_$typeId';
+          final key = '${participant.participant.reference}_$categoryId';
 
           if (!sapMap.containsKey(key)) {
             sapMap[key] = participant;
@@ -104,7 +104,7 @@ class SexualEventsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> removeActivity(SexualActivity activity) async {
+  Future<void> removeActivity(EventActivity activity) async {
     if (_state.selectedEvent == null) return;
 
     final currentActivities = _state.selectedEvent!.activities.toList();
@@ -122,7 +122,7 @@ class SexualEventsProvider extends ChangeNotifier {
   Future<void> removeParticipant(Person participant) async {
     if (_state.selectedEvent == null) return;
 
-    final currentActivities = <SexualActivity>[];
+    final currentActivities = <EventActivity>[];
 
     for (final activity in _state.selectedEvent!.activities) {
       final updatedParticipants = activity.participants
@@ -143,12 +143,12 @@ class SexualEventsProvider extends ChangeNotifier {
     await selectEvent(updatedEvent);
   }
 
-  Future<void> removeActivityFromEdit(String activityTypeId) async {
+  Future<void> removeActivityFromEdit(String activityCategoryId) async {
     if (_state.selectedEvent == null) return;
 
-    await _repository.removeActivityByTypeId(
+    await _repository.removeActivityByCategoryId(
       _state.selectedEvent!.id,
-      activityTypeId,
+      activityCategoryId,
     );
 
     final updatedEvent = await _repository.getById(_state.selectedEvent!.id);
@@ -174,31 +174,29 @@ class SexualEventsProvider extends ChangeNotifier {
     }
   }
 
-  List<SexualActivityTypeProperty>
-  getSexualActivityTypePropertiesForPersonAndActivity(
+  List<SexualActivity> getSexualActivitiesForPersonAndActivity(
     Person person,
-    SexualActivity activity,
+    EventActivity activity,
   ) {
-    List<SexualActivityTypeProperty> properties = [];
-    for (SexualActivityParticipant property in activity.participants) {
-      for (var propertyCount in property.propertyCounts) {
-        if (propertyCount.propertyReference.resourceType ==
-                "SexualActivityTypeProperty" &&
-            property.participant.resourceType == "Person" &&
-            property.participant.reference == person.id &&
-            _state.sexualActivityTypeProperties != null &&
-            _state.sexualActivityTypeProperties!.containsKey(
-              propertyCount.propertyReference.reference,
+    List<SexualActivity> activities = [];
+    for (ActivityParticipant activityParticipant in activity.participants) {
+      for (var activityCount in activityParticipant.activityCounts) {
+        if (activityCount.activityReference.resourceType == "SexualActivity" &&
+            activityParticipant.participant.resourceType == "Person" &&
+            activityParticipant.participant.reference == person.id &&
+            _state.sexualActivities != null &&
+            _state.sexualActivities!.containsKey(
+              activityCount.activityReference.reference,
             )) {
-          properties.add(
-            _state.sexualActivityTypeProperties![propertyCount
-                .propertyReference
+          activities.add(
+            _state.sexualActivities![activityCount
+                .activityReference
                 .reference]!,
           );
         }
       }
     }
-    return properties;
+    return activities;
   }
 
   Future<List<Person>> getPersonsForEvent(String eventId) async {
@@ -210,7 +208,7 @@ class SexualEventsProvider extends ChangeNotifier {
     return await _repository.getPersonsFromActivities(event.activities);
   }
 
-  Future<List<Person>> getPersonsForActivity(SexualActivity activity) async {
+  Future<List<Person>> getPersonsForActivity(EventActivity activity) async {
     return await _repository.getPersonsFromActivity(activity);
   }
 
@@ -295,24 +293,26 @@ class SexualEventsProvider extends ChangeNotifier {
     return await _repository.getAllEvents();
   }
 
-  Future<void> saveActivityType(SexualActivityType activityType) async {
-    await _repository.saveActivityType(activityType);
+  Future<void> saveActivityCategory(
+    SexualActivityCategory activityCategory,
+  ) async {
+    await _repository.saveActivityCategory(activityCategory);
 
-    // Refresh activity types in state
-    final types = await _loadSexualActivityTypes();
-    _state = _state.copyWith(sexualActivityTypes: types);
+    // Refresh activity categories in state
+    final categories = await _loadSexualActivityCategories();
+    _state = _state.copyWith(sexualActivityCategories: categories);
 
     notifyListeners();
   }
 
-  Future<void> deleteActivityType(String id) async {
-    await _repository.deleteActivityType(id);
+  Future<void> deleteActivityCategory(String id) async {
+    await _repository.deleteActivityCategory(id);
 
-    // Refresh activity types and daily event counts (events may have changed)
-    final types = await _loadSexualActivityTypes();
+    // Refresh activity categories and daily event counts (events may have changed)
+    final categories = await _loadSexualActivityCategories();
     final counts = await _repository.getDailyEventCount();
     _state = _state.copyWith(
-      sexualActivityTypes: types,
+      sexualActivityCategories: categories,
       dailyEventCount: counts,
     );
 
@@ -322,36 +322,36 @@ class SexualEventsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> isActivityTypeUsed(String activityTypeId) async {
-    return await _repository.isActivityTypeUsed(activityTypeId);
+  Future<bool> isActivityCategoryUsed(String activityCategoryId) async {
+    return await _repository.isActivityCategoryUsed(activityCategoryId);
   }
 
-  Future<void> saveActivityProperty(SexualActivityTypeProperty property) async {
-    await _repository.saveActivityProperty(property);
+  Future<void> saveSexualActivity(SexualActivity activity) async {
+    await _repository.saveSexualActivity(activity);
 
-    // Refresh activity properties in state
-    final properties = await _loadSexualActivityTypeProperties();
-    _state = _state.copyWith(sexualActivityTypeProperties: properties);
+    // Refresh sexual activities in state
+    final activities = await _loadSexualActivities();
+    _state = _state.copyWith(sexualActivities: activities);
 
     notifyListeners();
   }
 
-  Future<void> deleteActivityProperty(String id) async {
-    await _repository.deleteActivityProperty(id);
+  Future<void> deleteSexualActivity(String id) async {
+    await _repository.deleteSexualActivity(id);
 
-    // Refresh both properties and activity types (types may have changed)
-    final properties = await _loadSexualActivityTypeProperties();
-    final types = await _loadSexualActivityTypes();
+    // Refresh both sexual activities and activity categories (categories may have changed)
+    final activities = await _loadSexualActivities();
+    final categories = await _loadSexualActivityCategories();
     _state = _state.copyWith(
-      sexualActivityTypeProperties: properties,
-      sexualActivityTypes: types,
+      sexualActivities: activities,
+      sexualActivityCategories: categories,
     );
 
     notifyListeners();
   }
 
-  Future<bool> isActivityPropertyUsed(String propertyId) async {
-    return await _repository.isActivityPropertyUsed(propertyId);
+  Future<bool> isSexualActivityUsed(String activityId) async {
+    return await _repository.isSexualActivityUsed(activityId);
   }
 
   /* ########################
@@ -367,22 +367,22 @@ class SexualEventsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Map<String, SexualActivityTypeProperty>>
-  _loadSexualActivityTypeProperties() async {
-    final properties = await _repository.getAllSexualActivityTypeProperties();
-    Map<String, SexualActivityTypeProperty> propertyMap = {};
-    for (var property in properties) {
-      propertyMap[property.id] = property;
+  Future<Map<String, SexualActivity>> _loadSexualActivities() async {
+    final activities = await _repository.getAllSexualActivities();
+    Map<String, SexualActivity> activityMap = {};
+    for (var activity in activities) {
+      activityMap[activity.id] = activity;
     }
-    return propertyMap;
+    return activityMap;
   }
 
-  Future<Map<String, SexualActivityType>> _loadSexualActivityTypes() async {
-    final properties = await _repository.getAllSexualActivityTypes();
-    Map<String, SexualActivityType> typeMap = {};
-    for (var type in properties) {
-      typeMap[type.id] = type;
+  Future<Map<String, SexualActivityCategory>>
+  _loadSexualActivityCategories() async {
+    final categories = await _repository.getAllSexualActivityCategories();
+    Map<String, SexualActivityCategory> categoryMap = {};
+    for (var category in categories) {
+      categoryMap[category.id] = category;
     }
-    return typeMap;
+    return categoryMap;
   }
 }

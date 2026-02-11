@@ -5,3 +5,5 @@ targets:
         enabled: true
         generate_for:
           - lib/data/models/*/*.dart
+          - lib/data/models/v1/*/*.dart
+          - lib/data/models/v2/*/*.dart

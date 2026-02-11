@@ -16,13 +16,13 @@ class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.data.activityPartnerCountsThisYear.isEmpty) {
+    if (widget.data.categoryPartnerCountsThisYear.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Sort activities by unique partner count
-    final sortedActivities =
-        widget.data.activityPartnerCountsThisYear.entries.toList()
+    // Sort categories by unique partner count
+    final sortedCategories =
+        widget.data.categoryPartnerCountsThisYear.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
 
     return Card(
@@ -33,55 +33,55 @@ class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Partner Diversity by Activity',
+              'Partner Diversity by Category',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              'Number of unique partners per activity and property',
+              'Number of unique partners per category and activity',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
-            ...sortedActivities.map((entry) {
-              final activityTypeId = entry.key;
+            ...sortedCategories.map((entry) {
+              final categoryId = entry.key;
               final partnerCount = entry.value;
-              final activityType = widget.data.activityTypes[activityTypeId];
-              final isExpanded = _expandedActivities.contains(activityTypeId);
+              final category = widget.data.activityCategories[categoryId];
+              final isExpanded = _expandedActivities.contains(categoryId);
 
-              // Get properties for this activity with their unique partner counts
-              final activityPropertyPartnerCounts =
+              // Get activities for this category with their unique partner counts
+              final categoryActivityPartnerCounts =
                   widget
                       .data
-                      .activityPropertyPartnerCountsThisYear[activityTypeId] ??
+                      .categoryActivityPartnerCountsThisYear[categoryId] ??
                   {};
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: ExpandableActivityCard(
-                  title: activityType?.name ?? 'Unknown',
-                  emoji: activityType?.displayCharacter,
+                  title: category?.name ?? 'Unknown',
+                  emoji: category?.displayCharacter,
                   subtitle:
                       '$partnerCount unique partner${partnerCount != 1 ? 's' : ''}',
-                  badgeCount: activityPropertyPartnerCounts.length,
-                  badgeLabel: activityPropertyPartnerCounts.length == 1
-                      ? 'property'
-                      : 'properties',
+                  badgeCount: categoryActivityPartnerCounts.length,
+                  badgeLabel: categoryActivityPartnerCounts.length == 1
+                      ? 'activity'
+                      : 'activities',
                   isExpanded: isExpanded,
                   onTap: () {
                     setState(() {
                       if (isExpanded) {
-                        _expandedActivities.remove(activityTypeId);
+                        _expandedActivities.remove(categoryId);
                       } else {
-                        _expandedActivities.add(activityTypeId);
+                        _expandedActivities.add(categoryId);
                       }
                     });
                   },
-                  propertyCountsMap: activityPropertyPartnerCounts,
-                  availableProperties: widget.data.properties,
+                  propertyCountsMap: categoryActivityPartnerCounts,
+                  availableProperties: widget.data.sexualActivities,
                 ),
               );
             }),

@@ -5,9 +5,9 @@ import 'package:indulge/data/models.dart';
 import 'package:uuid/uuid.dart';
 
 class ActivityTypeEditorPage extends StatefulWidget {
-  final SexualActivityType? activityType;
+  final SexualActivityCategory? activityCategory;
 
-  const ActivityTypeEditorPage({super.key, this.activityType});
+  const ActivityTypeEditorPage({super.key, this.activityCategory});
 
   @override
   State<ActivityTypeEditorPage> createState() => _ActivityTypeEditorPageState();
@@ -17,7 +17,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _emojiController;
-  late List<_PropertyRow> _properties;
+  late List<_ActivityRow> _activities;
   bool _isLoading = false;
   bool _requiresPartner = false;
 
@@ -25,31 +25,30 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(
-      text: widget.activityType?.name ?? '',
+      text: widget.activityCategory?.name ?? '',
     );
     _emojiController = TextEditingController(
-      text: widget.activityType?.displayCharacter ?? '❓',
+      text: widget.activityCategory?.displayCharacter ?? '❓',
     );
-    _requiresPartner = widget.activityType?.requiresPartner ?? false;
+    _requiresPartner = widget.activityCategory?.requiresPartner ?? false;
 
-    // Load existing properties or start with empty list
-    _properties = [];
-    if (widget.activityType != null) {
+    // Load existing activities or start with empty list
+    _activities = [];
+    if (widget.activityCategory != null) {
       final provider = context.read<SexualEventsProvider>();
-      for (var ref in widget.activityType!.properties) {
-        final property =
-            provider.state.sexualActivityTypeProperties?[ref.reference];
-        if (property != null) {
-          _properties.add(
-            _PropertyRow(
-              id: property.id,
-              nameController: TextEditingController(text: property.name),
+      for (var ref in widget.activityCategory!.activities) {
+        final activity = provider.state.sexualActivities?[ref.reference];
+        if (activity != null) {
+          _activities.add(
+            _ActivityRow(
+              id: activity.id,
+              nameController: TextEditingController(text: activity.name),
               emojiController: TextEditingController(
-                text: property.displayCharacter,
+                text: activity.displayCharacter,
               ),
-              isRisky: property.isRisky,
-              requiresPartner: property.requiresPartner,
-              canHaveMultipleParticipants: property.canHaveMultipleParticipants,
+              isRisky: activity.isRisky,
+              requiresPartner: activity.requiresPartner,
+              canHaveMultipleParticipants: activity.canHaveMultipleParticipants,
             ),
           );
         }
@@ -61,9 +60,9 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
   void dispose() {
     _nameController.dispose();
     _emojiController.dispose();
-    for (var property in _properties) {
-      property.nameController.dispose();
-      property.emojiController.dispose();
+    for (var activity in _activities) {
+      activity.nameController.dispose();
+      activity.emojiController.dispose();
     }
     super.dispose();
   }
@@ -73,16 +72,14 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.activityType == null
-              ? 'New Activity Type'
-              : 'Edit Activity Type',
+          widget.activityCategory == null ? 'New Category' : 'Edit Category',
         ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           if (!_isLoading)
             IconButton(
               icon: const Icon(Icons.save),
-              onPressed: _saveActivityType,
+              onPressed: _saveActivityCategory,
             ),
         ],
       ),
@@ -125,8 +122,8 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                           child: TextFormField(
                             controller: _nameController,
                             decoration: const InputDecoration(
-                              labelText: 'Activity Name *',
-                              hintText: 'e.g., Oral Sex, Kissing, etc.',
+                              labelText: 'Category Name *',
+                              hintText: 'e.g., Oral, Vaginal, Manual, etc.',
                               border: OutlineInputBorder(),
                             ),
                             validator: (value) {
@@ -144,7 +141,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                     CheckboxListTile(
                       title: const Text('Requires Partner'),
                       subtitle: const Text(
-                        'When enabled, this activity cannot be performed alone (requires at least one other person)',
+                        'When enabled, this category cannot be performed alone (requires at least one other person)',
                       ),
                       value: _requiresPartner,
                       onChanged: (value) {
@@ -159,36 +156,36 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Properties',
+                          'Activities',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         ElevatedButton.icon(
-                          onPressed: _addProperty,
+                          onPressed: _addActivity,
                           icon: const Icon(Icons.add),
-                          label: const Text('Add Property'),
+                          label: const Text('Add Activity'),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    if (_properties.isEmpty)
+                    if (_activities.isEmpty)
                       const Card(
                         child: Padding(
                           padding: EdgeInsets.all(16.0),
                           child: Center(
                             child: Text(
-                              'No properties added yet',
+                              'No activities added yet',
                               style: TextStyle(color: Colors.grey),
                             ),
                           ),
                         ),
                       )
                     else
-                      ..._properties.asMap().entries.map((entry) {
+                      ..._activities.asMap().entries.map((entry) {
                         final index = entry.key;
-                        final property = entry.value;
+                        final activity = entry.value;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: Card(
@@ -196,11 +193,11 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                               padding: const EdgeInsets.all(8.0),
                               child: Row(
                                 children: [
-                                  // Property emoji
+                                  // Activity emoji
                                   SizedBox(
                                     width: 60,
                                     child: TextFormField(
-                                      controller: property.emojiController,
+                                      controller: activity.emojiController,
                                       decoration: const InputDecoration(
                                         border: OutlineInputBorder(),
                                         contentPadding: EdgeInsets.symmetric(
@@ -222,14 +219,14 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  // Property name
+                                  // Activity name
                                   Expanded(
                                     child: Column(
                                       children: [
                                         TextFormField(
-                                          controller: property.nameController,
+                                          controller: activity.nameController,
                                           decoration: const InputDecoration(
-                                            labelText: 'Property Name',
+                                            labelText: 'Activity Name',
                                             hintText: 'e.g., Giving, Receiving',
                                             border: OutlineInputBorder(),
                                           ),
@@ -252,10 +249,10 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                                                     fontSize: 12,
                                                   ),
                                                 ),
-                                                value: property.isRisky,
+                                                value: activity.isRisky,
                                                 onChanged: (value) {
                                                   setState(() {
-                                                    property.isRisky =
+                                                    activity.isRisky =
                                                         value ?? false;
                                                   });
                                                 },
@@ -274,10 +271,10 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                                                     fontSize: 12,
                                                   ),
                                                 ),
-                                                value: property.requiresPartner,
+                                                value: activity.requiresPartner,
                                                 onChanged: (value) {
                                                   setState(() {
-                                                    property.requiresPartner =
+                                                    activity.requiresPartner =
                                                         value ?? false;
                                                   });
                                                 },
@@ -295,11 +292,11 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                                             'Can have multiple participants',
                                             style: TextStyle(fontSize: 12),
                                           ),
-                                          value: property
+                                          value: activity
                                               .canHaveMultipleParticipants,
                                           onChanged: (value) {
                                             setState(() {
-                                              property.canHaveMultipleParticipants =
+                                              activity.canHaveMultipleParticipants =
                                                   value ?? true;
                                             });
                                           },
@@ -318,7 +315,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                                       Icons.delete,
                                       color: Colors.red,
                                     ),
-                                    onPressed: () => _removeProperty(index),
+                                    onPressed: () => _removeActivity(index),
                                   ),
                                 ],
                               ),
@@ -330,12 +327,12 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _saveActivityType,
+                        onPressed: _saveActivityCategory,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: Text(
-                          widget.activityType == null ? 'Create' : 'Save',
+                          widget.activityCategory == null ? 'Create' : 'Save',
                           style: const TextStyle(fontSize: 16),
                         ),
                       ),
@@ -347,10 +344,10 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     );
   }
 
-  void _addProperty() {
+  void _addActivity() {
     setState(() {
-      _properties.add(
-        _PropertyRow(
+      _activities.add(
+        _ActivityRow(
           id: const Uuid().v4(),
           nameController: TextEditingController(),
           emojiController: TextEditingController(text: '❔'),
@@ -362,15 +359,15 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     });
   }
 
-  void _removeProperty(int index) {
+  void _removeActivity(int index) {
     setState(() {
-      _properties[index].nameController.dispose();
-      _properties[index].emojiController.dispose();
-      _properties.removeAt(index);
+      _activities[index].nameController.dispose();
+      _activities[index].emojiController.dispose();
+      _activities.removeAt(index);
     });
   }
 
-  Future<void> _saveActivityType() async {
+  Future<void> _saveActivityCategory() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -382,36 +379,33 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     try {
       final provider = context.read<SexualEventsProvider>();
 
-      // Save all properties first
-      final propertyReferences = <Reference>[];
-      for (var property in _properties) {
-        final prop = SexualActivityTypeProperty(
-          id: property.id,
-          name: property.nameController.text.trim(),
-          displayCharacter: property.emojiController.text.trim(),
-          isRisky: property.isRisky,
-          requiresPartner: property.requiresPartner,
-          canHaveMultipleParticipants: property.canHaveMultipleParticipants,
+      // Save all activities first
+      final activityReferences = <Reference>[];
+      for (var activity in _activities) {
+        final act = SexualActivity(
+          id: activity.id,
+          name: activity.nameController.text.trim(),
+          displayCharacter: activity.emojiController.text.trim(),
+          isRisky: activity.isRisky,
+          requiresPartner: activity.requiresPartner,
+          canHaveMultipleParticipants: activity.canHaveMultipleParticipants,
         );
-        await provider.saveActivityProperty(prop);
-        propertyReferences.add(
-          Reference(
-            reference: prop.id,
-            resourceType: 'SexualActivityTypeProperty',
-          ),
+        await provider.saveSexualActivity(act);
+        activityReferences.add(
+          Reference(reference: act.id, resourceType: 'SexualActivity'),
         );
       }
 
-      // Save the activity type
-      final activityType = SexualActivityType(
-        id: widget.activityType?.id ?? const Uuid().v4(),
+      // Save the activity category
+      final activityCategory = SexualActivityCategory(
+        id: widget.activityCategory?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
         displayCharacter: _emojiController.text.trim(),
-        properties: propertyReferences,
+        activities: activityReferences,
         requiresPartner: _requiresPartner,
       );
 
-      await provider.saveActivityType(activityType);
+      await provider.saveActivityCategory(activityCategory);
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -432,7 +426,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
   }
 }
 
-class _PropertyRow {
+class _ActivityRow {
   final String id;
   final TextEditingController nameController;
   final TextEditingController emojiController;
@@ -440,7 +434,7 @@ class _PropertyRow {
   bool requiresPartner;
   bool canHaveMultipleParticipants;
 
-  _PropertyRow({
+  _ActivityRow({
     required this.id,
     required this.nameController,
     required this.emojiController,

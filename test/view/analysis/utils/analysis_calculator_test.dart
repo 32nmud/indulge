@@ -17,10 +17,10 @@ void main() {
     late Person partner1;
     late Person partner2;
     late Person anonymousPerson;
-    late SexualActivityType oralType;
-    late SexualActivityType vaginalType;
-    late SexualActivityTypeProperty condomProperty;
-    late SexualActivityTypeProperty riskyProperty;
+    late SexualActivityCategory oralType;
+    late SexualActivityCategory vaginalType;
+    late SexualActivity condomProperty;
+    late SexualActivity riskyProperty;
 
     setUp(() {
       mockProvider = MockSexualEventsProvider();
@@ -55,18 +55,18 @@ void main() {
       );
 
       // Create test activity types
-      oralType = const SexualActivityType(id: 'oral', name: 'Oral');
+      oralType = const SexualActivityCategory(id: 'oral', name: 'Oral');
 
-      vaginalType = const SexualActivityType(id: 'vaginal', name: 'Vaginal');
+      vaginalType = const SexualActivityCategory(id: 'vaginal', name: 'Vaginal');
 
       // Create test properties
-      condomProperty = const SexualActivityTypeProperty(
+      condomProperty = const SexualActivity(
         id: 'condom',
         name: 'Condom',
         isRisky: false,
       );
 
-      riskyProperty = const SexualActivityTypeProperty(
+      riskyProperty = const SexualActivity(
         id: 'risky',
         name: 'Risky Property',
         isRisky: true,
@@ -74,8 +74,8 @@ void main() {
 
       // Set up mock state
       mockState = EventState(
-        sexualActivityTypes: {'oral': oralType, 'vaginal': vaginalType},
-        sexualActivityTypeProperties: {
+        sexualActivityCategories: {'oral': oralType, 'vaginal': vaginalType},
+        sexualActivities: {
           'condom': condomProperty,
           'risky': riskyProperty,
         },
@@ -126,16 +126,16 @@ void main() {
         id: 'event1',
         date: now,
         activities: [
-          SexualActivity(
-            type: const Reference(reference: 'oral'),
+          EventActivity(
+            category: const Reference(reference: 'oral'),
             participants: [
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'me'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner1'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
             ],
           ),
@@ -156,25 +156,25 @@ void main() {
         id: 'event1',
         date: now,
         activities: [
-          SexualActivity(
-            type: const Reference(reference: 'oral'),
+          EventActivity(
+            category: const Reference(reference: 'oral'),
             participants: [
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner1'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner2'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
             ],
           ),
-          SexualActivity(
-            type: const Reference(reference: 'vaginal'),
+          EventActivity(
+            category: const Reference(reference: 'vaginal'),
             participants: [
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner1'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
             ],
           ),
@@ -223,12 +223,12 @@ void main() {
           id: 'event1',
           date: now,
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
@@ -239,30 +239,30 @@ void main() {
           id: 'event2',
           date: now.subtract(const Duration(days: 1)),
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
-            SexualActivity(
-              type: const Reference(reference: 'vaginal'),
+            EventActivity(
+              category: const Reference(reference: 'vaginal'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner2'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
@@ -283,18 +283,18 @@ void main() {
         id: 'event1',
         date: now,
         activities: [
-          SexualActivity(
-            type: const Reference(reference: 'oral'),
+          EventActivity(
+            category: const Reference(reference: 'oral'),
             participants: [
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner1'),
-                propertyCounts: [
-                  PropertyCount(
-                    propertyReference: Reference(reference: 'condom'),
+                activityCounts: [
+                  ActivityCount(
+                    activityReference: Reference(reference: 'condom'),
                     count: 2,
                   ),
-                  PropertyCount(
-                    propertyReference: Reference(reference: 'risky'),
+                  ActivityCount(
+                    activityReference: Reference(reference: 'risky'),
                     count: 1,
                   ),
                 ],
@@ -307,9 +307,9 @@ void main() {
       final result = await AnalysisCalculator.calculate([event], mockProvider);
 
       // 2 + 1 = 3 properties
-      expect(result.averagePropertiesPerEvent, 3.0);
-      expect(result.propertyCountsTotal['condom'], 2);
-      expect(result.propertyCountsTotal['risky'], 1);
+      expect(result.averageSexualActivitiesPerEvent, 3.0);
+      expect(result.sexualActivityCountsTotal['condom'], 2);
+      expect(result.sexualActivityCountsTotal['risky'], 1);
     });
 
     test('identifies risky activities correctly', () async {
@@ -320,14 +320,14 @@ void main() {
           id: 'event1',
           date: now,
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [
-                    PropertyCount(
-                      propertyReference: Reference(reference: 'condom'),
+                  activityCounts: [
+                    ActivityCount(
+                      activityReference: Reference(reference: 'condom'),
                       count: 1,
                     ),
                   ],
@@ -341,14 +341,14 @@ void main() {
           id: 'event2',
           date: now.subtract(const Duration(days: 1)),
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'vaginal'),
+            EventActivity(
+              category: const Reference(reference: 'vaginal'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [
-                    PropertyCount(
-                      propertyReference: Reference(reference: 'risky'),
+                  activityCounts: [
+                    ActivityCount(
+                      activityReference: Reference(reference: 'risky'),
                       count: 1,
                     ),
                   ],
@@ -371,16 +371,16 @@ void main() {
         id: 'event1',
         date: now,
         activities: [
-          SexualActivity(
-            type: const Reference(reference: 'oral'),
+          EventActivity(
+            category: const Reference(reference: 'oral'),
             participants: [
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'anonymous'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner1'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
             ],
           ),
@@ -402,12 +402,12 @@ void main() {
           id: 'solo',
           date: now,
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'me'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
@@ -418,16 +418,16 @@ void main() {
           id: 'couple',
           date: now.subtract(const Duration(days: 1)),
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'me'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
@@ -438,20 +438,20 @@ void main() {
           id: 'group',
           date: now.subtract(const Duration(days: 2)),
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'me'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner2'),
-                  propertyCounts: [],
+                  activityCounts: [],
                 ),
               ],
             ),
@@ -473,14 +473,14 @@ void main() {
           id: 'event1',
           date: now,
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'oral'),
+            EventActivity(
+              category: const Reference(reference: 'oral'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner1'),
-                  propertyCounts: [
-                    PropertyCount(
-                      propertyReference: Reference(reference: 'condom'),
+                  activityCounts: [
+                    ActivityCount(
+                      activityReference: Reference(reference: 'condom'),
                       count: 1,
                     ),
                   ],
@@ -493,14 +493,14 @@ void main() {
           id: 'event2',
           date: now.subtract(const Duration(days: 1)),
           activities: [
-            SexualActivity(
-              type: const Reference(reference: 'vaginal'),
+            EventActivity(
+              category: const Reference(reference: 'vaginal'),
               participants: [
-                const SexualActivityParticipant(
+                const ActivityParticipant(
                   participant: Reference(reference: 'partner2'),
-                  propertyCounts: [
-                    PropertyCount(
-                      propertyReference: Reference(reference: 'condom'),
+                  activityCounts: [
+                    ActivityCount(
+                      activityReference: Reference(reference: 'condom'),
                       count: 1,
                     ),
                   ],
@@ -514,7 +514,7 @@ void main() {
       final result = await AnalysisCalculator.calculate(events, mockProvider);
 
       // Condom used with 2 different partners
-      expect(result.propertyPartnerCounts['condom'], 2);
+      expect(result.sexualActivityPartnerCounts['condom'], 2);
     });
 
     test('respects time window filtering for statistics', () async {
@@ -578,32 +578,32 @@ void main() {
         id: 'complex',
         date: now,
         activities: [
-          SexualActivity(
-            type: const Reference(reference: 'oral'),
+          EventActivity(
+            category: const Reference(reference: 'oral'),
             participants: [
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner1'),
-                propertyCounts: [
-                  PropertyCount(
-                    propertyReference: Reference(reference: 'condom'),
+                activityCounts: [
+                  ActivityCount(
+                    activityReference: Reference(reference: 'condom'),
                     count: 1,
                   ),
                 ],
               ),
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner2'),
-                propertyCounts: [],
+                activityCounts: [],
               ),
             ],
           ),
-          SexualActivity(
-            type: const Reference(reference: 'vaginal'),
+          EventActivity(
+            category: const Reference(reference: 'vaginal'),
             participants: [
-              const SexualActivityParticipant(
+              const ActivityParticipant(
                 participant: Reference(reference: 'partner1'),
-                propertyCounts: [
-                  PropertyCount(
-                    propertyReference: Reference(reference: 'risky'),
+                activityCounts: [
+                  ActivityCount(
+                    activityReference: Reference(reference: 'risky'),
                     count: 1,
                   ),
                 ],
@@ -637,12 +637,12 @@ SexualEvent _createEvent(DateTime date) {
     id: 'event_${date.millisecondsSinceEpoch}',
     date: date,
     activities: [
-      SexualActivity(
-        type: const Reference(reference: 'oral'),
+      EventActivity(
+        category: const Reference(reference: 'oral'),
         participants: [
-          const SexualActivityParticipant(
+          const ActivityParticipant(
             participant: Reference(reference: 'partner1'),
-            propertyCounts: [],
+            activityCounts: [],
           ),
         ],
       ),
@@ -654,12 +654,12 @@ SexualEvent _createEvent(DateTime date) {
 SexualEvent _createEventWithActivities(DateTime date, int activityCount) {
   final activities = List.generate(
     activityCount,
-    (index) => SexualActivity(
-      type: const Reference(reference: 'oral'),
+    (index) => EventActivity(
+      category: const Reference(reference: 'oral'),
       participants: [
-        const SexualActivityParticipant(
+        const ActivityParticipant(
           participant: Reference(reference: 'partner1'),
-          propertyCounts: [],
+          activityCounts: [],
         ),
       ],
     ),

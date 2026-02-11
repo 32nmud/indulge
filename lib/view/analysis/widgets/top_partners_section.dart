@@ -223,18 +223,18 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
           (p) => p.participant.reference == partnerId,
         );
         if (hasPartner) {
-          final typeId = activity.type.reference;
+          final typeId = activity.category.reference;
           activityTypeCounts[typeId] = (activityTypeCounts[typeId] ?? 0) + 1;
 
           // Track properties for this activity type
           activityTypePropertyCounts.putIfAbsent(typeId, () => {});
           for (final participant in activity.participants) {
             if (participant.participant.reference == partnerId) {
-              for (final propertyCount in participant.propertyCounts) {
-                final propertyId = propertyCount.propertyReference.reference;
-                activityTypePropertyCounts[typeId]![propertyId] =
-                    (activityTypePropertyCounts[typeId]![propertyId] ?? 0) +
-                    propertyCount.count;
+              for (final activityCount in participant.activityCounts) {
+                final activityId = activityCount.activityReference.reference;
+                activityTypePropertyCounts[typeId]![activityId] =
+                    (activityTypePropertyCounts[typeId]![activityId] ?? 0) +
+                    activityCount.count;
               }
             }
           }
@@ -309,7 +309,7 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
           const SizedBox(height: 8),
           ...sortedActivityTypes.map((entry) {
             final typeId = entry.key;
-            final activityType = widget.data.activityTypes[typeId];
+            final activityCategory = widget.data.activityCategories[typeId];
             final count = entry.value;
             final propertyCountsForActivity =
                 activityTypePropertyCounts[typeId] ?? {};
@@ -318,13 +318,13 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: ExpandableActivityCard(
-                title: activityType?.name ?? 'Unknown',
-                emoji: activityType?.displayCharacter,
-                subtitle: '$count activit${count != 1 ? 'ies' : 'y'}',
+                title: activityCategory?.name ?? 'Unknown',
+                emoji: activityCategory?.displayCharacter,
+                subtitle: '$count event${count != 1 ? 's' : ''}',
                 badgeCount: propertyCountsForActivity.length,
                 badgeLabel: propertyCountsForActivity.length == 1
-                    ? 'property'
-                    : 'properties',
+                    ? 'activity'
+                    : 'activities',
                 isExpanded: isExpanded,
                 onTap: () {
                   setState(() {
@@ -336,7 +336,7 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                   });
                 },
                 propertyCountsMap: propertyCountsForActivity,
-                availableProperties: widget.data.properties,
+                availableProperties: widget.data.sexualActivities,
               ),
             );
           }),
@@ -354,11 +354,27 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
           const SizedBox(height: 6),
           ...events.reversed.take(3).map((event) {
             final dateStr = DateFormat('MMM d, yyyy').format(event.date);
-            final activityCount = event.activities.where((activity) {
+
+            // Count categories (activities in the event) for this partner
+            final categoryCount = event.activities.where((activity) {
               return activity.participants.any(
                 (p) => p.participant.reference == partnerId,
               );
             }).length;
+
+            // Count total specific activities for this partner
+            var specificActivityCount = 0;
+            for (final activity in event.activities) {
+              final partnerParticipant = activity.participants
+                  .where((p) => p.participant.reference == partnerId)
+                  .firstOrNull;
+              if (partnerParticipant != null) {
+                for (final activityCount in partnerParticipant.activityCounts) {
+                  specificActivityCount += activityCount.count;
+                }
+              }
+            }
+
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 2.0),
               child: Row(
@@ -379,7 +395,7 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
                     ),
                   ),
                   Text(
-                    '$activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
+                    '$categoryCount categor${categoryCount != 1 ? 'ies' : 'y'}, $specificActivityCount activit${specificActivityCount != 1 ? 'ies' : 'y'}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.onSurface,

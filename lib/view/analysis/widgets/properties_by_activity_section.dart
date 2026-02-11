@@ -39,7 +39,7 @@ class _PropertiesByActivitySectionState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Properties by Activity Type',
+              'Activities by Category',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -48,7 +48,8 @@ class _PropertiesByActivitySectionState
             ...sortedActivities.map((entry) {
               final activityTypeId = entry.key;
               final activityCount = entry.value;
-              final activityType = widget.data.activityTypes[activityTypeId];
+              final activityCategory =
+                  widget.data.activityCategories[activityTypeId];
               final isExpanded = _expandedActivities.contains(activityTypeId);
 
               // Get properties for this activity type from the events
@@ -57,7 +58,7 @@ class _PropertiesByActivitySectionState
               );
 
               _logger.info(
-                'Activity ${activityType?.name} ($activityTypeId): found ${activityProperties.length} properties',
+                'Activity ${activityCategory?.name} ($activityTypeId): found ${activityProperties.length} properties',
               );
 
               // Get enriched properties (from data and provider)
@@ -68,14 +69,14 @@ class _PropertiesByActivitySectionState
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: ExpandableActivityCard(
-                  title: activityType?.name ?? 'Unknown',
-                  emoji: activityType?.displayCharacter ?? '❓',
+                  title: activityCategory?.name ?? 'Unknown',
+                  emoji: activityCategory?.displayCharacter,
                   subtitle:
                       '$activityCount activit${activityCount != 1 ? 'ies' : 'y'}',
                   badgeCount: activityProperties.length,
                   badgeLabel: activityProperties.length == 1
-                      ? 'property'
-                      : 'properties',
+                      ? 'activity'
+                      : 'activities',
                   isExpanded: isExpanded,
                   onTap: () {
                     setState(() {
@@ -98,18 +99,16 @@ class _PropertiesByActivitySectionState
   }
 
   /// Get enriched properties (from data and provider state)
-  Map<String, SexualActivityTypeProperty> _getEnrichedProperties(
-    Set<String> propertyIds,
-  ) {
-    final result = <String, SexualActivityTypeProperty>{};
+  Map<String, SexualActivity> _getEnrichedProperties(Set<String> propertyIds) {
+    final result = <String, SexualActivity>{};
 
     for (final propertyId in propertyIds) {
-      var property = widget.data.properties[propertyId];
+      var property = widget.data.sexualActivities[propertyId];
       _logger.info('Property $propertyId: in data=${property != null}');
 
       if (property == null) {
         final providerState = context.read<SexualEventsProvider>().state;
-        property = providerState.sexualActivityTypeProperties?[propertyId];
+        property = providerState.sexualActivities?[propertyId];
         _logger.info(
           'Property $propertyId: in provider=${property != null}, name=${property?.name}',
         );
@@ -138,7 +137,7 @@ class _PropertiesByActivitySectionState
     // Iterate through events (already filtered by selected time window)
     for (final event in widget.data.events) {
       for (final activity in event.activities) {
-        if (activity.type.reference == activityTypeId) {
+        if (activity.category.reference == activityTypeId) {
           _logger.info(
             'Found matching activity in event ${event.date}, participants: ${activity.participants.length}',
           );
@@ -146,17 +145,17 @@ class _PropertiesByActivitySectionState
           // Count properties from all participants in this activity
           for (final participant in activity.participants) {
             _logger.info(
-              'Participant has ${participant.propertyCounts.length} property counts',
+              'Participant has ${participant.activityCounts.length} activity counts',
             );
 
-            for (final propertyCount in participant.propertyCounts) {
-              final propertyId = propertyCount.propertyReference.reference;
+            for (final activityCount in participant.activityCounts) {
+              final activityId = activityCount.activityReference.reference;
               _logger.info(
-                'Found property $propertyId with count ${propertyCount.count}',
+                'Found activity $activityId with count ${activityCount.count}',
               );
-              propertyCountsForActivity[propertyId] =
-                  (propertyCountsForActivity[propertyId] ?? 0) +
-                  propertyCount.count;
+              propertyCountsForActivity[activityId] =
+                  (propertyCountsForActivity[activityId] ?? 0) +
+                  activityCount.count;
             }
           }
         }

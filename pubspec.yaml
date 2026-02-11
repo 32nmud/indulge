@@ -81,8 +81,8 @@ flutter:
 
   assets:
     - assets/sql/schema.sql
-    - assets/sql/seed_data/sexual_activity_types.json
-    - assets/sql/seed_data/sexual_activity_type_properties.json
+    - assets/sql/seed_data/sexual_activity_categories.json
+    - assets/sql/seed_data/sexual_activities.json
     - assets/sql/seed_data/persons.json
 
   # An image asset can refer to one or more resolution-specific "variants", see

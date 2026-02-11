@@ -103,7 +103,7 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
               const SizedBox(height: 12),
               _buildStatComparison(
                 context,
-                'Unique Properties',
+                'Unique Activities',
                 firstPeriodStats.uniqueProperties,
                 secondPeriodStats.uniqueProperties,
                 Icons.label,
@@ -593,8 +593,8 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     final propertyIds = <String>{};
     for (final event in periodEvents) {
       for (final activity in event.activities) {
-        if (activity.type.reference.isNotEmpty) {
-          propertyIds.add(activity.type.reference);
+        if (activity.category.reference.isNotEmpty) {
+          propertyIds.add(activity.category.reference);
         }
       }
     }

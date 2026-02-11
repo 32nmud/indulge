@@ -39,7 +39,7 @@ class _EventCardState extends State<EventCard>
   @override
   Widget build(BuildContext context) {
     SexualEventsProvider provider = context.watch<SexualEventsProvider>();
-    final List<SexualActivity> activities = widget.event.activities;
+    final List<EventActivity> activities = widget.event.activities;
     final EventState eventState = provider.state;
     final Future<List<Person>> participants = provider.getPersonsForEvent(
       widget.event.id,
@@ -73,7 +73,7 @@ class _EventCardState extends State<EventCard>
     BuildContext context,
     List<Person> persons,
     EventState eventState,
-    List<SexualActivity> activities,
+    List<EventActivity> activities,
   ) {
     return InkWell(
       onTapDown: (_) => _scaleController.forward(),
@@ -120,7 +120,7 @@ class _EventCardState extends State<EventCard>
   }
 
   Widget _buildCompactPreview(
-    List<SexualActivity> activities,
+    List<EventActivity> activities,
     EventState eventState,
     List<Person> persons,
   ) {
@@ -134,10 +134,10 @@ class _EventCardState extends State<EventCard>
         spacing: 8,
         runSpacing: 4,
         children: activities.map((activity) {
-          final activityType =
-              eventState.sexualActivityTypes?[activity.type.reference];
-          final emoji = activityType?.displayCharacter ?? '❔';
-          final name = activityType?.name ?? 'Unknown';
+          final activityCategory =
+              eventState.sexualActivityCategories?[activity.category.reference];
+          final emoji = activityCategory?.displayCharacter ?? '❔';
+          final name = activityCategory?.name ?? 'Unknown';
 
           return Chip(
             avatar: Text(emoji, style: const TextStyle(fontSize: 16)),
@@ -151,7 +151,7 @@ class _EventCardState extends State<EventCard>
   }
 
   Widget _buildDetailedActivitiesList(
-    List<SexualActivity> activities,
+    List<EventActivity> activities,
     List<Person> persons,
     EventState eventState,
   ) {
@@ -164,14 +164,14 @@ class _EventCardState extends State<EventCard>
   }
 
   Widget _buildActivityCard(
-    SexualActivity activity,
+    EventActivity activity,
     List<Person> persons,
     EventState eventState,
   ) {
-    final activityType =
-        eventState.sexualActivityTypes?[activity.type.reference];
-    final emoji = activityType?.displayCharacter ?? '❔';
-    final name = activityType?.name ?? 'Unknown';
+    final activityCategory =
+        eventState.sexualActivityCategories?[activity.category.reference];
+    final emoji = activityCategory?.displayCharacter ?? '❔';
+    final name = activityCategory?.name ?? 'Unknown';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -229,7 +229,7 @@ class _EventCardState extends State<EventCard>
   }
 
   Widget _buildParticipantsBreakdown(
-    SexualActivity activity,
+    EventActivity activity,
     List<Person> persons,
     EventState eventState,
   ) {
@@ -255,15 +255,15 @@ class _EventCardState extends State<EventCard>
         ),
       );
 
-      if (participant.propertyCounts.isEmpty) {
-        // Group under "no properties"
-        propertyGroups.putIfAbsent('_no_property', () => {});
-        propertyGroups['_no_property']![person] = 1;
+      if (participant.activityCounts.isEmpty) {
+        // Group under "no activities"
+        propertyGroups.putIfAbsent('_no_activity', () => {});
+        propertyGroups['_no_activity']![person] = 1;
       } else {
-        for (var propertyCount in participant.propertyCounts) {
-          final propertyId = propertyCount.propertyReference.reference;
-          propertyGroups.putIfAbsent(propertyId, () => {});
-          propertyGroups[propertyId]![person] = propertyCount.count;
+        for (var activityCount in participant.activityCounts) {
+          final activityId = activityCount.activityReference.reference;
+          propertyGroups.putIfAbsent(activityId, () => {});
+          propertyGroups[activityId]![person] = activityCount.count;
         }
       }
     }
@@ -271,7 +271,7 @@ class _EventCardState extends State<EventCard>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: propertyGroups.entries.map((entry) {
-        if (entry.key == '_no_property') {
+        if (entry.key == '_no_activity') {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
             child: Wrap(
@@ -305,10 +305,10 @@ class _EventCardState extends State<EventCard>
             ),
           );
         } else {
-          final property = eventState.sexualActivityTypeProperties?[entry.key];
-          final propertyEmoji = property?.displayCharacter ?? '❔';
-          final propertyName = property?.name ?? 'Unknown';
-          final isRisky = property?.isRisky ?? false;
+          final activity = eventState.sexualActivities?[entry.key];
+          final activityEmoji = activity?.displayCharacter ?? '❔';
+          final activityName = activity?.name ?? 'Unknown';
+          final isRisky = activity?.isRisky ?? false;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
@@ -317,10 +317,10 @@ class _EventCardState extends State<EventCard>
               children: [
                 Row(
                   children: [
-                    Text(propertyEmoji, style: const TextStyle(fontSize: 18)),
+                    Text(activityEmoji, style: const TextStyle(fontSize: 18)),
                     const SizedBox(width: 6),
                     Text(
-                      propertyName,
+                      activityName,
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

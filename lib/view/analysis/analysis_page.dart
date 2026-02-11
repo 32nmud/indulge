@@ -557,7 +557,7 @@ class _AnalysisPageState extends State<AnalysisPage>
         _buildPageTitle(
           'Activity Breakdown',
           Icons.list_alt,
-          'Types, properties, and averages',
+          'Categories, activities, and averages',
         ),
         EventAveragesSection(data: data),
         ActivityTypeDistribution(data: data),

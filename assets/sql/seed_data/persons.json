@@ -6,7 +6,9 @@
       "name": {
         "given": "Me"
       },
-      "isSelf": true
+      "isSelf": true,
+      "version": 2,
+      "resourceType": "Person"
     },
     {
       "id": "anonymous",
@@ -14,7 +16,9 @@
       "name": {
         "given": "Anonymous"
       },
-      "isSelf": false
+      "isSelf": false,
+      "version": 2,
+      "resourceType": "Person"
     }
   ]
 }
