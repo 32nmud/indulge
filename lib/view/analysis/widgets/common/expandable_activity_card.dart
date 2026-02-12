@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
 
 /// A reusable expandable card widget for displaying categories with their activities
-class ExpandableActivityCard extends StatelessWidget {
+/// Converted to a StatefulWidget so it can participate in the keep-alive mechanism
+/// and remain expanded when scrolled out of view.
+class ExpandableActivityCard extends StatefulWidget {
   final String title;
   final String? emoji;
   final String subtitle;
@@ -29,7 +31,27 @@ class ExpandableActivityCard extends StatelessWidget {
   });
 
   @override
+  State<ExpandableActivityCard> createState() => _ExpandableActivityCardState();
+}
+
+class _ExpandableActivityCardState extends State<ExpandableActivityCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => widget.isExpanded;
+
+  @override
+  void didUpdateWidget(covariant ExpandableActivityCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the expanded state changed, inform the framework to update keep-alive.
+    if (oldWidget.isExpanded != widget.isExpanded) {
+      updateKeepAlive();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // required for AutomaticKeepAliveClientMixin
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
@@ -40,15 +62,15 @@ class ExpandableActivityCard extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: onTap,
+              onTap: widget.onTap,
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Row(
                   children: [
                     // Emoji/Icon
-                    if (emoji != null) ...[
-                      Text(emoji!, style: const TextStyle(fontSize: 24)),
+                    if (widget.emoji != null) ...[
+                      Text(widget.emoji!, style: const TextStyle(fontSize: 24)),
                       const SizedBox(width: 12),
                     ],
                     // Title and subtitle
@@ -57,13 +79,13 @@ class ExpandableActivityCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            title,
+                            widget.title,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            subtitle,
+                            widget.subtitle,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(
@@ -76,7 +98,7 @@ class ExpandableActivityCard extends StatelessWidget {
                       ),
                     ),
                     // Badge
-                    if (badgeCount > 0)
+                    if (widget.badgeCount > 0)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -89,7 +111,7 @@ class ExpandableActivityCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '$badgeCount $badgeLabel',
+                          '${widget.badgeCount} ${widget.badgeLabel}',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -99,7 +121,7 @@ class ExpandableActivityCard extends StatelessWidget {
                       ),
                     const SizedBox(width: 8),
                     Icon(
-                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      widget.isExpanded ? Icons.expand_less : Icons.expand_more,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ],
@@ -108,18 +130,18 @@ class ExpandableActivityCard extends StatelessWidget {
             ),
           ),
           // Expanded content
-          if (isExpanded) ...[
+          if (widget.isExpanded) ...[
             const Divider(height: 1),
-            if (activityCountsMap.isNotEmpty)
+            if (widget.activityCountsMap.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...activityCountsMap.entries.map((activityEntry) {
+                    ...widget.activityCountsMap.entries.map((activityEntry) {
                       final activityId = activityEntry.key;
                       final count = activityEntry.value;
-                      final activity = availableActivities[activityId];
+                      final activity = widget.availableActivities[activityId];
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -175,14 +197,14 @@ class ExpandableActivityCard extends StatelessWidget {
                         ),
                       );
                     }),
-                    if (additionalContent != null) ...[
+                    if (widget.additionalContent != null) ...[
                       const SizedBox(height: 12),
-                      additionalContent!,
+                      widget.additionalContent!,
                     ],
                   ],
                 ),
               ),
-            if (activityCountsMap.isEmpty)
+            if (widget.activityCountsMap.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Text(
