@@ -38,6 +38,8 @@ class PreferencesService {
   static const String _kCategorySelectedIds = 'pref_category_selected_ids';
   static const String _kPropertiesCategorySelectedIds =
       'pref_properties_category_selected_ids';
+  static const String _kPartnerPropertiesCategorySelectedIds =
+      'pref_partner_properties_category_selected_ids';
   static const String _kActivitySelectedIds = 'pref_activity_selected_ids';
 
   // Current preferences version. Increment when stored keys/shape change.
@@ -72,6 +74,8 @@ class PreferencesService {
   // and activity IDs for the trends widgets and are stored as JSON arrays in prefs.
   final ValueNotifier<List<String>> categorySelectedIdsNotifier;
   final ValueNotifier<List<String>> propertiesCategorySelectedIdsNotifier;
+  final ValueNotifier<List<String>>
+  partnerPropertiesCategorySelectedIdsNotifier;
   final ValueNotifier<List<String>> activitySelectedIdsNotifier;
 
   PreferencesService._(
@@ -87,6 +91,7 @@ class PreferencesService {
     this.activityShowPatternNotifier,
     this.categorySelectedIdsNotifier,
     this.propertiesCategorySelectedIdsNotifier,
+    this.partnerPropertiesCategorySelectedIdsNotifier,
     this.activitySelectedIdsNotifier,
   );
 
@@ -179,10 +184,16 @@ class PreferencesService {
     final propertiesCategorySelectedJson = prefs.getString(
       _kPropertiesCategorySelectedIds,
     );
+    final partnerPropertiesCategorySelectedJson = prefs.getString(
+      _kPartnerPropertiesCategorySelectedIds,
+    );
     final activitySelectedJson = prefs.getString(_kActivitySelectedIds);
     final categorySelected = _parseStringList(categorySelectedJson);
     final propertiesCategorySelected = _parseStringList(
       propertiesCategorySelectedJson,
+    );
+    final partnerPropertiesCategorySelected = _parseStringList(
+      partnerPropertiesCategorySelectedJson,
     );
     final activitySelected = _parseStringList(activitySelectedJson);
 
@@ -199,6 +210,7 @@ class PreferencesService {
       ValueNotifier<bool>(activityPattern),
       ValueNotifier<List<String>>(categorySelected),
       ValueNotifier<List<String>>(propertiesCategorySelected),
+      ValueNotifier<List<String>>(partnerPropertiesCategorySelected),
       ValueNotifier<List<String>>(activitySelected),
     );
   }
@@ -390,6 +402,26 @@ class PreferencesService {
       propertiesCategorySelectedIdsNotifier.value = List.unmodifiable(ids);
     } else {
       propertiesCategorySelectedIdsNotifier.value = List.unmodifiable(ids);
+    }
+  }
+
+  // Partner-section selected category IDs (separate key so partner UI stores its own selection)
+  List<String> getPartnerPropertiesCategorySelectedIds() =>
+      List.unmodifiable(partnerPropertiesCategorySelectedIdsNotifier.value);
+  Future<void> setPartnerPropertiesCategorySelectedIds(List<String> ids) async {
+    final jsonStr = jsonEncode(ids);
+    final success = await _prefs.setString(
+      _kPartnerPropertiesCategorySelectedIds,
+      jsonStr,
+    );
+    if (success) {
+      partnerPropertiesCategorySelectedIdsNotifier.value = List.unmodifiable(
+        ids,
+      );
+    } else {
+      partnerPropertiesCategorySelectedIdsNotifier.value = List.unmodifiable(
+        ids,
+      );
     }
   }
 
