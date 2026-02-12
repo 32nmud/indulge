@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/person_editor/person_editor_page.dart';
 import 'package:uuid/uuid.dart';
-import 'package:indulge/view/common/person_avatar.dart';
+import 'utils/event_mutations.dart';
 import 'widgets/widgets.dart';
+import 'widgets/activity_card.dart';
 import 'utils/event_validator.dart';
 
 class EventEditorPage extends StatefulWidget {
@@ -114,34 +115,18 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   void _addActivity(SexualActivityCategory activityCategory) {
-    final newActivity = EventActivity(
-      category: Reference(
-        reference: activityCategory.id,
-        resourceType: 'SexualActivityCategory',
-      ),
-      participants: [],
-    );
-
     setState(() {
-      _workingEvent = _workingEvent.copyWith(
-        activities: [..._workingEvent.activities, newActivity],
-      );
-      // Auto-expand the newly added activity
-      _expandedActivities.add(_workingEvent.activities.length);
+      _workingEvent = addActivity(_workingEvent, activityCategory);
+      // Auto-expand the newly added activity (last index)
+      _expandedActivities.add(_workingEvent.activities.length - 1);
     });
   }
 
   void _removeActivity(int activityIndex) {
-    final updatedActivities = List<EventActivity>.from(
-      _workingEvent.activities,
-    );
-    updatedActivities.removeAt(activityIndex);
-
     setState(() {
-      _workingEvent = _workingEvent.copyWith(activities: updatedActivities);
-      // Remove the deleted activity from expanded set
+      _workingEvent = removeActivity(_workingEvent, activityIndex);
+      // Remove the deleted activity from expanded set and adjust indices
       _expandedActivities.remove(activityIndex);
-      // Adjust indices for activities after the removed one
       final adjustedExpanded = <int>{};
       for (var idx in _expandedActivities) {
         if (idx > activityIndex) {
@@ -150,24 +135,18 @@ class _EventEditorPageState extends State<EventEditorPage> {
           adjustedExpanded.add(idx);
         }
       }
-      _expandedActivities.clear();
-      _expandedActivities.addAll(adjustedExpanded);
+      _expandedActivities
+        ..clear()
+        ..addAll(adjustedExpanded);
     });
   }
 
   void _addParticipant(int activityIndex, Person person) {
-    final updatedActivities = List<EventActivity>.from(
-      _workingEvent.activities,
-    );
-    final activity = updatedActivities[activityIndex];
-
-    // Check if participant already exists in this activity
-    final alreadyExists = activity.participants.any(
-      (p) => p.participant.reference == person.id,
-    );
-
-    if (alreadyExists) {
-      // Show a message to the user
+    // Use the helper; it returns the unchanged event if the participant
+    // already exists for that activity.
+    final updatedEvent = addParticipant(_workingEvent, activityIndex, person);
+    if (identical(updatedEvent, _workingEvent)) {
+      // No-op: participant already present
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -179,37 +158,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
       return;
     }
 
-    final participant = ActivityParticipant(
-      participant: Reference(reference: person.id, resourceType: 'Person'),
-      activityCounts: [],
-    );
-
-    updatedActivities[activityIndex] = activity.copyWith(
-      participants: [...activity.participants, participant],
-    );
-
     setState(() {
-      _workingEvent = _workingEvent.copyWith(activities: updatedActivities);
-    });
-  }
-
-  void _removeParticipant(int activityIndex, int participantIndex) {
-    final updatedActivities = List<EventActivity>.from(
-      _workingEvent.activities,
-    );
-    final activity = updatedActivities[activityIndex];
-
-    final updatedParticipants = List<ActivityParticipant>.from(
-      activity.participants,
-    );
-    updatedParticipants.removeAt(participantIndex);
-
-    updatedActivities[activityIndex] = activity.copyWith(
-      participants: updatedParticipants,
-    );
-
-    setState(() {
-      _workingEvent = _workingEvent.copyWith(activities: updatedActivities);
+      _workingEvent = updatedEvent;
     });
   }
 
@@ -219,80 +169,12 @@ class _EventEditorPageState extends State<EventEditorPage> {
     if (myself == null) return;
 
     setState(() {
-      final updatedActivities = List<EventActivity>.from(
-        _workingEvent.activities,
+      _workingEvent = toggleMyselfForProperty(
+        _workingEvent,
+        activityIndex,
+        myself.id,
+        activityId,
       );
-      final activity = updatedActivities[activityIndex];
-
-      // Find or create "Me" participant
-      final meParticipantIndex = activity.participants.indexWhere(
-        (p) => p.participant.reference == myself.id,
-      );
-
-      List<ActivityParticipant> updatedParticipants;
-
-      if (meParticipantIndex == -1) {
-        // Create "Me" participant with this activity
-        final newParticipant = ActivityParticipant(
-          participant: Reference(reference: myself.id, resourceType: 'Person'),
-          activityCounts: [
-            ActivityCount(
-              activityReference: Reference(
-                reference: activityId,
-                resourceType: 'SexualActivity',
-              ),
-              count: 1,
-            ),
-          ],
-        );
-        updatedParticipants = [...activity.participants, newParticipant];
-      } else {
-        // Toggle activity for existing "Me" participant
-        final meParticipant = activity.participants[meParticipantIndex];
-        final hasActivity = meParticipant.activityCounts.any(
-          (ac) => ac.activityReference.reference == activityId,
-        );
-
-        List<ActivityCount> updatedActivities;
-        if (hasActivity) {
-          // Remove this activity
-          updatedActivities = meParticipant.activityCounts
-              .where((ac) => ac.activityReference.reference != activityId)
-              .toList();
-        } else {
-          // Add this activity
-          updatedActivities = [
-            ...meParticipant.activityCounts,
-            ActivityCount(
-              activityReference: Reference(
-                reference: activityId,
-                resourceType: 'SexualActivity',
-              ),
-              count: 1,
-            ),
-          ];
-        }
-
-        updatedParticipants = List<ActivityParticipant>.from(
-          activity.participants,
-        );
-
-        if (updatedActivities.isEmpty) {
-          // Remove "Me" participant if no activities
-          updatedParticipants.removeAt(meParticipantIndex);
-        } else {
-          // Update "Me" participant with new activities
-          updatedParticipants[meParticipantIndex] = meParticipant.copyWith(
-            activityCounts: updatedActivities,
-          );
-        }
-      }
-
-      updatedActivities[activityIndex] = activity.copyWith(
-        participants: updatedParticipants,
-      );
-
-      _workingEvent = _workingEvent.copyWith(activities: updatedActivities);
     });
   }
 
@@ -301,55 +183,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
     String activityId,
     String personId,
   ) {
-    final updatedActivities = List<EventActivity>.from(
-      _workingEvent.activities,
-    );
-    final activity = updatedActivities[activityIndex];
-
-    final updatedParticipants = <ActivityParticipant>[];
-
-    for (var participant in activity.participants) {
-      if (participant.participant.reference != personId) {
-        updatedParticipants.add(participant);
-        continue;
-      }
-
-      // This is the participant we're updating
-      final currentActivityIds = participant.activityCounts
-          .map((ac) => ac.activityReference.reference)
-          .toSet();
-
-      List<ActivityCount> newActivityCounts;
-      if (currentActivityIds.contains(activityId)) {
-        // Remove activity
-        newActivityCounts = participant.activityCounts
-            .where((ac) => ac.activityReference.reference != activityId)
-            .toList();
-      } else {
-        // Add activity
-        newActivityCounts = [
-          ...participant.activityCounts,
-          ActivityCount(
-            activityReference: Reference(
-              reference: activityId,
-              resourceType: 'SexualActivity',
-            ),
-            count: 1,
-          ),
-        ];
-      }
-
-      updatedParticipants.add(
-        participant.copyWith(activityCounts: newActivityCounts),
-      );
-    }
-
-    updatedActivities[activityIndex] = activity.copyWith(
-      participants: updatedParticipants,
-    );
-
     setState(() {
-      _workingEvent = _workingEvent.copyWith(activities: updatedActivities);
+      _workingEvent = toggleParticipantForProperty(
+        _workingEvent,
+        activityIndex,
+        activityId,
+        personId,
+      );
     });
   }
 
@@ -358,38 +198,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
     String activityId,
     String personId,
   ) {
-    final updatedActivities = List<EventActivity>.from(
-      _workingEvent.activities,
-    );
-    final activity = updatedActivities[activityIndex];
-
-    final updatedParticipants = <ActivityParticipant>[];
-
-    for (var participant in activity.participants) {
-      if (participant.participant.reference != personId) {
-        updatedParticipants.add(participant);
-        continue;
-      }
-
-      // Find the activity count to increment
-      final updatedActivityCounts = participant.activityCounts.map((ac) {
-        if (ac.activityReference.reference == activityId) {
-          return ac.copyWith(count: ac.count + 1);
-        }
-        return ac;
-      }).toList();
-
-      updatedParticipants.add(
-        participant.copyWith(activityCounts: updatedActivityCounts.toList()),
-      );
-    }
-
-    updatedActivities[activityIndex] = activity.copyWith(
-      participants: updatedParticipants,
-    );
-
     setState(() {
-      _workingEvent = _workingEvent.copyWith(activities: updatedActivities);
+      _workingEvent = incrementPropertyCount(
+        _workingEvent,
+        activityIndex,
+        activityId,
+        personId,
+      );
     });
   }
 
@@ -398,44 +213,13 @@ class _EventEditorPageState extends State<EventEditorPage> {
     String activityId,
     String personId,
   ) {
-    final updatedActivities = List<EventActivity>.from(
-      _workingEvent.activities,
-    );
-    final activity = updatedActivities[activityIndex];
-
-    final updatedParticipants = <ActivityParticipant>[];
-
-    for (var participant in activity.participants) {
-      if (participant.participant.reference != personId) {
-        updatedParticipants.add(participant);
-        continue;
-      }
-
-      // Find the activity count to decrement or remove
-      final updatedActivityCounts = <ActivityCount>[];
-      for (var ac in participant.activityCounts) {
-        if (ac.activityReference.reference == activityId) {
-          if (ac.count > 1) {
-            // Decrement count
-            updatedActivityCounts.add(ac.copyWith(count: ac.count - 1));
-          }
-          // If count is 1, don't add it (remove the activity)
-        } else {
-          updatedActivityCounts.add(ac);
-        }
-      }
-
-      updatedParticipants.add(
-        participant.copyWith(activityCounts: updatedActivityCounts),
-      );
-    }
-
-    updatedActivities[activityIndex] = activity.copyWith(
-      participants: updatedParticipants,
-    );
-
     setState(() {
-      _workingEvent = _workingEvent.copyWith(activities: updatedActivities);
+      _workingEvent = decrementPropertyCount(
+        _workingEvent,
+        activityIndex,
+        activityId,
+        personId,
+      );
     });
   }
 
@@ -585,477 +369,43 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   Widget _buildActivityCard(int activityIndex, EventActivity activity) {
-    final activityCategory =
-        _availableActivityCategories[activity.category.reference];
-    final emoji = activityCategory?.displayCharacter ?? '❔';
-    final name = activityCategory?.name ?? 'Unknown';
-    final isExpanded = _expandedActivities.contains(activityIndex);
-
-    // Get available properties for this activity type
-    final availableSexualActivities = <SexualActivity>[];
-    if (activityCategory != null) {
-      for (var activityRef in activityCategory.activities) {
-        final sexualActivity = _availableActivities[activityRef.reference];
-        if (sexualActivity != null) {
-          availableSexualActivities.add(sexualActivity);
-        }
-      }
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Activity header (always visible, tappable)
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  if (isExpanded) {
-                    _expandedActivities.remove(activityIndex);
-                  } else {
-                    _expandedActivities.add(activityIndex);
-                  }
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Text(emoji, style: const TextStyle(fontSize: 40)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (activityCategory?.requiresPartner == true)
-                            const Text(
-                              'Requires partner',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      isExpanded ? Icons.expand_less : Icons.expand_more,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _removeActivity(activityIndex),
-                      tooltip: 'Remove activity',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Collapsible content
-          if (isExpanded) ...[
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Participants section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Participants',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _showPersonPicker(activityIndex),
-                        icon: const Icon(Icons.person_add, size: 18),
-                        label: const Text('Add'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (activity.participants.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              activityCategory?.requiresPartner == true
-                                  ? 'Add at least one partner to continue'
-                                  : 'Add other participants, or toggle properties below to track your own participation',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    _buildParticipantSection(activityIndex, activity),
-                  // Properties section (show even with no participants for solo-capable activities)
-                  if (availableSexualActivities.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Activities',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...availableSexualActivities.map((sexualActivity) {
-                      return _buildPropertyRow(
-                        activityIndex,
-                        activity,
-                        sexualActivity,
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildParticipantSection(int activityIndex, EventActivity activity) {
-    final provider = context.watch<SexualEventsProvider>();
-    final myself = provider.state.myself;
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: activity.participants.asMap().entries.map((entry) {
-        final participantIndex = entry.key;
-        final participant = entry.value;
-        final person = _availablePersons.firstWhere(
-          (p) => p.id == participant.participant.reference,
-          orElse: () => Person(
-            date: DateTime.now(),
-            name: const Name(given: 'Unknown'),
-          ),
-        );
-        final personName =
-            person.name.nickname ?? person.name.given ?? 'Unknown';
-        final isSelf = myself != null && person.id == myself.id;
-
-        return Chip(
-          avatar: Icon(
-            isSelf ? Icons.account_circle : Icons.person,
-            size: 18,
-            color: isSelf ? Colors.blue : null,
-          ),
-          label: Text(
-            personName,
-            style: TextStyle(
-              fontWeight: isSelf ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          backgroundColor: isSelf ? Colors.blue.shade50 : null,
-          onDeleted: () => _removeParticipant(activityIndex, participantIndex),
-          deleteIcon: const Icon(Icons.close, size: 18),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildPropertyRow(
-    int activityIndex,
-    EventActivity activity,
-    SexualActivity sexualActivity,
-  ) {
     final provider = context.read<SexualEventsProvider>();
     final myself = provider.state.myself;
-    final activityCategory =
-        _availableActivityCategories[activity.category.reference];
+    final isExpanded = _expandedActivities.contains(activityIndex);
 
-    // Use the current working activity state (not from provider)
-    final currentActivity = _workingEvent.activities[activityIndex];
-
-    // Check if "Me" has this property
-    final meParticipant = currentActivity.participants.firstWhere(
-      (p) => myself != null && p.participant.reference == myself.id,
-      orElse: () => ActivityParticipant(
-        participant: Reference(reference: '', resourceType: 'Person'),
-        activityCounts: [],
-      ),
-    );
-    final meActivityCount = meParticipant.activityCounts.firstWhere(
-      (ac) => ac.activityReference.reference == sexualActivity.id,
-      orElse: () => ActivityCount(
-        activityReference: Reference(
-          reference: '',
-          resourceType: 'SexualActivity',
-        ),
-        count: 0,
-      ),
-    );
-    final meHasProperty = meActivityCount.count > 0;
-
-    // Determine if "Me" checkbox should be enabled
-    final activityRequiresPartner = activityCategory?.requiresPartner ?? false;
-    final propertyRequiresPartner = sexualActivity.requiresPartner;
-    final meCheckboxEnabled =
-        !activityRequiresPartner && !propertyRequiresPartner;
-
-    // Get non-self participants who have this property
-    final participantsWithProperty = <String>[];
-    for (var participant in currentActivity.participants) {
-      if (myself != null && participant.participant.reference == myself.id) {
-        continue; // Skip "Me"
-      }
-      final activityCount = participant.activityCounts.firstWhere(
-        (ac) => ac.activityReference.reference == sexualActivity.id,
-        orElse: () => ActivityCount(
-          activityReference: Reference(
-            reference: '',
-            resourceType: 'SexualActivity',
-          ),
-          count: 0,
-        ),
-      );
-      if (activityCount.count > 0) {
-        participantsWithProperty.add(participant.participant.reference);
-      }
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: sexualActivity.isRisky
-          ? Theme.of(context).colorScheme.tertiaryContainer
-          : Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  sexualActivity.displayCharacter,
-                  style: const TextStyle(fontSize: 24),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    sexualActivity.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                // "Me" checkbox (only show if activity doesn't require partner)
-                if (myself != null && !activityRequiresPartner)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        PersonAvatar(
-                          person: myself,
-                          radius: 20,
-                          showName: true,
-                          isSelected: meHasProperty,
-                          count: meActivityCount.count > 0
-                              ? meActivityCount.count
-                              : null,
-                          onTap: meCheckboxEnabled
-                              ? () {
-                                  _toggleMyselfForProperty(
-                                    activityIndex,
-                                    sexualActivity.id,
-                                  );
-                                }
-                              : null,
-                        ),
-                        if (meHasProperty && meCheckboxEnabled) ...[
-                          const SizedBox(width: 4),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle_outline,
-                                  size: 20,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => _incrementPropertyCount(
-                                  activityIndex,
-                                  sexualActivity.id,
-                                  myself.id,
-                                ),
-                                tooltip: 'Increase count',
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  size: 20,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => _decrementPropertyCount(
-                                  activityIndex,
-                                  sexualActivity.id,
-                                  myself.id,
-                                ),
-                                tooltip: 'Decrease count',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                // Other participants (iterate only participants added to this activity)
-                ...currentActivity.participants
-                    .where((p) {
-                      // Filter out "Me" (already handled above)
-                      return myself == null ||
-                          p.participant.reference != myself.id;
-                    })
-                    .map((participant) {
-                      final personId = participant.participant.reference;
-                      // Find person details from available persons
-                      final person = _availablePersons.firstWhere(
-                        (p) => p.id == personId,
-                        orElse: () => Person(
-                          id: personId,
-                          date: DateTime.now(),
-                          name: const Name(given: 'Unknown'),
-                        ),
-                      );
-
-                      final activityCount = participant.activityCounts
-                          .firstWhere(
-                            (ac) =>
-                                ac.activityReference.reference ==
-                                sexualActivity.id,
-                            orElse: () => ActivityCount(
-                              activityReference: Reference(
-                                reference: '',
-                                resourceType: 'SexualActivity',
-                              ),
-                              count: 0,
-                            ),
-                          );
-
-                      final isSelected = activityCount.count > 0;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PersonAvatar(
-                              person: person,
-                              radius: 20,
-                              showName: true,
-                              isSelected: isSelected,
-                              count: activityCount.count > 0
-                                  ? activityCount.count
-                                  : null,
-                              onTap: () {
-                                _toggleParticipantForProperty(
-                                  activityIndex,
-                                  sexualActivity.id,
-                                  personId,
-                                );
-                              },
-                            ),
-                            if (isSelected) ...[
-                              const SizedBox(width: 4),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.add_circle_outline,
-                                      size: 20,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () => _incrementPropertyCount(
-                                      activityIndex,
-                                      sexualActivity.id,
-                                      personId,
-                                    ),
-                                    tooltip: 'Increase count',
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.remove_circle_outline,
-                                      size: 20,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () => _decrementPropertyCount(
-                                      activityIndex,
-                                      sexualActivity.id,
-                                      personId,
-                                    ),
-                                    tooltip: 'Decrease count',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
-                    }),
-              ],
-            ),
-          ],
-        ),
-      ),
+    return ActivityCard(
+      activityIndex: activityIndex,
+      activity: activity,
+      availableActivityCategories: _availableActivityCategories,
+      availableActivities: _availableActivities,
+      availablePersons: _availablePersons,
+      myself: myself,
+      isExpanded: isExpanded,
+      onToggleExpanded: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedActivities.remove(activityIndex);
+          } else {
+            _expandedActivities.add(activityIndex);
+          }
+        });
+      },
+      onRemove: () => _removeActivity(activityIndex),
+      onShowPersonPicker: () => _showPersonPicker(activityIndex),
+      // Wire participant removal from chip delete back to the page state.
+      onRemoveParticipant: (actIdx, participantIndex) {
+        setState(() {
+          _workingEvent = removeParticipant(
+            _workingEvent,
+            actIdx,
+            participantIndex,
+          );
+        });
+      },
+      toggleMyselfForProperty: _toggleMyselfForProperty,
+      toggleParticipantForProperty: _toggleParticipantForProperty,
+      incrementPropertyCount: _incrementPropertyCount,
+      decrementPropertyCount: _decrementPropertyCount,
     );
   }
 }
