@@ -14,12 +14,28 @@ import 'package:indulge/view/migration/migration_check.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 import 'package:logging/logging.dart';
 
-void main() {
+// Preferences service (SharedPreferences wrapper) - initialize at startup
+import 'package:indulge/services/preferences_service.dart';
+
+Future<void> main() async {
+  // Ensure bindings are initialized before we await async services.
+  WidgetsFlutterBinding.ensureInitialized();
+
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((record) {
     print('${record.level.name}: ${record.message}');
   });
-  runApp(const MyApp());
+
+  // Initialize preferences service before running the app so UI can read persisted prefs.
+  final prefsService = await PreferencesService.build();
+
+  // Provide the PreferencesService to the widget tree so screens can access persisted UI preferences.
+  runApp(
+    Provider<PreferencesService>.value(
+      value: prefsService,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

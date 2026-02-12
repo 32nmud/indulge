@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:indulge/data/models.dart';
 import '../../models/analysis_data.dart';
 import '../../utils/analysis_colors.dart';
+import 'package:provider/provider.dart';
+import 'package:indulge/services/preferences_service.dart';
 
 class MonthlyActivityChart extends StatefulWidget {
   final AnalysisData data;
@@ -17,6 +20,100 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
     with AutomaticKeepAliveClientMixin {
   AnalysisEventType? _selectedType; // null for Total
   bool _showPattern = false;
+
+  // Persist activity type selection via PreferencesService.
+  // Call this whenever the user changes the event type filter so the choice
+  // is stored and available across screens / app restarts.
+  Future<void> _persistActivityFilter(AnalysisEventType? type) async {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      await svc.setActivityFilter(type);
+    } catch (_) {
+      // Best-effort: ignore persistence failures to avoid blocking the UI.
+    }
+  }
+
+  // The show-pattern preference is persisted and exposed via PreferencesService.
+  // `true` -> Pattern view, `false` -> History view.
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadShowPatternPreference();
+
+      // Load persisted activity filter (Total/Solo/Couple/Group) and subscribe
+      // to changes from PreferencesService so the widget stays in sync.
+      try {
+        final svc = Provider.of<PreferencesService>(context, listen: false);
+        final persisted = svc.getActivityFilter();
+        if (mounted) {
+          setState(() {
+            _selectedType = persisted;
+          });
+        } else {
+          _selectedType = persisted;
+        }
+
+        svc.activityFilterNotifier.addListener(() {
+          final newVal = svc.getActivityFilter();
+          if (mounted) {
+            setState(() {
+              _selectedType = newVal;
+            });
+          } else {
+            _selectedType = newVal;
+          }
+        });
+      } catch (_) {
+        // Best-effort: ignore failures (e.g. provider not available)
+      }
+    });
+  }
+
+  /// Read the persisted preference via PreferencesService and listen for updates.
+  void _loadShowPatternPreference() {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      final val = svc.getMonthlyShowPattern();
+      if (mounted) {
+        setState(() {
+          _showPattern = val;
+        });
+      } else {
+        _showPattern = val;
+      }
+
+      // Keep in sync with future preference changes.
+      svc.monthlyShowPatternNotifier.addListener(() {
+        final newVal = svc.getMonthlyShowPattern();
+        if (mounted) {
+          setState(() {
+            _showPattern = newVal;
+          });
+        } else {
+          _showPattern = newVal;
+        }
+      });
+    } catch (e) {
+      // Best-effort: ignore failures and keep default.
+    }
+  }
+
+  /// Persist the preference via PreferencesService (best-effort).
+  Future<void> _setShowPattern(bool value) async {
+    if (mounted) {
+      setState(() {
+        _showPattern = value;
+      });
+    }
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      await svc.setMonthlyShowPattern(value);
+    } catch (e) {
+      // silently ignore preference save failures
+    }
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -74,9 +171,9 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
                   ],
                   selected: {_showPattern},
                   onSelectionChanged: (Set<bool> newSelection) {
-                    setState(() {
-                      _showPattern = newSelection.first;
-                    });
+                    // Persist the user's choice and update local state.
+                    final newVal = newSelection.first;
+                    _setShowPattern(newVal);
                   },
                   showSelectedIcon: false,
                   style: const ButtonStyle(

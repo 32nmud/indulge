@@ -3,7 +3,12 @@ import 'package:intl/intl.dart';
 import '../../models/analysis_data.dart';
 
 /// Quick-select presets for period comparison.
-enum PeriodPreset { lastMonthVsThisMonth, lastWeekVsThisWeek, custom }
+enum PeriodPreset {
+  lastYearVsThisYear,
+  lastMonthVsThisMonth,
+  lastWeekVsThisWeek,
+  custom,
+}
 
 class PeriodComparisonSection extends StatelessWidget {
   final AnalysisData data;
@@ -28,6 +33,8 @@ class PeriodComparisonSection extends StatelessWidget {
   /// Resolves the effective first period (baseline) based on preset or custom.
   DateTimeRange? get _effectiveFirstPeriod {
     switch (selectedPreset) {
+      case PeriodPreset.lastYearVsThisYear:
+        return _lastYear();
       case PeriodPreset.lastMonthVsThisMonth:
         return _lastMonth();
       case PeriodPreset.lastWeekVsThisWeek:
@@ -44,6 +51,8 @@ class PeriodComparisonSection extends StatelessWidget {
         return _thisMonth();
       case PeriodPreset.lastWeekVsThisWeek:
         return _thisWeek();
+      case PeriodPreset.lastYearVsThisYear:
+        return _thisYear();
       case PeriodPreset.custom:
         return customSecondPeriod;
     }
@@ -109,6 +118,22 @@ class PeriodComparisonSection extends StatelessWidget {
     );
   }
 
+  /// Previous calendar year (Jan 1 - Dec 31 of last year).
+  static DateTimeRange _lastYear() {
+    final now = DateTime.now();
+    final lastYear = now.year - 1;
+    final start = DateTime(lastYear, 1, 1);
+    final end = DateTime(lastYear, 12, 31, 23, 59, 59);
+    return DateTimeRange(start: start, end: end);
+  }
+
+  /// Current calendar year (Jan 1 of this year through today).
+  static DateTimeRange _thisYear() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, 1, 1);
+    return DateTimeRange(start: start, end: now);
+  }
+
   // ── Preset labels ───────────────────────────────────────────────────
 
   static String presetLabel(PeriodPreset preset) {
@@ -117,6 +142,8 @@ class PeriodComparisonSection extends StatelessWidget {
         return 'Month';
       case PeriodPreset.lastWeekVsThisWeek:
         return 'Week';
+      case PeriodPreset.lastYearVsThisYear:
+        return 'Year';
       case PeriodPreset.custom:
         return 'Custom';
     }
@@ -128,6 +155,8 @@ class PeriodComparisonSection extends StatelessWidget {
         return 'Last month vs this month';
       case PeriodPreset.lastWeekVsThisWeek:
         return 'Last week vs this week';
+      case PeriodPreset.lastYearVsThisYear:
+        return 'Last year vs this year';
       case PeriodPreset.custom:
         return 'Pick any two date ranges';
     }

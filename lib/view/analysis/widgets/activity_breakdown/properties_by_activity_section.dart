@@ -6,6 +6,7 @@ import 'package:indulge/data/models.dart';
 import '../../models/analysis_data.dart';
 import '../common/expandable_activity_card.dart';
 import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
+import 'package:indulge/services/preferences_service.dart';
 
 class PropertiesByActivitySection extends StatefulWidget {
   final AnalysisData data;
@@ -27,6 +28,60 @@ class _PropertiesByActivitySectionState
   final Logger _logger = Logger('PropertiesByActivitySection');
   final Set<String> _expandedActivities = {};
   Set<String> _selectedCategoryIds = {};
+
+  // PreferencesService instance and listener for persisted selected categories.
+  PreferencesService? _prefsService;
+  late VoidCallback _prefsListener;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Defer provider access until after the first frame so the widget tree is ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        _prefsService = Provider.of<PreferencesService>(context, listen: false);
+        // Seed initial selection from persisted preferences.
+        final ids =
+            _prefsService?.getCategorySelectedIds().toSet() ?? <String>{};
+        if (mounted) {
+          setState(() {
+            _selectedCategoryIds = ids;
+          });
+        } else {
+          _selectedCategoryIds = ids;
+        }
+
+        // Keep UI in sync if preferences change elsewhere.
+        _prefsListener = () {
+          final newIds =
+              _prefsService?.getCategorySelectedIds().toSet() ?? <String>{};
+          if (mounted) {
+            setState(() {
+              _selectedCategoryIds = newIds;
+            });
+          } else {
+            _selectedCategoryIds = newIds;
+          }
+        };
+        _prefsService?.categorySelectedIdsNotifier.addListener(_prefsListener);
+      } catch (e) {
+        _logger.warning(
+          'Failed to initialize persisted category selection: $e',
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    try {
+      _prefsService?.categorySelectedIdsNotifier.removeListener(_prefsListener);
+    } catch (_) {
+      // ignore
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +288,14 @@ class _PropertiesByActivitySectionState
       setState(() {
         _selectedCategoryIds = result;
       });
+
+      // Persist the user's selection via PreferencesService (best-effort).
+      try {
+        final svc = Provider.of<PreferencesService>(context, listen: false);
+        await svc.setCategorySelectedIds(result.toList());
+      } catch (e) {
+        _logger.warning('Failed to persist selected categories: $e');
+      }
     }
   }
 }

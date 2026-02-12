@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:indulge/services/preferences_service.dart';
 import '../../models/analysis_data.dart';
 import '../../utils/analysis_colors.dart';
 
@@ -38,6 +40,14 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
   void initState() {
     super.initState();
     _calculateTopCategories();
+
+    // Load persisted preferences (show-pattern and selected categories).
+    // Use post-frame callback to ensure the widget is fully mounted before any
+    // operations that might depend on inherited widgets / providers.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadShowPatternPreference();
+      _loadPersistedSelectedCategories();
+    });
   }
 
   @override
@@ -72,6 +82,96 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     setState(() {
       _topCategories = sortedIds.take(5).toList();
     });
+  }
+
+  /// Load the persisted "show pattern" preference for this chart via PreferencesService.
+  /// Also subscribe to the service notifier so the chart updates if the preference
+  /// changes elsewhere in the app.
+  Future<void> _loadShowPatternPreference() async {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      final val = svc.getCategoryShowPattern();
+      if (mounted) {
+        setState(() {
+          _showPattern = val;
+        });
+      } else {
+        _showPattern = val;
+      }
+
+      // Keep in sync with future preference changes.
+      svc.categoryShowPatternNotifier.addListener(() {
+        final newVal = svc.getCategoryShowPattern();
+        if (mounted) {
+          setState(() {
+            _showPattern = newVal;
+          });
+        } else {
+          _showPattern = newVal;
+        }
+      });
+    } catch (e) {
+      // Best-effort: ignore failures and keep the default value.
+    }
+  }
+
+  /// Load persisted selected category IDs via `PreferencesService`.
+  /// Subscribes to the service notifier so the selection stays in sync.
+  Future<void> _loadPersistedSelectedCategories() async {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      final ids = svc.getCategorySelectedIds().toSet();
+
+      if (mounted) {
+        setState(() {
+          _selectedCategoryIds
+            ..clear()
+            ..addAll(ids);
+        });
+      } else {
+        _selectedCategoryIds
+          ..clear()
+          ..addAll(ids);
+      }
+
+      // Keep in sync with future preference changes.
+      svc.categorySelectedIdsNotifier.addListener(() {
+        final newIds = svc.getCategorySelectedIds().toSet();
+        if (mounted) {
+          setState(() {
+            _selectedCategoryIds
+              ..clear()
+              ..addAll(newIds);
+          });
+        } else {
+          _selectedCategoryIds
+            ..clear()
+            ..addAll(newIds);
+        }
+      });
+    } catch (_) {
+      // Ignore failures and keep the current in-memory selection.
+    }
+  }
+
+  /// Persist the currently-selected category IDs via `PreferencesService`.
+  Future<void> _persistSelectedCategories() async {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      await svc.setCategorySelectedIds(_selectedCategoryIds.toList());
+    } catch (_) {
+      // Ignore persistence failures.
+    }
+  }
+
+  /// Persist the "show pattern" preference via PreferencesService.
+  Future<void> _persistShowPattern(bool value) async {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      await svc.setCategoryShowPattern(value);
+    } catch (e) {
+      // Ignore persistence failures.
+    }
   }
 
   @override
@@ -127,9 +227,12 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                   ],
                   selected: {_showPattern},
                   onSelectionChanged: (Set<bool> newSelection) {
+                    final val = newSelection.first;
                     setState(() {
-                      _showPattern = newSelection.first;
+                      _showPattern = val;
                     });
+                    // Persist preference (best-effort)
+                    _persistShowPattern(val);
                   },
                   showSelectedIcon: false,
                   style: const ButtonStyle(
@@ -177,6 +280,8 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                           setState(() {
                             _selectedCategoryIds.clear();
                           });
+                          // Persist the cleared selection (best-effort).
+                          _persistSelectedCategories();
                         },
                         padding: EdgeInsets.zero,
                         labelPadding: const EdgeInsets.only(right: 8),
@@ -207,6 +312,8 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                               _selectedCategoryIds.remove(id);
                             }
                           });
+                          // Persist changes to the selected categories immediately.
+                          _persistSelectedCategories();
                         },
                         showCheckmark: false,
                         selectedColor: color.withOpacity(0.2),

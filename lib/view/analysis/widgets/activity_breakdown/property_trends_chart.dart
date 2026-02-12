@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:indulge/services/preferences_service.dart';
 import 'package:indulge/data/models.dart';
 import '../../models/analysis_data.dart';
 import '../../utils/analysis_colors.dart';
@@ -25,6 +27,8 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
     with AutomaticKeepAliveClientMixin {
   AnalysisEventType? _selectedType;
   final Set<String> _selectedPropertyIds = {};
+  // The show-pattern preference is persisted and exposed via PreferencesService.
+  // `true` -> Pattern view, `false` -> History view.
   bool _showPattern = false;
   List<String> _topProperties = [];
   List<String> _visibleProperties = [];
@@ -40,6 +44,11 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
   void initState() {
     super.initState();
     _calculateTopProperties();
+    // Load persisted preferences and subscribe for changes after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadShowPatternPreference();
+      _loadSelectedPropertiesPreference();
+    });
   }
 
   @override
@@ -50,6 +59,116 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.data != widget.data) {
       _calculateTopProperties();
+    }
+  }
+
+  /// Read the persisted preference via PreferencesService and listen for updates.
+  void _loadShowPatternPreference() {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      final val = svc.getActivityShowPattern();
+      if (mounted) {
+        setState(() {
+          _showPattern = val;
+        });
+      } else {
+        _showPattern = val;
+      }
+
+      // Keep in sync with future preference changes.
+      svc.activityShowPatternNotifier.addListener(() {
+        final newVal = svc.getActivityShowPattern();
+        if (mounted) {
+          setState(() {
+            _showPattern = newVal;
+          });
+        } else {
+          _showPattern = newVal;
+        }
+      });
+    } catch (_) {
+      // Best-effort: ignore failures and keep default.
+    }
+  }
+
+  /// -------------------------
+  /// Selected-properties persistence (via PreferencesService)
+  /// -------------------------
+  /// Loads the set of selected activity/property IDs from the PreferencesService
+  /// and seeds the local `_selectedPropertyIds` and `_visibleProperties`.
+  void _loadSelectedPropertiesPreference() {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      final ids = svc.getActivitySelectedIds().toSet();
+
+      if (mounted) {
+        setState(() {
+          _selectedPropertyIds
+            ..clear()
+            ..addAll(ids);
+
+          // Ensure visible properties include selected ones
+          final Set<String> visibleSet = {
+            ..._topProperties,
+            ..._selectedPropertyIds,
+          };
+          _visibleProperties = visibleSet.toList();
+        });
+      } else {
+        _selectedPropertyIds
+          ..clear()
+          ..addAll(ids);
+        _visibleProperties = {
+          ..._topProperties,
+          ..._selectedPropertyIds,
+        }.toList();
+      }
+
+      // Listen for future preference changes and keep the UI in sync.
+      svc.activitySelectedIdsNotifier.addListener(() {
+        final newIds = svc.getActivitySelectedIds().toSet();
+        if (mounted) {
+          setState(() {
+            _selectedPropertyIds
+              ..clear()
+              ..addAll(newIds);
+            _visibleProperties = {
+              ..._topProperties,
+              ..._selectedPropertyIds,
+            }.toList();
+          });
+        } else {
+          _selectedPropertyIds
+            ..clear()
+            ..addAll(newIds);
+          _visibleProperties = {
+            ..._topProperties,
+            ..._selectedPropertyIds,
+          }.toList();
+        }
+      });
+    } catch (_) {
+      // Best-effort: ignore load failures.
+    }
+  }
+
+  /// Persists the currently selected property IDs via PreferencesService.
+  Future<void> _persistSelectedProperties() async {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      await svc.setActivitySelectedIds(_selectedPropertyIds.toList());
+    } catch (_) {
+      // Best-effort: ignore save failures.
+    }
+  }
+
+  /// Persist the preference via PreferencesService (best-effort).
+  Future<void> _persistShowPattern(bool value) async {
+    try {
+      final svc = Provider.of<PreferencesService>(context, listen: false);
+      await svc.setActivityShowPattern(value);
+    } catch (_) {
+      // Ignore persistence failures.
     }
   }
 
@@ -145,9 +264,12 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
                   ],
                   selected: {_showPattern},
                   onSelectionChanged: (Set<bool> newSelection) {
+                    final newVal = newSelection.first;
                     setState(() {
-                      _showPattern = newSelection.first;
+                      _showPattern = newVal;
                     });
+                    // Persist preference via PreferencesService (best-effort)
+                    _persistShowPattern(newVal);
                   },
                   showSelectedIcon: false,
                   style: const ButtonStyle(
@@ -191,12 +313,14 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
                       child: ActionChip(
                         avatar: const Icon(Icons.clear_all, size: 16),
                         label: const Text('Clear'),
-                        onPressed: () {
+                        onPressed: () async {
                           setState(() {
                             _selectedPropertyIds.clear();
                             // Reset visible properties to just top properties
                             _visibleProperties = _topProperties.toList();
                           });
+                          // Persist clearing of selection (best-effort)
+                          await _persistSelectedProperties();
                         },
                         padding: EdgeInsets.zero,
                         labelPadding: const EdgeInsets.only(right: 8),
@@ -219,7 +343,7 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
                       child: FilterChip(
                         label: Text(label),
                         selected: isSelected,
-                        onSelected: (selected) {
+                        onSelected: (selected) async {
                           setState(() {
                             if (selected) {
                               _selectedPropertyIds.add(id);
@@ -227,6 +351,8 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
                               _selectedPropertyIds.remove(id);
                             }
                           });
+                          // Persist updated selection (best-effort)
+                          await _persistSelectedProperties();
                         },
                         showCheckmark: false,
                         selectedColor: color.withOpacity(0.2),

@@ -12,6 +12,7 @@ import 'widgets/activity_breakdown/activity_breakdown_page.dart';
 import 'widgets/partner_breakdown/partner_breakdown_page.dart';
 import 'widgets/period_comparison/period_comparison_page.dart';
 import 'widgets/period_comparison/period_comparison_section.dart';
+import 'package:indulge/services/preferences_service.dart';
 
 enum TimeWindow { last12Months, allTime, specificYear }
 
@@ -54,9 +55,12 @@ class _AnalysisPageState extends State<AnalysisPage>
   @override
   void initState() {
     super.initState();
-    // Listen to provider changes to reload when data changes
+    // Listen to provider changes to reload when data changes and load persisted prefs
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Attach provider change listener
       context.read<SexualEventsProvider>().addListener(_onProviderChange);
+      // Load persisted UI preferences (if any)
+      _loadPreferences();
     });
   }
 
@@ -66,6 +70,61 @@ class _AnalysisPageState extends State<AnalysisPage>
     _pageController.dispose();
     context.read<SexualEventsProvider>().removeListener(_onProviderChange);
     super.dispose();
+  }
+
+  /// Loads persisted UI preferences (period preset, custom ranges, activity filter)
+  /// from the PreferencesService and applies them to the page state.
+  Future<void> _loadPreferences() async {
+    try {
+      final prefs = Provider.of<PreferencesService>(context, listen: false);
+
+      // Read persisted values (synchronous getters backed by the initialized service)
+      final preset = prefs.getPeriodPreset();
+      final activityFilter = prefs.getActivityFilter();
+      final customFirst = prefs.getCustomFirst();
+      final customSecond = prefs.getCustomSecond();
+      final timeWindowIndex = prefs.getAnalysisTimeWindowIndex();
+      final specificYear = prefs.getAnalysisSpecificYear();
+
+      setState(() {
+        // Apply loaded values if present
+        _periodPreset = preset;
+        _activityBreakdownFilterType = activityFilter;
+
+        // Apply persisted analysis time window if present
+        if (timeWindowIndex != null) {
+          switch (timeWindowIndex) {
+            case 0:
+              _timeWindow = TimeWindow.last12Months;
+              _selectedYear = null;
+              break;
+            case 1:
+              _timeWindow = TimeWindow.allTime;
+              _selectedYear = null;
+              break;
+            case 2:
+              _timeWindow = TimeWindow.specificYear;
+              _selectedYear = specificYear;
+              break;
+            default:
+              _timeWindow = TimeWindow.last12Months;
+          }
+        }
+
+        // If we have both endpoints for a first custom range, use them to seed the UI.
+        // Note: the PreferencesService currently stores single DateTimes for custom
+        // endpoints; if you later extend the service to store full ranges, update
+        // this logic to reconstruct both DateTimeRange values accordingly.
+        if (customFirst != null && customSecond != null) {
+          _customFirstPeriod = DateTimeRange(
+            start: customFirst,
+            end: customSecond,
+          );
+        }
+      });
+    } catch (e) {
+      _logger.warning('Failed to load preferences: $e');
+    }
   }
 
   void _onProviderChange() {
@@ -496,12 +555,50 @@ class _AnalysisPageState extends State<AnalysisPage>
     return FilterChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (selected) {
+      onSelected: (selected) async {
         if (selected) {
           setState(() {
             _timeWindow = window;
             _selectedYear = year;
           });
+
+          // Persist selection to PreferencesService (best-effort, do not block UI)
+          try {
+            final prefs = Provider.of<PreferencesService>(
+              context,
+              listen: false,
+            );
+
+            // Map TimeWindow to a stable integer index:
+            // 0 -> last12Months, 1 -> allTime, 2 -> specificYear
+            int index;
+            switch (window) {
+              case TimeWindow.last12Months:
+                index = 0;
+                break;
+              case TimeWindow.allTime:
+                index = 1;
+                break;
+              case TimeWindow.specificYear:
+                index = 2;
+                break;
+            }
+
+            await prefs.setAnalysisTimeWindowIndex(index);
+
+            // Persist specific year if provided; if selecting a non-specific window,
+            // clear any previously-stored specific year.
+            if (year != null) {
+              await prefs.setAnalysisSpecificYear(year);
+            } else if (window != TimeWindow.specificYear) {
+              await prefs.setAnalysisSpecificYear(null);
+            }
+          } catch (e) {
+            _logger.warning(
+              'Failed to persist analysis time window preference: $e',
+            );
+          }
+
           _refresh();
         }
       },
@@ -565,10 +662,17 @@ class _AnalysisPageState extends State<AnalysisPage>
     return ActivityBreakdownPage(
       data: data,
       selectedType: _activityBreakdownFilterType,
-      onTypeChanged: (type) {
+      onTypeChanged: (type) async {
         setState(() {
           _activityBreakdownFilterType = type;
         });
+        // Persist selection to SharedPreferences via PreferencesService
+        try {
+          final prefs = Provider.of<PreferencesService>(context, listen: false);
+          await prefs.setActivityFilter(type);
+        } catch (e) {
+          _logger.warning('Failed to persist activity filter: $e');
+        }
       },
     );
   }
@@ -583,20 +687,41 @@ class _AnalysisPageState extends State<AnalysisPage>
       selectedPreset: _periodPreset,
       customFirstPeriod: _customFirstPeriod,
       customSecondPeriod: _customSecondPeriod,
-      onPresetChanged: (preset) {
+      onPresetChanged: (preset) async {
         setState(() {
           _periodPreset = preset;
         });
+        try {
+          final prefs = Provider.of<PreferencesService>(context, listen: false);
+          await prefs.setPeriodPreset(preset);
+        } catch (e) {
+          _logger.warning('Failed to persist period preset: $e');
+        }
       },
-      onCustomFirstPeriodChanged: (range) {
+      onCustomFirstPeriodChanged: (range) async {
         setState(() {
           _customFirstPeriod = range;
         });
+        try {
+          final prefs = Provider.of<PreferencesService>(context, listen: false);
+          // Persist start/end components of the selected range (if any).
+          await prefs.setCustomFirst(range?.start);
+          await prefs.setCustomSecond(range?.end);
+        } catch (e) {
+          _logger.warning('Failed to persist custom first period: $e');
+        }
       },
-      onCustomSecondPeriodChanged: (range) {
+      onCustomSecondPeriodChanged: (range) async {
         setState(() {
           _customSecondPeriod = range;
         });
+        try {
+          final prefs = Provider.of<PreferencesService>(context, listen: false);
+          // Persist any updates to the second custom period endpoint
+          await prefs.setCustomSecond(range?.end);
+        } catch (e) {
+          _logger.warning('Failed to persist custom second period: $e');
+        }
       },
     );
   }
