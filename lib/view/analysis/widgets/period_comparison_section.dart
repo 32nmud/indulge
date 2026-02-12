@@ -575,8 +575,10 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     for (final event in periodEvents) {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
-          if (participant.participant.reference.isNotEmpty) {
-            participantIds.add(participant.participant.reference);
+          final id = participant.participant.reference;
+          // Check if ID is in personCounts to exclude "Me" (personCounts only includes partners)
+          if (id.isNotEmpty && widget.data.personCounts.containsKey(id)) {
+            participantIds.add(id);
           }
         }
       }
@@ -593,37 +595,36 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     final propertyIds = <String>{};
     for (final event in periodEvents) {
       for (final activity in event.activities) {
-        if (activity.category.reference.isNotEmpty) {
-          propertyIds.add(activity.category.reference);
+        for (final participant in activity.participants) {
+          for (final count in participant.activityCounts) {
+            if (count.activityReference.reference.isNotEmpty) {
+              propertyIds.add(count.activityReference.reference);
+            }
+          }
         }
       }
     }
     final uniqueProperties = propertyIds.length;
 
     // Count event types (solo, couple, group)
-    int soloEvents = 0;
-    int coupleEvents = 0;
-    int groupEvents = 0;
-
-    for (final event in periodEvents) {
-      final allParticipants = <String>{};
-      for (final activity in event.activities) {
-        for (final participant in activity.participants) {
-          if (participant.participant.reference.isNotEmpty) {
-            allParticipants.add(participant.participant.reference);
-          }
-        }
-      }
-
-      final partnerCount = allParticipants.length;
-      if (partnerCount == 0) {
-        soloEvents++;
-      } else if (partnerCount == 1) {
-        coupleEvents++;
-      } else {
-        groupEvents++;
-      }
+    bool isInRange(DateTime date) {
+      return date.isAfter(range.start.subtract(const Duration(days: 1))) &&
+          date.isBefore(range.end.add(const Duration(days: 1)));
     }
+
+    final soloEvents = (widget.data.eventsByType[AnalysisEventType.solo] ?? [])
+        .where((e) => isInRange(e.date))
+        .length;
+
+    final coupleEvents =
+        (widget.data.eventsByType[AnalysisEventType.couple] ?? [])
+            .where((e) => isInRange(e.date))
+            .length;
+
+    final groupEvents =
+        (widget.data.eventsByType[AnalysisEventType.group] ?? [])
+            .where((e) => isInRange(e.date))
+            .length;
 
     // Calculate average activities per event
     final averageActivitiesPerEvent = events > 0

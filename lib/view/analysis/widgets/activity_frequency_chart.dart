@@ -3,14 +3,21 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
 
-class ActivityFrequencyChart extends StatelessWidget {
+class ActivityFrequencyChart extends StatefulWidget {
   final AnalysisData data;
 
   const ActivityFrequencyChart({super.key, required this.data});
 
   @override
+  State<ActivityFrequencyChart> createState() => _ActivityFrequencyChartState();
+}
+
+class _ActivityFrequencyChartState extends State<ActivityFrequencyChart> {
+  AnalysisEventType? _selectedType; // null for Total
+
+  @override
   Widget build(BuildContext context) {
-    if (data.dailyCounts.isEmpty) {
+    if (widget.data.dailyCounts.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -34,6 +41,21 @@ class ActivityFrequencyChart extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip('Total', null),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Solo', AnalysisEventType.solo),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Couple', AnalysisEventType.couple),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Group', AnalysisEventType.group),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
             SizedBox(height: 200, child: _buildChart(context)),
           ],
@@ -42,8 +64,41 @@ class ActivityFrequencyChart extends StatelessWidget {
     );
   }
 
+  Widget _buildFilterChip(String label, AnalysisEventType? type) {
+    final isSelected = _selectedType == type;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _selectedType = type;
+          });
+        }
+      },
+      showCheckmark: false,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+    );
+  }
+
   Widget _buildChart(BuildContext context) {
-    final sortedDates = data.dailyCounts.keys.toList()..sort();
+    final Map<String, int> dailyCounts;
+    if (_selectedType == null) {
+      dailyCounts = widget.data.dailyCounts;
+    } else {
+      dailyCounts = {};
+      final events = widget.data.eventsByType[_selectedType] ?? [];
+      for (final event in events) {
+        final dateKey = DateFormat('yyyy-MM-dd').format(event.date);
+        dailyCounts[dateKey] = (dailyCounts[dateKey] ?? 0) + 1;
+      }
+    }
+
+    final sortedDates = dailyCounts.keys.toList()..sort();
 
     if (sortedDates.isEmpty) {
       return Center(
@@ -61,7 +116,7 @@ class ActivityFrequencyChart extends StatelessWidget {
     // Create data points
     final spots = <FlSpot>[];
     for (int i = 0; i < sortedDates.length; i++) {
-      final count = data.dailyCounts[sortedDates[i]] ?? 0;
+      final count = dailyCounts[sortedDates[i]] ?? 0;
       spots.add(FlSpot(i.toDouble(), count.toDouble()));
     }
 

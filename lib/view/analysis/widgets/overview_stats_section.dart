@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 
 import '../models/analysis_data.dart';
+import '../utils/analysis_colors.dart';
 import 'marquee_text.dart';
 
 class OverviewStatsSection extends StatelessWidget {
@@ -146,7 +147,7 @@ class OverviewStatsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Row 5: Solo, Couple, Group events (last 12 months)
+        // Row 5: Event Types Breakdown
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Card(
@@ -164,56 +165,103 @@ class OverviewStatsSection extends StatelessWidget {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Event Types',
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            'Tap to search',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                  fontSize: 10,
-                                ),
-                          ),
-                        ],
+                      Text(
+                        'Event Types',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+
+                  // Progress Bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      height: 12,
+                      child: Row(
+                        children: [
+                          if ((data.eventCountsByType[AnalysisEventType.solo] ??
+                                  0) >
+                              0)
+                            Expanded(
+                              flex: data
+                                  .eventCountsByType[AnalysisEventType.solo]!,
+                              child: Container(color: AnalysisColors.solo),
+                            ),
+                          if ((data.eventCountsByType[AnalysisEventType
+                                      .couple] ??
+                                  0) >
+                              0)
+                            Expanded(
+                              flex: data
+                                  .eventCountsByType[AnalysisEventType.couple]!,
+                              child: Container(color: AnalysisColors.couple),
+                            ),
+                          if ((data.eventCountsByType[AnalysisEventType
+                                      .group] ??
+                                  0) >
+                              0)
+                            Expanded(
+                              flex: data
+                                  .eventCountsByType[AnalysisEventType.group]!,
+                              child: Container(color: AnalysisColors.group),
+                            ),
+                          if ((data.eventCountsByType[AnalysisEventType.solo] ??
+                                      0) +
+                                  (data.eventCountsByType[AnalysisEventType
+                                          .couple] ??
+                                      0) +
+                                  (data.eventCountsByType[AnalysisEventType
+                                          .group] ??
+                                      0) ==
+                              0)
+                            Expanded(
+                              child: Container(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Legend / Stats
                   Row(
                     children: [
                       Expanded(
-                        child: _buildEventTypeItem(
+                        child: _buildEventTypeLegendItem(
                           context,
-                          icon: Icons.person,
                           label: 'Solo',
-                          value: data.soloEventsThisYear,
-                          color: Theme.of(context).colorScheme.primary,
+                          count:
+                              data.eventCountsByType[AnalysisEventType.solo] ??
+                              0,
+                          color: AnalysisColors.solo,
                         ),
                       ),
                       Expanded(
-                        child: _buildEventTypeItem(
+                        child: _buildEventTypeLegendItem(
                           context,
-                          icon: Icons.people,
                           label: 'Couple',
-                          value: data.coupleEventsThisYear,
-                          color: Theme.of(context).colorScheme.secondary,
+                          count:
+                              data.eventCountsByType[AnalysisEventType
+                                  .couple] ??
+                              0,
+                          color: AnalysisColors.couple,
                         ),
                       ),
                       Expanded(
-                        child: _buildEventTypeItem(
+                        child: _buildEventTypeLegendItem(
                           context,
-                          icon: Icons.groups,
                           label: 'Group',
-                          value: data.groupEventsThisYear,
-                          color: Theme.of(context).colorScheme.tertiary,
+                          count:
+                              data.eventCountsByType[AnalysisEventType.group] ??
+                              0,
+                          color: AnalysisColors.group,
                         ),
                       ),
                     ],
@@ -230,11 +278,10 @@ class OverviewStatsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildEventTypeItem(
+  Widget _buildEventTypeLegendItem(
     BuildContext context, {
-    required IconData icon,
     required String label,
-    required int value,
+    required int count,
     required Color color,
   }) {
     return InkWell(
@@ -253,25 +300,35 @@ class OverviewStatsSection extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 6),
             Text(
-              value.toString(),
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              count.toString(),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 11,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

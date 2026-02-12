@@ -1,5 +1,7 @@
 import 'package:indulge/data/models.dart';
 
+enum AnalysisEventType { total, solo, couple, group }
+
 /// Holds all computed analysis statistics
 class AnalysisData {
   // Basic counts
@@ -19,6 +21,29 @@ class AnalysisData {
   final int soloEventsThisYear;
   final int coupleEventsThisYear;
   final int groupEventsThisYear;
+
+  // Solo Analysis
+  @Deprecated('Use breakdown logic instead')
+  final int soloEventsTotal;
+  @Deprecated('Use breakdown logic instead')
+  final int nonSoloEventsTotal;
+  @Deprecated('Use activityCountsByType[AnalysisEventType.solo] instead')
+  final Map<String, int> soloActivityCounts;
+  @Deprecated('Use sexualActivityCountsByType[AnalysisEventType.solo] instead')
+  final Map<String, int> soloSexualActivityCounts;
+  @Deprecated('Use breakdown logic instead')
+  final Map<String, int> soloActivityCountsThisYear;
+  @Deprecated('Use breakdown logic instead')
+  final Map<String, int> soloSexualActivityCountsThisYear;
+
+  // Breakdown by event type
+  final Map<AnalysisEventType, Map<String, int>> activityCountsByType;
+  final Map<AnalysisEventType, Map<String, int>> sexualActivityCountsByType;
+  final Map<AnalysisEventType, Map<String, int>> monthlyCountsByType;
+  final Map<AnalysisEventType, Map<int, int>> dayOfWeekCountsByType;
+  final Map<AnalysisEventType, Map<int, double>> averageDayOfWeekCountsByType;
+  final Map<AnalysisEventType, int> eventCountsByType;
+  final Map<AnalysisEventType, List<SexualEvent>> eventsByType;
 
   // Partner ratio
   final int knownPartners;
@@ -109,6 +134,19 @@ class AnalysisData {
     required this.soloEventsThisYear,
     required this.coupleEventsThisYear,
     required this.groupEventsThisYear,
+    required this.soloEventsTotal,
+    required this.nonSoloEventsTotal,
+    required this.soloActivityCounts,
+    required this.soloSexualActivityCounts,
+    required this.soloActivityCountsThisYear,
+    required this.soloSexualActivityCountsThisYear,
+    this.activityCountsByType = const {},
+    this.sexualActivityCountsByType = const {},
+    this.monthlyCountsByType = const {},
+    this.dayOfWeekCountsByType = const {},
+    this.averageDayOfWeekCountsByType = const {},
+    this.eventCountsByType = const {},
+    this.eventsByType = const {},
     required this.knownPartners,
     required this.anonymousPartnerInstances,
     required this.busiestDay,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:indulge/data/models.dart';
 import '../models/analysis_data.dart';
 
 class CoOccurrenceSection extends StatefulWidget {
   final AnalysisData data;
+  final AnalysisEventType? filterType;
 
-  const CoOccurrenceSection({super.key, required this.data});
+  const CoOccurrenceSection({super.key, required this.data, this.filterType});
 
   @override
   State<CoOccurrenceSection> createState() => _CoOccurrenceSectionState();
@@ -34,8 +36,10 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.data.topCategoryPairs.isEmpty &&
-        widget.data.topActivityPairs.isEmpty) {
+    final categoryPairs = _getPairs(true);
+    final activityPairs = _getPairs(false);
+
+    if (categoryPairs.isEmpty && activityPairs.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -87,10 +91,66 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
         ),
         const SizedBox(height: 12),
         _tabController.index == 0
-            ? _buildPairList(widget.data.topCategoryPairs, Colors.teal)
-            : _buildPairList(widget.data.topActivityPairs, Colors.orange),
+            ? _buildPairList(categoryPairs, Colors.teal)
+            : _buildPairList(activityPairs, Colors.orange),
       ],
     );
+  }
+
+  List<CoOccurrencePair> _getPairs(bool categories) {
+    if (widget.filterType == null) {
+      return categories
+          ? widget.data.topCategoryPairs
+          : widget.data.topActivityPairs;
+    }
+
+    final events = widget.data.eventsByType[widget.filterType!] ?? [];
+    final pairCounts = <String, int>{};
+
+    for (final event in events) {
+      final ids = <String>{};
+      if (categories) {
+        for (final activity in event.activities) {
+          ids.add(activity.category.reference);
+        }
+      } else {
+        for (final activity in event.activities) {
+          for (final participant in activity.participants) {
+            for (final count in participant.activityCounts) {
+              ids.add(count.activityReference.reference);
+            }
+          }
+        }
+      }
+
+      final idList = ids.toList()..sort();
+      for (int i = 0; i < idList.length; i++) {
+        for (int j = i + 1; j < idList.length; j++) {
+          final key = '${idList[i]}|${idList[j]}';
+          pairCounts[key] = (pairCounts[key] ?? 0) + 1;
+        }
+      }
+    }
+
+    return pairCounts.entries.map((e) {
+      final parts = e.key.split('|');
+      final id1 = parts[0];
+      final id2 = parts[1];
+      final name1 = categories
+          ? (widget.data.activityCategories[id1]?.name ?? 'Unknown')
+          : (widget.data.sexualActivities[id1]?.name ?? 'Unknown');
+      final name2 = categories
+          ? (widget.data.activityCategories[id2]?.name ?? 'Unknown')
+          : (widget.data.sexualActivities[id2]?.name ?? 'Unknown');
+
+      return CoOccurrencePair(
+        id1: id1,
+        id2: id2,
+        name1: name1,
+        name2: name2,
+        count: e.value,
+      );
+    }).toList()..sort((a, b) => b.count.compareTo(a.count));
   }
 
   Widget _buildPairList(List<CoOccurrencePair> pairs, Color color) {

@@ -9,8 +9,13 @@ import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 
 class PropertiesByActivitySection extends StatefulWidget {
   final AnalysisData data;
+  final AnalysisEventType? filterType;
 
-  const PropertiesByActivitySection({super.key, required this.data});
+  const PropertiesByActivitySection({
+    super.key,
+    required this.data,
+    this.filterType,
+  });
 
   @override
   State<PropertiesByActivitySection> createState() =>
@@ -25,12 +30,19 @@ class _PropertiesByActivitySectionState
 
   @override
   Widget build(BuildContext context) {
-    if (widget.data.activityCountsThisYear.isEmpty) {
+    Map<String, int> counts;
+    if (widget.filterType == null) {
+      counts = widget.data.activityCountsThisYear;
+    } else {
+      counts = widget.data.activityCountsByType[widget.filterType!] ?? {};
+    }
+
+    if (counts.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Sort activities by count (last 12 months)
-    final sortedActivities = widget.data.activityCountsThisYear.entries.toList()
+    // Sort activities by count
+    final sortedActivities = counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Card(
@@ -158,10 +170,17 @@ class _PropertiesByActivitySectionState
     final propertyCountsForActivity = <String, int>{};
 
     _logger.info('Getting properties for activity: $activityTypeId');
-    _logger.info('Total events to search: ${widget.data.events.length}');
+    List<SexualEvent> events;
+    if (widget.filterType == null) {
+      events = widget.data.events;
+    } else {
+      events = widget.data.eventsByType[widget.filterType!] ?? [];
+    }
+
+    _logger.info('Total events to search: ${events.length}');
 
     // Iterate through events (already filtered by selected time window)
-    for (final event in widget.data.events) {
+    for (final event in events) {
       for (final activity in event.activities) {
         if (activity.category.reference == activityTypeId) {
           _logger.info(

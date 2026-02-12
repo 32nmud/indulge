@@ -4,27 +4,80 @@ import 'package:intl/intl.dart';
 import '../models/analysis_data.dart';
 import '../utils/analysis_colors.dart';
 
-class MonthlyActivityChart extends StatefulWidget {
+class CategoryTrendsChart extends StatefulWidget {
   final AnalysisData data;
+  final AnalysisEventType? filterType;
+  final bool showTypeFilter;
 
-  const MonthlyActivityChart({super.key, required this.data});
+  const CategoryTrendsChart({
+    super.key,
+    required this.data,
+    this.filterType,
+    this.showTypeFilter = true,
+  });
 
   @override
-  State<MonthlyActivityChart> createState() => _MonthlyActivityChartState();
+  State<CategoryTrendsChart> createState() => _CategoryTrendsChartState();
 }
 
-class _MonthlyActivityChartState extends State<MonthlyActivityChart>
+class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     with AutomaticKeepAliveClientMixin {
-  AnalysisEventType? _selectedType; // null for Total
+  AnalysisEventType? _selectedType;
+  final Set<String> _selectedCategoryIds = {};
   bool _showPattern = false;
+  List<String> _topCategories = [];
+  final List<Color> _colors = [
+    Colors.blue,
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateTopCategories();
+  }
 
   @override
   bool get wantKeepAlive => true;
 
   @override
+  void didUpdateWidget(covariant CategoryTrendsChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data) {
+      _calculateTopCategories();
+    }
+  }
+
+  void _calculateTopCategories() {
+    // Count category occurrences across all events
+    final counts = <String, int>{};
+    for (final event in widget.data.events) {
+      final seenInEvent = <String>{};
+      for (final activity in event.activities) {
+        final id = activity.category.reference;
+        if (seenInEvent.add(id)) {
+          counts[id] = (counts[id] ?? 0) + 1;
+        }
+      }
+    }
+
+    // Sort by count descending
+    final sortedIds = counts.keys.toList()
+      ..sort((a, b) => (counts[b] ?? 0).compareTo(counts[a] ?? 0));
+
+    // Take top 5
+    setState(() {
+      _topCategories = sortedIds.take(5).toList();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (widget.data.monthlyCounts.isEmpty) {
+    if (_topCategories.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -43,7 +96,7 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Monthly Activity',
+                        'Category Trends',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
@@ -90,17 +143,84 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
               ],
             ),
             const SizedBox(height: 12),
+            if (widget.showTypeFilter) ...[
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildEventTypeFilterChip('Total', null),
+                    const SizedBox(width: 8),
+                    _buildEventTypeFilterChip('Solo', AnalysisEventType.solo),
+                    const SizedBox(width: 8),
+                    _buildEventTypeFilterChip(
+                      'Couple',
+                      AnalysisEventType.couple,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildEventTypeFilterChip('Group', AnalysisEventType.group),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('Total', null),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Solo', AnalysisEventType.solo),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Couple', AnalysisEventType.couple),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Group', AnalysisEventType.group),
+                  if (_selectedCategoryIds.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ActionChip(
+                        avatar: const Icon(Icons.clear_all, size: 16),
+                        label: const Text('Clear'),
+                        onPressed: () {
+                          setState(() {
+                            _selectedCategoryIds.clear();
+                          });
+                        },
+                        padding: EdgeInsets.zero,
+                        labelPadding: const EdgeInsets.only(right: 8),
+                      ),
+                    ),
+                  ..._topCategories.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final id = entry.value;
+                    final category = widget.data.activityCategories[id];
+                    final name = category?.name ?? 'Unknown';
+                    final char = category?.displayCharacter;
+                    final label = char != null && char.isNotEmpty
+                        ? '$char $name'
+                        : name;
+                    final color = _colors[index % _colors.length];
+                    final isSelected = _selectedCategoryIds.contains(id);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: FilterChip(
+                        label: Text(label),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedCategoryIds.add(id);
+                            } else {
+                              _selectedCategoryIds.remove(id);
+                            }
+                          });
+                        },
+                        showCheckmark: false,
+                        selectedColor: color.withOpacity(0.2),
+                        side: isSelected ? BorderSide(color: color) : null,
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: isSelected ? color : null,
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -112,7 +232,7 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
     );
   }
 
-  Widget _buildFilterChip(String label, AnalysisEventType? type) {
+  Widget _buildEventTypeFilterChip(String label, AnalysisEventType? type) {
     final isSelected = _selectedType == type;
     return FilterChip(
       label: Text(label),
@@ -134,25 +254,49 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
   }
 
   Widget _buildChart(BuildContext context) {
+    if (_selectedCategoryIds.isEmpty) {
+      return const Center(child: Text('Select at least one category'));
+    }
+
     return _showPattern
         ? _buildPatternChart(context)
         : _buildHistoryChart(context);
   }
 
   Widget _buildPatternChart(BuildContext context) {
-    Color barColor;
-    if (_selectedType == null) {
-      barColor = AnalysisColors.total;
-    } else {
-      barColor = AnalysisColors.getColor(_selectedType!);
+    // Count days of week for each selected category
+    final dayCounts = <int, Map<String, int>>{};
+    for (int i = 1; i <= 7; i++) {
+      dayCounts[i] = {};
+      for (final id in _selectedCategoryIds) {
+        dayCounts[i]![id] = 0;
+      }
     }
 
-    // Filter events based on selection
-    final events = _selectedType == null
+    final typeToUse = widget.showTypeFilter ? _selectedType : widget.filterType;
+    final events = typeToUse == null
         ? widget.data.events
-        : (widget.data.eventsByType[_selectedType] ?? []);
+        : (widget.data.eventsByType[typeToUse] ?? []);
 
-    // Calculate total weeks span
+    for (final event in events) {
+      // Check which selected categories this event has
+      final eventCategories = <String>{};
+      for (final activity in event.activities) {
+        final id = activity.category.reference;
+        if (_selectedCategoryIds.contains(id)) {
+          eventCategories.add(id);
+        }
+      }
+
+      if (eventCategories.isNotEmpty) {
+        final day = event.date.weekday;
+        for (final id in eventCategories) {
+          dayCounts[day]![id] = (dayCounts[day]![id] ?? 0) + 1;
+        }
+      }
+    }
+
+    // Calculate total weeks span for averaging
     double totalWeeksSpan = 1.0;
     if (widget.data.events.isNotEmpty) {
       final firstDate = widget.data.events.first.date;
@@ -161,23 +305,13 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
       totalWeeksSpan = (daysDiff / 7.0).clamp(1.0, double.infinity);
     }
 
-    // Count by day of week
-    final dayCounts = <int, int>{};
-    for (int i = 1; i <= 7; i++) {
-      dayCounts[i] = 0;
-    }
-
-    for (final event in events) {
-      dayCounts[event.date.weekday] = (dayCounts[event.date.weekday] ?? 0) + 1;
-    }
-
-    // Calculate averages
-    final averages = <int, double>{};
+    // Calculate max overlapping height
     double maxValue = 0.0;
     for (int i = 1; i <= 7; i++) {
-      final avg = (dayCounts[i] ?? 0) / totalWeeksSpan;
-      averages[i] = avg;
-      if (avg > maxValue) maxValue = avg;
+      for (final count in dayCounts[i]!.values) {
+        final average = count / totalWeeksSpan;
+        if (average > maxValue) maxValue = average;
+      }
     }
 
     final maxY = _calculateNiceMaxY(maxValue);
@@ -190,9 +324,31 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final dayName = _getDayName(group.x.toInt() + 1);
-              final value = rod.toY;
+              // rodIndex is always 0 because we have 1 rod per group in stacked
+              final total = rod.toY;
+
+              // Customize tooltip to show breakdown
+              final dayCategories = dayCounts[group.x.toInt() + 1]!;
+              final sortedCats = dayCategories.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value));
+
+              final tooltipText = StringBuffer('$dayName\n');
+
+              for (final entry in sortedCats) {
+                if (entry.value > 0) {
+                  final category = widget.data.activityCategories[entry.key];
+                  final name = category?.name ?? '';
+                  final char = category?.displayCharacter;
+                  final label = char != null && char.isNotEmpty
+                      ? '$char $name'
+                      : name;
+                  final val = entry.value / totalWeeksSpan;
+                  tooltipText.writeln('$label: ${val.toStringAsFixed(1)}');
+                }
+              }
+
               return BarTooltipItem(
-                '$dayName\n${value.toStringAsFixed(1)}',
+                tooltipText.toString().trim(),
                 const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -272,13 +428,41 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
         ),
         barGroups: List.generate(7, (index) {
           final dayOfWeek = index + 1;
-          final value = averages[dayOfWeek] ?? 0.0;
+          final categories = dayCounts[dayOfWeek]!;
+
+          // Build overlapping bars
+          final stackItems = <BarChartRodStackItem>[];
+          final barValues = <MapEntry<Color, double>>[];
+
+          // Collect values
+          for (int i = 0; i < _topCategories.length; i++) {
+            final id = _topCategories[i];
+            if (!_selectedCategoryIds.contains(id)) continue;
+
+            final rawCount = categories[id] ?? 0;
+            final count = rawCount / totalWeeksSpan;
+            if (count > 0) {
+              final color = _colors[i % _colors.length];
+              barValues.add(MapEntry(color, count));
+            }
+          }
+
+          // Sort by value descending (largest first so it's behind)
+          barValues.sort((a, b) => b.value.compareTo(a.value));
+
+          double maxYInGroup = 0;
+          for (final item in barValues) {
+            stackItems.add(BarChartRodStackItem(0, item.value, item.key));
+            if (item.value > maxYInGroup) maxYInGroup = item.value;
+          }
+
           return BarChartGroupData(
             x: index,
             barRods: [
               BarChartRodData(
-                toY: value,
-                color: barColor,
+                toY: maxYInGroup,
+                rodStackItems: stackItems,
+                color: Colors.transparent, // Color comes from stack items
                 width: 20,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(4),
@@ -293,45 +477,48 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
   }
 
   Widget _buildHistoryChart(BuildContext context) {
-    // Determine which data map to use
-    Map<String, int> counts;
-    Color barColor;
-
-    if (_selectedType == null) {
-      counts = widget.data.monthlyCounts;
-      barColor = AnalysisColors.total;
-    } else {
-      counts = widget.data.monthlyCountsByType[_selectedType!] ?? {};
-      barColor = AnalysisColors.getColor(_selectedType!);
-    }
-
-    // For "All Time" view, show last 12 months to keep chart readable
-    // For other views, show all months in the selected time window
+    // Filter events for selected categories and group by month
+    final monthlyCounts = <String, Map<String, int>>{};
     final now = DateTime.now();
+    // Use the same time window as other charts
     final twelveMonthsAgo = DateTime(now.year, now.month - 11, 1);
-
-    // If startDate is null (All Time), limit to last 12 months
-    // Otherwise show all data from the selected window
     final shouldLimitTo12Months = widget.data.startDate == null;
 
-    final filteredMonths =
-        widget
-            .data
-            .monthlyCounts
-            .keys // Always use total keys for X-axis stability
-            .where((key) {
-              if (!shouldLimitTo12Months) {
-                return true; // Show all months for specific time windows
-              }
-              final monthDate = DateTime.parse('$key-01');
-              return monthDate.isAfter(
-                twelveMonthsAgo.subtract(const Duration(days: 1)),
-              );
-            })
-            .toList()
-          ..sort();
+    // Pre-fill months
+    final allMonths = widget.data.monthlyCounts.keys.where((key) {
+      if (!shouldLimitTo12Months) return true;
+      final monthDate = DateTime.parse('$key-01');
+      return monthDate.isAfter(
+        twelveMonthsAgo.subtract(const Duration(days: 1)),
+      );
+    }).toList()..sort();
 
-    final sortedMonths = filteredMonths;
+    for (final month in allMonths) {
+      monthlyCounts[month] = {};
+      for (final id in _selectedCategoryIds) {
+        monthlyCounts[month]![id] = 0;
+      }
+    }
+
+    final typeToUse = widget.showTypeFilter ? _selectedType : widget.filterType;
+    final events = typeToUse == null
+        ? widget.data.events
+        : (widget.data.eventsByType[typeToUse] ?? []);
+
+    for (final event in events) {
+      final monthKey = DateFormat('yyyy-MM').format(event.date);
+      if (!monthlyCounts.containsKey(monthKey)) continue;
+
+      for (final activity in event.activities) {
+        final id = activity.category.reference;
+        if (_selectedCategoryIds.contains(id)) {
+          monthlyCounts[monthKey]![id] =
+              (monthlyCounts[monthKey]![id] ?? 0) + 1;
+        }
+      }
+    }
+
+    final sortedMonths = allMonths;
 
     if (sortedMonths.isEmpty) {
       return Center(
@@ -346,12 +533,11 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
       );
     }
 
-    // Calculate max value for better scaling from filtered data
+    // Calculate max value (max of overlaps)
     double maxValue = 0.0;
-    if (sortedMonths.isNotEmpty) {
-      for (final key in sortedMonths) {
-        double value = (counts[key] ?? 0).toDouble();
-        if (value > maxValue) maxValue = value;
+    for (final key in sortedMonths) {
+      for (final count in monthlyCounts[key]!.values) {
+        if (count > maxValue) maxValue = count.toDouble();
       }
     }
 
@@ -370,12 +556,30 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
                   group.x.toInt() < sortedMonths.length) {
                 final monthKey = sortedMonths[group.x.toInt()];
                 final date = DateTime.parse('$monthKey-01');
-                final value = rod.toY;
-                final label =
-                    '${value.toInt()} activit${value.toInt() != 1 ? 'ies' : 'y'}';
+                final total = rod.toY;
+
+                final dayCategories = monthlyCounts[monthKey]!;
+                final sortedCats = dayCategories.entries.toList()
+                  ..sort((a, b) => b.value.compareTo(a.value));
+
+                final tooltipText = StringBuffer(
+                  '${DateFormat('MMMM yyyy').format(date)}\n',
+                );
+
+                for (final entry in sortedCats) {
+                  if (entry.value > 0) {
+                    final category = widget.data.activityCategories[entry.key];
+                    final name = category?.name ?? '';
+                    final char = category?.displayCharacter;
+                    final label = char != null && char.isNotEmpty
+                        ? '$char $name'
+                        : name;
+                    tooltipText.writeln('$label: ${entry.value}');
+                  }
+                }
 
                 return BarTooltipItem(
-                  '${DateFormat('MMMM yyyy').format(date)}\n$label',
+                  tooltipText.toString().trim(),
                   const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -408,7 +612,6 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
                 final monthKey = sortedMonths[index];
                 final date = DateTime.parse('$monthKey-01');
 
-                // Show month abbreviation and year on separate lines
                 return Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
@@ -466,14 +669,40 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
         ),
         barGroups: List.generate(sortedMonths.length, (index) {
           final monthKey = sortedMonths[index];
-          double value = (counts[monthKey] ?? 0).toDouble();
+          final categories = monthlyCounts[monthKey]!;
+
+          // Build overlapping bars
+          final stackItems = <BarChartRodStackItem>[];
+          final barValues = <MapEntry<Color, double>>[];
+
+          // Process in order of top categories
+          for (int i = 0; i < _topCategories.length; i++) {
+            final id = _topCategories[i];
+            if (!_selectedCategoryIds.contains(id)) continue;
+
+            final count = (categories[id] ?? 0).toDouble();
+            if (count > 0) {
+              final color = _colors[i % _colors.length];
+              barValues.add(MapEntry(color, count));
+            }
+          }
+
+          // Sort by value descending (largest first so it's behind)
+          barValues.sort((a, b) => b.value.compareTo(a.value));
+
+          double maxYInGroup = 0;
+          for (final item in barValues) {
+            stackItems.add(BarChartRodStackItem(0, item.value, item.key));
+            if (item.value > maxYInGroup) maxYInGroup = item.value;
+          }
 
           return BarChartGroupData(
             x: index,
             barRods: [
               BarChartRodData(
-                toY: value,
-                color: barColor,
+                toY: maxYInGroup,
+                rodStackItems: stackItems,
+                color: Colors.transparent,
                 width: sortedMonths.length > 12 ? 12 : 20,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(4),

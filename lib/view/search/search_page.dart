@@ -46,6 +46,7 @@ class SearchPageState extends State<SearchPage>
     DateTimeRange? dateRange,
     String? eventType,
     String? partnerId,
+    String? categoryId,
   }) {
     setState(() {
       // Clear all existing filters
@@ -59,6 +60,7 @@ class SearchPageState extends State<SearchPage>
       if (dateRange != null) _dateRange = dateRange;
       if (eventType != null) _selectedEventType = eventType;
       if (partnerId != null) _selectedPartnerIds = {partnerId};
+      if (categoryId != null) _selectedCategoryIds = {categoryId};
       _performSearch();
     });
   }

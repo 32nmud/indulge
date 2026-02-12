@@ -50,6 +50,32 @@ class AnalysisCalculator {
           Map<String, Set<String>>
         >{}; // category -> sexual activity -> partners
 
+    final soloActivityCounts = <String, int>{};
+    final soloSexualActivityCounts = <String, int>{};
+    final soloActivityCountsThisYear = <String, int>{};
+    final soloSexualActivityCountsThisYear = <String, int>{};
+    int soloEventsTotal = 0;
+    int nonSoloEventsTotal = 0;
+
+    final activityCountsByType = {
+      for (var type in AnalysisEventType.values) type: <String, int>{},
+    };
+    final sexualActivityCountsByType = {
+      for (var type in AnalysisEventType.values) type: <String, int>{},
+    };
+    final monthlyCountsByType = {
+      for (var type in AnalysisEventType.values) type: <String, int>{},
+    };
+    final dayOfWeekCountsByType = {
+      for (var type in AnalysisEventType.values) type: <int, int>{},
+    };
+    final eventCountsByType = {
+      for (var type in AnalysisEventType.values) type: 0,
+    };
+    final eventsByType = {
+      for (var type in AnalysisEventType.values) type: <SexualEvent>[],
+    };
+
     int totalActivities = 0;
     int riskyActivityCount = 0;
     int safeActivityCount = 0;
@@ -84,6 +110,8 @@ class AnalysisCalculator {
       // Track properties and activities for this event
       int eventProperties = 0;
       int eventActivitiesCount = 0;
+      final eventActivityCategoryIds = <String, int>{};
+      final eventSexualActivityIds = <String, int>{};
 
       for (final activity in event.activities) {
         eventActivitiesCount++;
@@ -93,6 +121,8 @@ class AnalysisCalculator {
         final activityCategoryId = activity.category.reference;
         activityCounts[activityCategoryId] =
             (activityCounts[activityCategoryId] ?? 0) + 1;
+        eventActivityCategoryIds[activityCategoryId] =
+            (eventActivityCategoryIds[activityCategoryId] ?? 0) + 1;
         final activityCategory =
             providerState.sexualActivityCategories?[activityCategoryId];
         if (activityCategory != null) {
@@ -105,28 +135,30 @@ class AnalysisCalculator {
         for (final participant in activity.participants) {
           final personId = participant.participant.reference;
 
-          // Skip "me" person in partner counts
+          // Check if participant is "me"
           final person = await provider.getPersonById(personId);
-          if (person?.isSelf ?? false) {
-            continue; // Skip "me" from partner statistics
+          final isMe = person?.isSelf ?? false;
+
+          if (!isMe) {
+            // Count participants (partners only)
+            personCounts[personId] = (personCounts[personId] ?? 0) + 1;
+            eventPartners.add(personId); // Track unique partners in this event
+
+            // Count anonymous partner instances
+            if (personId == 'anonymous') {
+              anonymousPartnerInstances++;
+            }
           }
 
-          // Count participants
-          personCounts[personId] = (personCounts[personId] ?? 0) + 1;
-          eventPartners.add(personId); // Track unique partners in this event
-
-          // Count anonymous partner instances
-          if (personId == 'anonymous') {
-            anonymousPartnerInstances++;
-          }
-
-          // Count sexual activities
+          // Count sexual activities (for everyone, including me)
           for (final activityCount in participant.activityCounts) {
             final sexualActivityId = activityCount.activityReference.reference;
             final count = activityCount.count;
 
             sexualActivityCountsTotal[sexualActivityId] =
                 (sexualActivityCountsTotal[sexualActivityId] ?? 0) + count;
+            eventSexualActivityIds[sexualActivityId] =
+                (eventSexualActivityIds[sexualActivityId] ?? 0) + count;
             final sexualActivity =
                 providerState.sexualActivities?[sexualActivityId];
             if (sexualActivity != null) {
@@ -142,15 +174,20 @@ class AnalysisCalculator {
             }
             eventProperties += count; // Track sexual activities in this event
 
-            // Track sexual activities per partner
-            personPropertyCounts.putIfAbsent(personId, () => {});
-            personPropertyCounts[personId]![sexualActivityId] =
-                (personPropertyCounts[personId]![sexualActivityId] ?? 0) +
-                count;
+            if (!isMe) {
+              // Track sexual activities per partner
+              personPropertyCounts.putIfAbsent(personId, () => {});
+              personPropertyCounts[personId]![sexualActivityId] =
+                  (personPropertyCounts[personId]![sexualActivityId] ?? 0) +
+                  count;
 
-            // Track unique partners per sexual activity
-            sexualActivityPartnerCounts.putIfAbsent(sexualActivityId, () => {});
-            sexualActivityPartnerCounts[sexualActivityId]!.add(personId);
+              // Track unique partners per sexual activity
+              sexualActivityPartnerCounts.putIfAbsent(
+                sexualActivityId,
+                () => {},
+              );
+              sexualActivityPartnerCounts[sexualActivityId]!.add(personId);
+            }
           }
         }
 
@@ -162,6 +199,42 @@ class AnalysisCalculator {
           safeActivityCount++;
         }
       }
+
+      AnalysisEventType eventType;
+      if (eventPartners.isEmpty) {
+        eventType = AnalysisEventType.solo;
+        soloEventsTotal++;
+        eventActivityCategoryIds.forEach((key, count) {
+          soloActivityCounts[key] = (soloActivityCounts[key] ?? 0) + count;
+        });
+        eventSexualActivityIds.forEach((key, count) {
+          soloSexualActivityCounts[key] =
+              (soloSexualActivityCounts[key] ?? 0) + count;
+        });
+      } else if (eventPartners.length == 1) {
+        eventType = AnalysisEventType.couple;
+        nonSoloEventsTotal++;
+      } else {
+        eventType = AnalysisEventType.group;
+        nonSoloEventsTotal++;
+      }
+
+      eventCountsByType[eventType] = (eventCountsByType[eventType] ?? 0) + 1;
+      eventsByType[eventType]!.add(event);
+
+      // Update by-type maps
+      eventActivityCategoryIds.forEach((key, count) {
+        activityCountsByType[eventType]![key] =
+            (activityCountsByType[eventType]![key] ?? 0) + count;
+      });
+      eventSexualActivityIds.forEach((key, count) {
+        sexualActivityCountsByType[eventType]![key] =
+            (sexualActivityCountsByType[eventType]![key] ?? 0) + count;
+      });
+      monthlyCountsByType[eventType]![monthKey] =
+          (monthlyCountsByType[eventType]![monthKey] ?? 0) + 1;
+      dayOfWeekCountsByType[eventType]![dayOfWeek] =
+          (dayOfWeekCountsByType[eventType]![dayOfWeek] ?? 0) + 1;
 
       // Record partners, properties, and activities for this event
       eventPartnerCounts.add(eventPartners.length);
@@ -177,6 +250,41 @@ class AnalysisCalculator {
       // Track weekly counts (ISO 8601 week)
       final weekKey = _getWeekKey(event.date);
       weeklyCounts[weekKey] = (weeklyCounts[weekKey] ?? 0) + 1;
+    }
+
+    // Calculate averages (All Time)
+    // Use calendar duration (weeks spanned) instead of active weeks.
+    // This answers: "Over the period I've been tracking, what is my weekly average?"
+    // If I tracked for 1 month, divides by ~4. If 1 year, divides by ~52.
+    double totalWeeksSpan = 1.0;
+    if (sortedEvents.isNotEmpty) {
+      final firstDate = sortedEvents.first.date;
+      final lastDate = sortedEvents.last.date;
+      final daysDiff = lastDate.difference(firstDate).inDays + 1;
+      // Ensure at least 1 week to avoid skewing very short durations
+      totalWeeksSpan = (daysDiff / 7.0).clamp(1.0, double.infinity);
+    }
+
+    final averageDayOfWeekCountsByType =
+        <AnalysisEventType, Map<int, double>>{};
+
+    // Initialize maps
+    for (final type in AnalysisEventType.values) {
+      averageDayOfWeekCountsByType[type] = {};
+    }
+
+    // Populate from dayOfWeekCountsByType
+    for (final type in AnalysisEventType.values) {
+      for (int day = 1; day <= 7; day++) {
+        // For Total, use the main dayOfWeekCounts map as it's the source of truth
+        int count;
+        if (type == AnalysisEventType.total) {
+          count = dayOfWeekCounts[day] ?? 0;
+        } else {
+          count = dayOfWeekCountsByType[type]?[day] ?? 0;
+        }
+        averageDayOfWeekCountsByType[type]![day] = count / totalWeeksSpan;
+      }
     }
 
     // Calculate this month/year stats
@@ -243,8 +351,13 @@ class AnalysisCalculator {
 
         // Count partners in this event (excluding me)
         final eventPartnersNoMe = <String>{};
+        final eventActivityCountsLocal = <String, int>{};
+        final eventSexualActivityCountsLocal = <String, int>{};
+
         for (final activity in event.activities) {
           final activityCategoryId = activity.category.reference;
+          eventActivityCountsLocal[activityCategoryId] =
+              (eventActivityCountsLocal[activityCategoryId] ?? 0) + 1;
 
           // Track activity counts for last 12 months
           activityCountsThisYear[activityCategoryId] =
@@ -273,6 +386,11 @@ class AnalysisCalculator {
             for (final activityCount in participant.activityCounts) {
               final sexualActivityId =
                   activityCount.activityReference.reference;
+              final count = activityCount.count;
+
+              eventSexualActivityCountsLocal[sexualActivityId] =
+                  (eventSexualActivityCountsLocal[sexualActivityId] ?? 0) +
+                  count;
 
               sexualActivityPartnerCountsThisYear.putIfAbsent(
                 sexualActivityId,
@@ -298,6 +416,14 @@ class AnalysisCalculator {
         // Categorize event type
         if (eventPartnersNoMe.isEmpty) {
           soloEventsThisYear++;
+          eventActivityCountsLocal.forEach((key, count) {
+            soloActivityCountsThisYear[key] =
+                (soloActivityCountsThisYear[key] ?? 0) + count;
+          });
+          eventSexualActivityCountsLocal.forEach((key, count) {
+            soloSexualActivityCountsThisYear[key] =
+                (soloSexualActivityCountsThisYear[key] ?? 0) + count;
+          });
         } else if (eventPartnersNoMe.length == 1) {
           coupleEventsThisYear++;
         } else {
@@ -517,6 +643,19 @@ class AnalysisCalculator {
       soloEventsThisYear: soloEventsThisYear,
       coupleEventsThisYear: coupleEventsThisYear,
       groupEventsThisYear: groupEventsThisYear,
+      soloEventsTotal: soloEventsTotal,
+      nonSoloEventsTotal: nonSoloEventsTotal,
+      soloActivityCounts: soloActivityCounts,
+      soloSexualActivityCounts: soloSexualActivityCounts,
+      soloActivityCountsThisYear: soloActivityCountsThisYear,
+      soloSexualActivityCountsThisYear: soloSexualActivityCountsThisYear,
+      activityCountsByType: activityCountsByType,
+      sexualActivityCountsByType: sexualActivityCountsByType,
+      monthlyCountsByType: monthlyCountsByType,
+      dayOfWeekCountsByType: dayOfWeekCountsByType,
+      averageDayOfWeekCountsByType: averageDayOfWeekCountsByType,
+      eventCountsByType: eventCountsByType,
+      eventsByType: eventsByType,
       activityCounts: activityCounts,
       activityCountsThisYear: activityCountsThisYear,
       activityCategories: activityCategories,
@@ -584,6 +723,19 @@ class AnalysisCalculator {
       soloEventsThisYear: 0,
       coupleEventsThisYear: 0,
       groupEventsThisYear: 0,
+      soloEventsTotal: 0,
+      nonSoloEventsTotal: 0,
+      soloActivityCounts: {},
+      soloSexualActivityCounts: {},
+      soloActivityCountsThisYear: {},
+      soloSexualActivityCountsThisYear: {},
+      activityCountsByType: {},
+      sexualActivityCountsByType: {},
+      monthlyCountsByType: {},
+      dayOfWeekCountsByType: {},
+      averageDayOfWeekCountsByType: {},
+      eventCountsByType: {},
+      eventsByType: {},
       activityCounts: {},
       activityCountsThisYear: {},
       activityCategories: {},

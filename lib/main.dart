@@ -105,6 +105,15 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void navigateToSearchWithCategory(String categoryId) {
+    setState(() {
+      currentPageIndex = 1; // Search page index
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchPageKey.currentState?.applyFilters(categoryId: categoryId);
+    });
+  }
+
   // Method to navigate to search page with date range filter
   void navigateToSearchWithDateRange(DateTimeRange range) {
     setState(() {
@@ -120,6 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
     DateTimeRange? dateRange,
     String? eventType,
     String? partnerId,
+    String? categoryId,
   }) {
     setState(() {
       currentPageIndex = 1; // Search page index
@@ -129,6 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
         dateRange: dateRange,
         eventType: eventType,
         partnerId: partnerId,
+        categoryId: categoryId,
       );
     });
   }
@@ -138,6 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return NavigationHelper(
       navigateToSearchWithPartner: navigateToSearchWithPartner,
       navigateToSearchWithEventType: navigateToSearchWithEventType,
+      navigateToSearchWithCategory: navigateToSearchWithCategory,
       navigateToSearchWithDateRange: navigateToSearchWithDateRange,
       navigateToSearch: navigateToSearch,
       child: Scaffold(

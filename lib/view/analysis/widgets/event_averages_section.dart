@@ -3,11 +3,93 @@ import '../models/analysis_data.dart';
 
 class EventAveragesSection extends StatelessWidget {
   final AnalysisData data;
+  final AnalysisEventType? filterType;
 
-  const EventAveragesSection({super.key, required this.data});
+  const EventAveragesSection({super.key, required this.data, this.filterType});
 
   @override
   Widget build(BuildContext context) {
+    // Calculate values based on filter
+    String eventsPerWeek;
+    String eventsPerMonth;
+    String activitiesPerWeek;
+    String activitiesPerMonth;
+    String partnersPerEvent;
+    String activitiesPerEvent;
+    String sexualActivitiesPerEvent;
+
+    if (filterType == null) {
+      eventsPerWeek = data.averageEventsPerWeek.toStringAsFixed(1);
+      eventsPerMonth = data.averageEventsPerMonth.toStringAsFixed(1);
+      activitiesPerWeek = data.averageActivitiesPerWeek.toStringAsFixed(1);
+      activitiesPerMonth = data.averageActivitiesPerMonth.toStringAsFixed(1);
+      partnersPerEvent = data.averagePartnersPerEvent.toStringAsFixed(1);
+      activitiesPerEvent = data.averageActivitiesPerEvent.toStringAsFixed(1);
+      sexualActivitiesPerEvent = data.averageSexualActivitiesPerEvent
+          .toStringAsFixed(1);
+    } else {
+      final events = data.eventsByType[filterType!] ?? [];
+      final count = events.length;
+
+      // Approximate duration from global data
+      // Avoid division by zero
+      final weeks = data.averageEventsPerWeek > 0
+          ? data.eventsThisYear / data.averageEventsPerWeek
+          : 1.0;
+      final months = data.averageEventsPerMonth > 0
+          ? data.eventsThisYear / data.averageEventsPerMonth
+          : 1.0;
+
+      // Totals
+      int totalActivities = 0;
+      int totalSexualActivities = 0;
+      int totalPartners = 0;
+
+      for (final event in events) {
+        totalActivities += event.activities.length;
+        for (final act in event.activities) {
+          for (final p in act.participants) {
+            for (final ac in p.activityCounts) {
+              totalSexualActivities += ac.count;
+            }
+          }
+        }
+
+        // Partners calculation
+        if (filterType == AnalysisEventType.solo) {
+          // Solo implies 0 partners
+        } else if (filterType == AnalysisEventType.couple) {
+          totalPartners += 1;
+        } else {
+          // Group: estimate based on participants.
+          // We don't have easy access to "Me" ID here, but we can count unique participants.
+          // Assuming 1 is "Me", partners = count - 1.
+          final uniqueParticipants = <String>{};
+          for (final act in event.activities) {
+            for (final p in act.participants) {
+              uniqueParticipants.add(p.participant.reference);
+            }
+          }
+          if (uniqueParticipants.isNotEmpty) {
+            totalPartners += uniqueParticipants.length - 1;
+          }
+        }
+      }
+
+      eventsPerWeek = (weeks > 0 ? count / weeks : 0).toStringAsFixed(1);
+      eventsPerMonth = (months > 0 ? count / months : 0).toStringAsFixed(1);
+      activitiesPerWeek = (weeks > 0 ? totalActivities / weeks : 0)
+          .toStringAsFixed(1);
+      activitiesPerMonth = (months > 0 ? totalActivities / months : 0)
+          .toStringAsFixed(1);
+      partnersPerEvent = (count > 0 ? totalPartners / count : 0)
+          .toStringAsFixed(1);
+      activitiesPerEvent = (count > 0 ? totalActivities / count : 0)
+          .toStringAsFixed(1);
+      sexualActivitiesPerEvent = (count > 0 ? totalSexualActivities / count : 0)
+          .toStringAsFixed(1);
+    }
+
     return Card(
       margin: const EdgeInsets.all(16.0),
       child: Padding(
@@ -41,7 +123,7 @@ class EventAveragesSection extends StatelessWidget {
                   child: _buildAverageItem(
                     context,
                     label: 'Events/Week',
-                    value: data.averageEventsPerWeek.toStringAsFixed(1),
+                    value: eventsPerWeek,
                     icon: Icons.calendar_view_week,
                   ),
                 ),
@@ -50,7 +132,7 @@ class EventAveragesSection extends StatelessWidget {
                   child: _buildAverageItem(
                     context,
                     label: 'Events/Month',
-                    value: data.averageEventsPerMonth.toStringAsFixed(1),
+                    value: eventsPerMonth,
                     icon: Icons.calendar_month,
                   ),
                 ),
@@ -64,7 +146,7 @@ class EventAveragesSection extends StatelessWidget {
                   child: _buildAverageItem(
                     context,
                     label: 'Categories/Week',
-                    value: data.averageActivitiesPerWeek.toStringAsFixed(1),
+                    value: activitiesPerWeek,
                     icon: Icons.event_note,
                   ),
                 ),
@@ -73,7 +155,7 @@ class EventAveragesSection extends StatelessWidget {
                   child: _buildAverageItem(
                     context,
                     label: 'Categories/Month',
-                    value: data.averageActivitiesPerMonth.toStringAsFixed(1),
+                    value: activitiesPerMonth,
                     icon: Icons.event_available,
                   ),
                 ),
@@ -87,7 +169,7 @@ class EventAveragesSection extends StatelessWidget {
                   child: _buildAverageItem(
                     context,
                     label: 'Unique Partners/Event',
-                    value: data.averagePartnersPerEvent.toStringAsFixed(1),
+                    value: partnersPerEvent,
                     icon: Icons.people,
                   ),
                 ),
@@ -96,7 +178,7 @@ class EventAveragesSection extends StatelessWidget {
                   child: _buildAverageItem(
                     context,
                     label: 'Categories/Event',
-                    value: data.averageActivitiesPerEvent.toStringAsFixed(1),
+                    value: activitiesPerEvent,
                     icon: Icons.event_note,
                   ),
                 ),
@@ -106,7 +188,7 @@ class EventAveragesSection extends StatelessWidget {
             _buildAverageItem(
               context,
               label: 'Activities/Event',
-              value: data.averageSexualActivitiesPerEvent.toStringAsFixed(1),
+              value: sexualActivitiesPerEvent,
               icon: Icons.label,
             ),
           ],

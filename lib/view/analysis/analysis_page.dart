@@ -6,19 +6,17 @@ import 'package:logging/logging.dart';
 import 'models/analysis_data.dart';
 import 'utils/analysis_calculator.dart';
 import 'widgets/overview_stats_section.dart';
+import 'widgets/category_trends_chart.dart';
 import 'widgets/monthly_activity_chart.dart';
-import 'widgets/activity_type_distribution.dart';
+import 'widgets/property_trends_chart.dart';
 import 'widgets/top_partners_section.dart';
-import 'widgets/properties_by_activity_section.dart';
-import 'widgets/time_patterns_section.dart';
+
 import 'widgets/period_comparison_section.dart';
-import 'widgets/event_averages_section.dart';
 import 'widgets/property_partner_section.dart';
-import 'widgets/cumulative_activities_chart.dart';
-import 'widgets/cumulative_properties_chart.dart';
+
 import 'widgets/calendar_heatmap.dart';
 import 'widgets/records_section.dart';
-import 'widgets/co_occurrence_section.dart';
+import 'widgets/activity_breakdown_page.dart';
 import '../common/navigation_helper.dart';
 
 enum TimeWindow { last12Months, allTime, specificYear }
@@ -347,7 +345,7 @@ class _AnalysisPageState extends State<AnalysisPage>
                     AnimatedSize(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
-                      child: _currentPage == 4
+                      child: _currentPage == 3
                           ? const SizedBox.shrink()
                           : _buildTimeWindowSelector(),
                     ),
@@ -381,7 +379,6 @@ class _AnalysisPageState extends State<AnalysisPage>
                             },
                             children: [
                               _buildOverviewPage(_currentData!),
-                              _buildTimeSeriesPage(_currentData!),
                               _buildActivityBreakdownPage(_currentData!),
                               _buildPartnerBreakdownPage(_currentData!),
                               _buildPeriodComparisonPage(_currentData!),
@@ -544,6 +541,7 @@ class _AnalysisPageState extends State<AnalysisPage>
           data: data,
           showCurrentMonthStats: _timeWindow == TimeWindow.last12Months,
         ),
+        MonthlyActivityChart(data: data),
         const SizedBox(height: 16),
         Card(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -570,41 +568,8 @@ class _AnalysisPageState extends State<AnalysisPage>
     );
   }
 
-  Widget _buildTimeSeriesPage(AnalysisData data) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        _buildPageTitle(
-          'Time Series',
-          Icons.show_chart,
-          'Charts and patterns over time',
-        ),
-        MonthlyActivityChart(data: data),
-        TimePatternsSection(data: data),
-        CumulativeActivitiesChart(data: data),
-        CumulativePropertiesChart(data: data),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
   Widget _buildActivityBreakdownPage(AnalysisData data) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        _buildPageTitle(
-          'Activity Breakdown',
-          Icons.list_alt,
-          'Categories, activities, and averages',
-        ),
-        EventAveragesSection(data: data),
-        CoOccurrenceSection(data: data),
-        const SizedBox(height: 16),
-        ActivityTypeDistribution(data: data),
-        PropertiesByActivitySection(data: data),
-        const SizedBox(height: 16),
-      ],
-    );
+    return ActivityBreakdownPage(data: data);
   }
 
   Widget _buildPartnerBreakdownPage(AnalysisData data) {
@@ -681,7 +646,7 @@ class _AnalysisPageState extends State<AnalysisPage>
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(5, (index) {
+        children: List.generate(4, (index) {
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.symmetric(horizontal: 4),

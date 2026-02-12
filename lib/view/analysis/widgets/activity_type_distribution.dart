@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/analysis_data.dart';
+import '../../common/navigation_helper.dart';
 
 class ActivityTypeDistribution extends StatefulWidget {
   final AnalysisData data;
+  final AnalysisEventType? filterType;
 
-  const ActivityTypeDistribution({super.key, required this.data});
+  const ActivityTypeDistribution({
+    super.key,
+    required this.data,
+    this.filterType,
+  });
 
   @override
   State<ActivityTypeDistribution> createState() =>
@@ -15,9 +21,16 @@ class ActivityTypeDistribution extends StatefulWidget {
 class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
   int touchedIndex = -1;
 
+  Map<String, int> get _counts {
+    if (widget.filterType == null) {
+      return widget.data.activityCountsThisYear;
+    }
+    return widget.data.activityCountsByType[widget.filterType!] ?? {};
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.data.activityCountsThisYear.isEmpty) {
+    if (_counts.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -36,7 +49,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Total count of each category you\'ve done',
+              'Total count of each category you\'ve done\nTap a category to search',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -59,7 +72,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
   }
 
   Widget _buildPieChart(BuildContext context) {
-    final sortedEntries = widget.data.activityCountsThisYear.entries.toList()
+    final sortedEntries = _counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     // Calculate total from last 12 months
@@ -95,6 +108,19 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
               touchedIndex =
                   pieTouchResponse.touchedSection!.touchedSectionIndex;
             });
+
+            if (event is FlTapUpEvent &&
+                pieTouchResponse != null &&
+                pieTouchResponse.touchedSection != null) {
+              final index =
+                  pieTouchResponse.touchedSection!.touchedSectionIndex;
+              if (index >= 0 && index < sortedEntries.length) {
+                final entry = sortedEntries[index];
+                NavigationHelper.of(
+                  context,
+                )?.navigateToSearchWithCategory(entry.key);
+              }
+            }
           },
         ),
         borderData: FlBorderData(show: false),
@@ -127,7 +153,7 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
   }
 
   Widget _buildLegend(BuildContext context) {
-    final sortedEntries = widget.data.activityCountsThisYear.entries.toList()
+    final sortedEntries = _counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     // Calculate total from last 12 months
@@ -159,44 +185,55 @@ class _ActivityTypeDistributionState extends State<ActivityTypeDistribution> {
         final percentage = (entry.value / totalActivitiesThisYear * 100)
             .round();
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Row(
-            children: [
-              Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      activityCategory?.displayCharacter ?? '❓',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    Text(
-                      activityCategory?.name ?? 'Unknown',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        return InkWell(
+          onTap: () {
+            NavigationHelper.of(
+              context,
+            )?.navigateToSearchWithCategory(entry.key);
+          },
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        activityCategory?.displayCharacter ?? '❓',
+                        style: const TextStyle(fontSize: 14),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                      Text(
+                        activityCategory?.name ?? 'Unknown',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 10,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${entry.value} ($percentage%)',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
+                const SizedBox(width: 4),
+                Text(
+                  '${entry.value} ($percentage%)',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
