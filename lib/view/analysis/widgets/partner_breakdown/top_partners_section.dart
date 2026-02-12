@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/data/models.dart';
 import 'package:intl/intl.dart';
-import '../models/analysis_data.dart';
-import 'common/expandable_activity_card.dart';
+import '../../models/analysis_data.dart';
+import '../common/expandable_activity_card.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 

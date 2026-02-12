@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import '../models/analysis_data.dart';
+import '../../models/analysis_data.dart';
 
 class CoOccurrenceSection extends StatefulWidget {
   final AnalysisData data;

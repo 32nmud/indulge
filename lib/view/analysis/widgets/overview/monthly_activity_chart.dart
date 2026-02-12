@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import '../models/analysis_data.dart';
-import '../utils/analysis_colors.dart';
+import '../../models/analysis_data.dart';
+import '../../utils/analysis_colors.dart';
 
 class MonthlyActivityChart extends StatefulWidget {
   final AnalysisData data;

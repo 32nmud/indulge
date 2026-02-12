@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/analysis_data.dart';
+import '../../models/analysis_data.dart';
 
 class EventAveragesSection extends StatelessWidget {
   final AnalysisData data;

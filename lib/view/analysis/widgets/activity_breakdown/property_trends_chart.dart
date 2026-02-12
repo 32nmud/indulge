@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import '../models/analysis_data.dart';
-import '../utils/analysis_colors.dart';
+import 'package:indulge/data/models.dart';
+import '../../models/analysis_data.dart';
+import '../../utils/analysis_colors.dart';
 
-class CategoryTrendsChart extends StatefulWidget {
+class PropertyTrendsChart extends StatefulWidget {
   final AnalysisData data;
   final AnalysisEventType? filterType;
   final bool showTypeFilter;
 
-  const CategoryTrendsChart({
+  const PropertyTrendsChart({
     super.key,
     required this.data,
     this.filterType,
@@ -17,49 +18,59 @@ class CategoryTrendsChart extends StatefulWidget {
   });
 
   @override
-  State<CategoryTrendsChart> createState() => _CategoryTrendsChartState();
+  State<PropertyTrendsChart> createState() => _PropertyTrendsChartState();
 }
 
-class _CategoryTrendsChartState extends State<CategoryTrendsChart>
+class _PropertyTrendsChartState extends State<PropertyTrendsChart>
     with AutomaticKeepAliveClientMixin {
   AnalysisEventType? _selectedType;
-  final Set<String> _selectedCategoryIds = {};
+  final Set<String> _selectedPropertyIds = {};
   bool _showPattern = false;
-  List<String> _topCategories = [];
+  List<String> _topProperties = [];
+  List<String> _visibleProperties = [];
   final List<Color> _colors = [
-    Colors.blue,
-    Colors.red,
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
+    Colors.teal,
+    Colors.pink,
+    Colors.amber,
+    Colors.cyan,
+    Colors.deepOrange,
   ];
 
   @override
   void initState() {
     super.initState();
-    _calculateTopCategories();
+    _calculateTopProperties();
   }
 
   @override
   bool get wantKeepAlive => true;
 
   @override
-  void didUpdateWidget(covariant CategoryTrendsChart oldWidget) {
+  void didUpdateWidget(covariant PropertyTrendsChart oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.data != widget.data) {
-      _calculateTopCategories();
+      _calculateTopProperties();
     }
   }
 
-  void _calculateTopCategories() {
-    // Count category occurrences across all events
+  void _calculateTopProperties() {
+    // Use the pre-calculated totals from AnalysisData
+    // We can filter this if we want to respect the current time window,
+    // but using the global "Top 5" is usually what users want to see.
+    // If we want strict time-window compliance, we should recalculate from events.
+
+    // Let's recalculate from current events to respect the time window filter
     final counts = <String, int>{};
     for (final event in widget.data.events) {
       final seenInEvent = <String>{};
       for (final activity in event.activities) {
-        final id = activity.category.reference;
-        if (seenInEvent.add(id)) {
-          counts[id] = (counts[id] ?? 0) + 1;
+        for (final participant in activity.participants) {
+          for (final count in participant.activityCounts) {
+            final id = count.activityReference.reference;
+            if (seenInEvent.add(id)) {
+              counts[id] = (counts[id] ?? 0) + 1;
+            }
+          }
         }
       }
     }
@@ -70,14 +81,21 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
 
     // Take top 5
     setState(() {
-      _topCategories = sortedIds.take(5).toList();
+      _topProperties = sortedIds.take(5).toList();
+
+      // Ensure currently selected items stay visible
+      final Set<String> visibleSet = {
+        ..._topProperties,
+        ..._selectedPropertyIds,
+      };
+      _visibleProperties = visibleSet.toList();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (_topCategories.isEmpty) {
+    if (_topProperties.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -96,7 +114,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Category Trends',
+                        'Activity Trends',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
@@ -167,7 +185,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  if (_selectedCategoryIds.isNotEmpty)
+                  if (_selectedPropertyIds.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: ActionChip(
@@ -175,24 +193,26 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                         label: const Text('Clear'),
                         onPressed: () {
                           setState(() {
-                            _selectedCategoryIds.clear();
+                            _selectedPropertyIds.clear();
+                            // Reset visible properties to just top properties
+                            _visibleProperties = _topProperties.toList();
                           });
                         },
                         padding: EdgeInsets.zero,
                         labelPadding: const EdgeInsets.only(right: 8),
                       ),
                     ),
-                  ..._topCategories.asMap().entries.map((entry) {
+                  ..._visibleProperties.asMap().entries.map((entry) {
                     final index = entry.key;
                     final id = entry.value;
-                    final category = widget.data.activityCategories[id];
-                    final name = category?.name ?? 'Unknown';
-                    final char = category?.displayCharacter;
-                    final label = char != null && char.isNotEmpty
+                    final property = widget.data.sexualActivities[id];
+                    final name = property?.name ?? 'Unknown';
+                    final char = property?.displayCharacter;
+                    final label = char != null && char.isNotEmpty && char != '❔'
                         ? '$char $name'
                         : name;
                     final color = _colors[index % _colors.length];
-                    final isSelected = _selectedCategoryIds.contains(id);
+                    final isSelected = _selectedPropertyIds.contains(id);
 
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
@@ -202,9 +222,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                         onSelected: (selected) {
                           setState(() {
                             if (selected) {
-                              _selectedCategoryIds.add(id);
+                              _selectedPropertyIds.add(id);
                             } else {
-                              _selectedCategoryIds.remove(id);
+                              _selectedPropertyIds.remove(id);
                             }
                           });
                         },
@@ -221,6 +241,16 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       ),
                     );
                   }),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.add, size: 16),
+                      label: const Text('Add'),
+                      onPressed: _showActivityPicker,
+                      padding: EdgeInsets.zero,
+                      labelPadding: const EdgeInsets.only(right: 8),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -254,8 +284,8 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
   }
 
   Widget _buildChart(BuildContext context) {
-    if (_selectedCategoryIds.isEmpty) {
-      return const Center(child: Text('Select at least one category'));
+    if (_selectedPropertyIds.isEmpty) {
+      return const Center(child: Text('Select at least one activity'));
     }
 
     return _showPattern
@@ -264,11 +294,11 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
   }
 
   Widget _buildPatternChart(BuildContext context) {
-    // Count days of week for each selected category
+    // Count days of week for each selected property
     final dayCounts = <int, Map<String, int>>{};
     for (int i = 1; i <= 7; i++) {
       dayCounts[i] = {};
-      for (final id in _selectedCategoryIds) {
+      for (final id in _selectedPropertyIds) {
         dayCounts[i]![id] = 0;
       }
     }
@@ -279,18 +309,22 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
         : (widget.data.eventsByType[typeToUse] ?? []);
 
     for (final event in events) {
-      // Check which selected categories this event has
-      final eventCategories = <String>{};
+      // Check which selected properties this event has
+      final eventProperties = <String>{};
       for (final activity in event.activities) {
-        final id = activity.category.reference;
-        if (_selectedCategoryIds.contains(id)) {
-          eventCategories.add(id);
+        for (final participant in activity.participants) {
+          for (final count in participant.activityCounts) {
+            final id = count.activityReference.reference;
+            if (_selectedPropertyIds.contains(id)) {
+              eventProperties.add(id);
+            }
+          }
         }
       }
 
-      if (eventCategories.isNotEmpty) {
+      if (eventProperties.isNotEmpty) {
         final day = event.date.weekday;
-        for (final id in eventCategories) {
+        for (final id in eventProperties) {
           dayCounts[day]![id] = (dayCounts[day]![id] ?? 0) + 1;
         }
       }
@@ -328,18 +362,18 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
               final total = rod.toY;
 
               // Customize tooltip to show breakdown
-              final dayCategories = dayCounts[group.x.toInt() + 1]!;
-              final sortedCats = dayCategories.entries.toList()
+              final dayProperties = dayCounts[group.x.toInt() + 1]!;
+              final sortedProps = dayProperties.entries.toList()
                 ..sort((a, b) => b.value.compareTo(a.value));
 
               final tooltipText = StringBuffer('$dayName\n');
 
-              for (final entry in sortedCats) {
+              for (final entry in sortedProps) {
                 if (entry.value > 0) {
-                  final category = widget.data.activityCategories[entry.key];
-                  final name = category?.name ?? '';
-                  final char = category?.displayCharacter;
-                  final label = char != null && char.isNotEmpty
+                  final property = widget.data.sexualActivities[entry.key];
+                  final name = property?.name ?? '';
+                  final char = property?.displayCharacter;
+                  final label = char != null && char.isNotEmpty && char != '❔'
                       ? '$char $name'
                       : name;
                   final val = entry.value / totalWeeksSpan;
@@ -428,18 +462,18 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
         ),
         barGroups: List.generate(7, (index) {
           final dayOfWeek = index + 1;
-          final categories = dayCounts[dayOfWeek]!;
+          final properties = dayCounts[dayOfWeek]!;
 
           // Build overlapping bars
           final stackItems = <BarChartRodStackItem>[];
           final barValues = <MapEntry<Color, double>>[];
 
           // Collect values
-          for (int i = 0; i < _topCategories.length; i++) {
-            final id = _topCategories[i];
-            if (!_selectedCategoryIds.contains(id)) continue;
+          for (int i = 0; i < _topProperties.length; i++) {
+            final id = _topProperties[i];
+            if (!_selectedPropertyIds.contains(id)) continue;
 
-            final rawCount = categories[id] ?? 0;
+            final rawCount = properties[id] ?? 0;
             final count = rawCount / totalWeeksSpan;
             if (count > 0) {
               final color = _colors[i % _colors.length];
@@ -462,7 +496,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
               BarChartRodData(
                 toY: maxYInGroup,
                 rodStackItems: stackItems,
-                color: Colors.transparent, // Color comes from stack items
+                color: Colors.transparent,
                 width: 20,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(4),
@@ -477,14 +511,14 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
   }
 
   Widget _buildHistoryChart(BuildContext context) {
-    // Filter events for selected categories and group by month
+    // Filter events for selected properties and group by month
     final monthlyCounts = <String, Map<String, int>>{};
     final now = DateTime.now();
     // Use the same time window as other charts
     final twelveMonthsAgo = DateTime(now.year, now.month - 11, 1);
     final shouldLimitTo12Months = widget.data.startDate == null;
 
-    // Pre-fill months
+    // Pre-fill months to ensure continuity on X-axis (using global monthly counts keys as reference)
     final allMonths = widget.data.monthlyCounts.keys.where((key) {
       if (!shouldLimitTo12Months) return true;
       final monthDate = DateTime.parse('$key-01');
@@ -495,7 +529,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
 
     for (final month in allMonths) {
       monthlyCounts[month] = {};
-      for (final id in _selectedCategoryIds) {
+      for (final id in _selectedPropertyIds) {
         monthlyCounts[month]![id] = 0;
       }
     }
@@ -510,10 +544,14 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
       if (!monthlyCounts.containsKey(monthKey)) continue;
 
       for (final activity in event.activities) {
-        final id = activity.category.reference;
-        if (_selectedCategoryIds.contains(id)) {
-          monthlyCounts[monthKey]![id] =
-              (monthlyCounts[monthKey]![id] ?? 0) + 1;
+        for (final participant in activity.participants) {
+          for (final count in participant.activityCounts) {
+            final id = count.activityReference.reference;
+            if (_selectedPropertyIds.contains(id)) {
+              monthlyCounts[monthKey]![id] =
+                  (monthlyCounts[monthKey]![id] ?? 0) + count.count;
+            }
+          }
         }
       }
     }
@@ -558,20 +596,20 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                 final date = DateTime.parse('$monthKey-01');
                 final total = rod.toY;
 
-                final dayCategories = monthlyCounts[monthKey]!;
-                final sortedCats = dayCategories.entries.toList()
+                final dayProperties = monthlyCounts[monthKey]!;
+                final sortedProps = dayProperties.entries.toList()
                   ..sort((a, b) => b.value.compareTo(a.value));
 
                 final tooltipText = StringBuffer(
                   '${DateFormat('MMMM yyyy').format(date)}\n',
                 );
 
-                for (final entry in sortedCats) {
+                for (final entry in sortedProps) {
                   if (entry.value > 0) {
-                    final category = widget.data.activityCategories[entry.key];
-                    final name = category?.name ?? '';
-                    final char = category?.displayCharacter;
-                    final label = char != null && char.isNotEmpty
+                    final property = widget.data.sexualActivities[entry.key];
+                    final name = property?.name ?? '';
+                    final char = property?.displayCharacter;
+                    final label = char != null && char.isNotEmpty && char != '❔'
                         ? '$char $name'
                         : name;
                     tooltipText.writeln('$label: ${entry.value}');
@@ -675,10 +713,10 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
           final stackItems = <BarChartRodStackItem>[];
           final barValues = <MapEntry<Color, double>>[];
 
-          // Process in order of top categories
-          for (int i = 0; i < _topCategories.length; i++) {
-            final id = _topCategories[i];
-            if (!_selectedCategoryIds.contains(id)) continue;
+          // Process in order of top properties
+          for (int i = 0; i < _topProperties.length; i++) {
+            final id = _topProperties[i];
+            if (!_selectedPropertyIds.contains(id)) continue;
 
             final count = (categories[id] ?? 0).toDouble();
             if (count > 0) {
@@ -752,5 +790,150 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     if (rawInterval <= 2) return 2.0;
     if (rawInterval <= 5) return 5.0;
     return ((rawInterval / 5).ceil() * 5).toDouble();
+  }
+
+  Future<void> _showActivityPicker() async {
+    // Build hierarchy of Category -> Activities
+    final categoryActivities = <String, Set<String>>{};
+
+    for (final event in widget.data.events) {
+      for (final activity in event.activities) {
+        final catId = activity.category.reference;
+        for (final participant in activity.participants) {
+          for (final count in participant.activityCounts) {
+            final actId = count.activityReference.reference;
+            categoryActivities.putIfAbsent(catId, () => {}).add(actId);
+          }
+        }
+      }
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) => _ActivityPickerDialog(
+        data: widget.data,
+        categoryActivities: categoryActivities,
+        selectedIds: _selectedPropertyIds,
+        onSelectionChanged: (newSelection) {
+          setState(() {
+            _selectedPropertyIds.clear();
+            _selectedPropertyIds.addAll(newSelection);
+            // Add new selections to visible properties if not present
+            final visibleSet = {..._topProperties, ..._selectedPropertyIds};
+            _visibleProperties = visibleSet.toList();
+          });
+        },
+      ),
+    );
+  }
+}
+
+class _ActivityPickerDialog extends StatefulWidget {
+  final AnalysisData data;
+  final Map<String, Set<String>> categoryActivities;
+  final Set<String> selectedIds;
+  final ValueChanged<Set<String>> onSelectionChanged;
+
+  const _ActivityPickerDialog({
+    required this.data,
+    required this.categoryActivities,
+    required this.selectedIds,
+    required this.onSelectionChanged,
+  });
+
+  @override
+  State<_ActivityPickerDialog> createState() => _ActivityPickerDialogState();
+}
+
+class _ActivityPickerDialogState extends State<_ActivityPickerDialog> {
+  late Set<String> _tempSelectedIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _tempSelectedIds = Set.from(widget.selectedIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedCategories = widget.categoryActivities.keys.toList()
+      ..sort((a, b) {
+        final nameA = widget.data.activityCategories[a]?.name ?? '';
+        final nameB = widget.data.activityCategories[b]?.name ?? '';
+        return nameA.compareTo(nameB);
+      });
+
+    return AlertDialog(
+      title: const Text('Select Activities'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: sortedCategories.length,
+          itemBuilder: (context, index) {
+            final catId = sortedCategories[index];
+            final category = widget.data.activityCategories[catId];
+            final catName = category?.name ?? 'Unknown';
+            final catChar = category?.displayCharacter;
+            final catLabel = catChar != null && catChar.isNotEmpty
+                ? '$catChar $catName'
+                : catName;
+
+            final activityIds = widget.categoryActivities[catId]!.toList()
+              ..sort((a, b) {
+                final nameA = widget.data.sexualActivities[a]?.name ?? '';
+                final nameB = widget.data.sexualActivities[b]?.name ?? '';
+                return nameA.compareTo(nameB);
+              });
+
+            return ExpansionTile(
+              title: Text(catLabel),
+              initiallyExpanded: activityIds.any(
+                (id) => _tempSelectedIds.contains(id),
+              ),
+              children: activityIds.map((actId) {
+                final activity = widget.data.sexualActivities[actId];
+                final actName = activity?.name ?? 'Unknown';
+                final actChar = activity?.displayCharacter;
+                final actLabel =
+                    actChar != null && actChar.isNotEmpty && actChar != '❔'
+                    ? '$actChar $actName'
+                    : actName;
+                final isSelected = _tempSelectedIds.contains(actId);
+
+                return CheckboxListTile(
+                  title: Text(actLabel),
+                  value: isSelected,
+                  onChanged: (val) {
+                    setState(() {
+                      if (val == true) {
+                        _tempSelectedIds.add(actId);
+                      } else {
+                        _tempSelectedIds.remove(actId);
+                      }
+                    });
+                  },
+                  dense: true,
+                  contentPadding: const EdgeInsets.only(left: 16, right: 8),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            widget.onSelectionChanged(_tempSelectedIds);
+            Navigator.pop(context);
+          },
+          child: const Text('Apply'),
+        ),
+      ],
+    );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
@@ -5,19 +7,11 @@ import 'package:indulge/data/models.dart';
 import 'package:logging/logging.dart';
 import 'models/analysis_data.dart';
 import 'utils/analysis_calculator.dart';
-import 'widgets/overview_stats_section.dart';
-import 'widgets/category_trends_chart.dart';
-import 'widgets/monthly_activity_chart.dart';
-import 'widgets/property_trends_chart.dart';
-import 'widgets/top_partners_section.dart';
-
-import 'widgets/period_comparison_section.dart';
-import 'widgets/property_partner_section.dart';
-
-import 'widgets/calendar_heatmap.dart';
-import 'widgets/records_section.dart';
-import 'widgets/activity_breakdown_page.dart';
-import '../common/navigation_helper.dart';
+import 'widgets/overview/overview_page.dart';
+import 'widgets/activity_breakdown/activity_breakdown_page.dart';
+import 'widgets/partner_breakdown/partner_breakdown_page.dart';
+import 'widgets/period_comparison/period_comparison_page.dart';
+import 'widgets/period_comparison/period_comparison_section.dart';
 
 enum TimeWindow { last12Months, allTime, specificYear }
 
@@ -39,6 +33,21 @@ class _AnalysisPageState extends State<AnalysisPage>
   AnalysisData? _currentData;
   bool _isLoading = false;
 
+  // ── Persisted filter state (survives recalculations) ──────────────
+  AnalysisEventType? _activityBreakdownFilterType;
+  PeriodPreset _periodPreset = PeriodPreset.lastMonthVsThisMonth;
+  DateTimeRange? _customFirstPeriod;
+  DateTimeRange? _customSecondPeriod;
+
+  /// Debounce timer to coalesce rapid-fire provider notifications.
+  Timer? _debounceTimer;
+
+  /// Tracks whether the underlying data has changed since the last
+  /// successful calculation, so we can skip redundant recalculations.
+  bool _isDirty = true;
+
+  static const _debounceDuration = Duration(milliseconds: 300);
+
   @override
   bool get wantKeepAlive => true;
 
@@ -53,16 +62,29 @@ class _AnalysisPageState extends State<AnalysisPage>
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _pageController.dispose();
     context.read<SexualEventsProvider>().removeListener(_onProviderChange);
     super.dispose();
   }
 
   void _onProviderChange() {
-    _refresh();
+    // Mark data as stale so the next load actually recalculates.
+    _isDirty = true;
+
+    // Debounce: if multiple notifications arrive in quick succession
+    // (e.g. bulk edits), only trigger one recalculation after they settle.
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, _refresh);
   }
 
-  Future<AnalysisData> _loadData() async {
+  Future<AnalysisData> _loadData({bool force = false}) async {
+    // Skip recalculation if data hasn't changed and we already have results.
+    if (!force && !_isDirty && _currentData != null) {
+      _logger.info('Skipping recalculation — data is not dirty');
+      return _currentData!;
+    }
+
     final provider = context.read<SexualEventsProvider>();
 
     // Wait for provider to be ready
@@ -136,10 +158,14 @@ class _AnalysisPageState extends State<AnalysisPage>
 
     _logger.info('Calculated data - ${analysisData.totalEvents} total events');
 
+    // Calculation succeeded — data is no longer dirty.
+    _isDirty = false;
+
     return analysisData;
   }
 
   void _refresh() {
+    _isDirty = true;
     _loadDataAsync();
   }
 
@@ -529,115 +555,49 @@ class _AnalysisPageState extends State<AnalysisPage>
   }
 
   Widget _buildOverviewPage(AnalysisData data) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        _buildPageTitle(
-          'Overview',
-          Icons.dashboard,
-          'Key stats, streaks, and summary',
-        ),
-        OverviewStatsSection(
-          data: data,
-          showCurrentMonthStats: _timeWindow == TimeWindow.last12Months,
-        ),
-        MonthlyActivityChart(data: data),
-        const SizedBox(height: 16),
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: CalendarHeatmap(
-              dailyCounts: data.dailyCounts,
-              startDate:
-                  data.startDate ??
-                  DateTime.now().subtract(const Duration(days: 365)),
-              endDate: data.endDate ?? DateTime.now(),
-              onDaySelected: (date) {
-                NavigationHelper.of(context)?.navigateToSearch(
-                  dateRange: DateTimeRange(start: date, end: date),
-                );
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        RecordsSection(data: data),
-        const SizedBox(height: 16),
-      ],
+    return OverviewPage(
+      data: data,
+      showCurrentMonthStats: _timeWindow == TimeWindow.last12Months,
     );
   }
 
   Widget _buildActivityBreakdownPage(AnalysisData data) {
-    return ActivityBreakdownPage(data: data);
+    return ActivityBreakdownPage(
+      data: data,
+      selectedType: _activityBreakdownFilterType,
+      onTypeChanged: (type) {
+        setState(() {
+          _activityBreakdownFilterType = type;
+        });
+      },
+    );
   }
 
   Widget _buildPartnerBreakdownPage(AnalysisData data) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        _buildPageTitle(
-          'Partner Breakdown',
-          Icons.people,
-          'Top partners and diversity stats',
-        ),
-        TopPartnersSection(data: data),
-        PropertyPartnerSection(data: data),
-        const SizedBox(height: 16),
-      ],
-    );
+    return PartnerBreakdownPage(data: data);
   }
 
   Widget _buildPeriodComparisonPage(AnalysisData data) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        _buildPageTitle(
-          'Period Comparison',
-          Icons.compare_arrows,
-          'Compare any two date ranges',
-        ),
-        PeriodComparisonSection(data: data),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildPageTitle(String title, IconData icon, String subtitle) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: Theme.of(context).colorScheme.primary,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.only(left: 40),
-            child: Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return PeriodComparisonPage(
+      data: data,
+      selectedPreset: _periodPreset,
+      customFirstPeriod: _customFirstPeriod,
+      customSecondPeriod: _customSecondPeriod,
+      onPresetChanged: (preset) {
+        setState(() {
+          _periodPreset = preset;
+        });
+      },
+      onCustomFirstPeriodChanged: (range) {
+        setState(() {
+          _customFirstPeriod = range;
+        });
+      },
+      onCustomSecondPeriodChanged: (range) {
+        setState(() {
+          _customSecondPeriod = range;
+        });
+      },
     );
   }
 

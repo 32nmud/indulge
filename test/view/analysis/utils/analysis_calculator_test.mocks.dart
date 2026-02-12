@@ -65,6 +65,15 @@ class MockSexualEventsProvider extends _i1.Mock
           as bool);
 
   @override
+  _i4.Future<void> refreshAllData() =>
+      (super.noSuchMethod(
+            Invocation.method(#refreshAllData, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   void selectDate(DateTime? date) => super.noSuchMethod(
     Invocation.method(#selectDate, [date]),
     returnValueForMissingStub: null,
@@ -238,6 +247,14 @@ class MockSexualEventsProvider extends _i1.Mock
           as _i4.Future<bool>);
 
   @override
+  _i4.Future<int> getUsageCountForCategory(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#getUsageCountForCategory, [id]),
+            returnValue: _i4.Future<int>.value(0),
+          )
+          as _i4.Future<int>);
+
+  @override
   _i4.Future<void> saveSexualActivity(_i6.SexualActivity? activity) =>
       (super.noSuchMethod(
             Invocation.method(#saveSexualActivity, [activity]),
@@ -262,6 +279,14 @@ class MockSexualEventsProvider extends _i1.Mock
             returnValue: _i4.Future<bool>.value(false),
           )
           as _i4.Future<bool>);
+
+  @override
+  _i4.Future<int> getUsageCountForActivity(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#getUsageCountForActivity, [id]),
+            returnValue: _i4.Future<int>.value(0),
+          )
+          as _i4.Future<int>);
 
   @override
   void addListener(_i7.VoidCallback? listener) => super.noSuchMethod(

@@ -1,34 +1,153 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/analysis_data.dart';
+import '../../models/analysis_data.dart';
 
-class PeriodComparisonSection extends StatefulWidget {
+/// Quick-select presets for period comparison.
+enum PeriodPreset { lastMonthVsThisMonth, lastWeekVsThisWeek, custom }
+
+class PeriodComparisonSection extends StatelessWidget {
   final AnalysisData data;
+  final PeriodPreset selectedPreset;
+  final DateTimeRange? customFirstPeriod;
+  final DateTimeRange? customSecondPeriod;
+  final ValueChanged<PeriodPreset> onPresetChanged;
+  final ValueChanged<DateTimeRange?> onCustomFirstPeriodChanged;
+  final ValueChanged<DateTimeRange?> onCustomSecondPeriodChanged;
 
-  const PeriodComparisonSection({super.key, required this.data});
+  const PeriodComparisonSection({
+    super.key,
+    required this.data,
+    required this.selectedPreset,
+    required this.onPresetChanged,
+    this.customFirstPeriod,
+    this.customSecondPeriod,
+    required this.onCustomFirstPeriodChanged,
+    required this.onCustomSecondPeriodChanged,
+  });
 
-  @override
-  State<PeriodComparisonSection> createState() =>
-      _PeriodComparisonSectionState();
-}
+  /// Resolves the effective first period (baseline) based on preset or custom.
+  DateTimeRange? get _effectiveFirstPeriod {
+    switch (selectedPreset) {
+      case PeriodPreset.lastMonthVsThisMonth:
+        return _lastMonth();
+      case PeriodPreset.lastWeekVsThisWeek:
+        return _lastWeek();
+      case PeriodPreset.custom:
+        return customFirstPeriod;
+    }
+  }
 
-class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
-  DateTimeRange? _firstPeriod;
-  DateTimeRange? _secondPeriod;
+  /// Resolves the effective second period based on preset or custom.
+  DateTimeRange? get _effectiveSecondPeriod {
+    switch (selectedPreset) {
+      case PeriodPreset.lastMonthVsThisMonth:
+        return _thisMonth();
+      case PeriodPreset.lastWeekVsThisWeek:
+        return _thisWeek();
+      case PeriodPreset.custom:
+        return customSecondPeriod;
+    }
+  }
+
+  // ── Date range helpers ──────────────────────────────────────────────
+
+  /// Previous calendar month, first day through last day.
+  static DateTimeRange _lastMonth() {
+    final now = DateTime.now();
+    final firstOfThisMonth = DateTime(now.year, now.month, 1);
+    final lastOfPrevMonth = firstOfThisMonth.subtract(const Duration(days: 1));
+    final firstOfPrevMonth = DateTime(
+      lastOfPrevMonth.year,
+      lastOfPrevMonth.month,
+      1,
+    );
+    return DateTimeRange(start: firstOfPrevMonth, end: lastOfPrevMonth);
+  }
+
+  /// Current calendar month, first day through today.
+  static DateTimeRange _thisMonth() {
+    final now = DateTime.now();
+    final firstOfThisMonth = DateTime(now.year, now.month, 1);
+    return DateTimeRange(start: firstOfThisMonth, end: now);
+  }
+
+  /// Previous ISO week (Monday–Sunday).
+  static DateTimeRange _lastWeek() {
+    final now = DateTime.now();
+    // Monday of the current week
+    final mondayThisWeek = now.subtract(Duration(days: now.weekday - 1));
+    final mondayLastWeek = mondayThisWeek.subtract(const Duration(days: 7));
+    final sundayLastWeek = mondayThisWeek.subtract(const Duration(days: 1));
+    return DateTimeRange(
+      start: DateTime(
+        mondayLastWeek.year,
+        mondayLastWeek.month,
+        mondayLastWeek.day,
+      ),
+      end: DateTime(
+        sundayLastWeek.year,
+        sundayLastWeek.month,
+        sundayLastWeek.day,
+        23,
+        59,
+        59,
+      ),
+    );
+  }
+
+  /// Current ISO week (Monday through today).
+  static DateTimeRange _thisWeek() {
+    final now = DateTime.now();
+    final mondayThisWeek = now.subtract(Duration(days: now.weekday - 1));
+    return DateTimeRange(
+      start: DateTime(
+        mondayThisWeek.year,
+        mondayThisWeek.month,
+        mondayThisWeek.day,
+      ),
+      end: now,
+    );
+  }
+
+  // ── Preset labels ───────────────────────────────────────────────────
+
+  static String presetLabel(PeriodPreset preset) {
+    switch (preset) {
+      case PeriodPreset.lastMonthVsThisMonth:
+        return 'Month';
+      case PeriodPreset.lastWeekVsThisWeek:
+        return 'Week';
+      case PeriodPreset.custom:
+        return 'Custom';
+    }
+  }
+
+  static String _presetSubtitle(PeriodPreset preset) {
+    switch (preset) {
+      case PeriodPreset.lastMonthVsThisMonth:
+        return 'Last month vs this month';
+      case PeriodPreset.lastWeekVsThisWeek:
+        return 'Last week vs this week';
+      case PeriodPreset.custom:
+        return 'Pick any two date ranges';
+    }
+  }
+
+  // ── Build ───────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    // Calculate stats for first period
-    final firstPeriodStats = _firstPeriod == null
-        ? null
-        : _calculatePeriodStats(_firstPeriod!);
+    final firstPeriod = _effectiveFirstPeriod;
+    final secondPeriod = _effectiveSecondPeriod;
 
-    // Calculate stats for second period
-    final secondPeriodStats = _secondPeriod == null
+    final firstPeriodStats = firstPeriod == null
         ? null
-        : _calculatePeriodStats(_secondPeriod!);
+        : _calculatePeriodStats(firstPeriod);
+    final secondPeriodStats = secondPeriod == null
+        ? null
+        : _calculatePeriodStats(secondPeriod);
 
-    final hasComparison = _firstPeriod != null && _secondPeriod != null;
+    final hasComparison = firstPeriod != null && secondPeriod != null;
 
     return Card(
       margin: const EdgeInsets.all(16.0),
@@ -43,33 +162,43 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
-              'Compare Period 1 (baseline) vs Period 2',
+              _presetSubtitle(selectedPreset),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
-            // First Period Selector (baseline)
-            _buildPeriodSelector(
-              context,
-              title: 'Period 1 (baseline)',
-              dateRange: _firstPeriod,
-              icon: Icons.calendar_today,
-              color: Theme.of(context).colorScheme.primary,
-              onTap: () => _selectPeriod(true),
-            ),
             const SizedBox(height: 12),
-            // Second Period Selector
-            _buildPeriodSelector(
-              context,
-              title: 'Period 2',
-              dateRange: _secondPeriod,
-              icon: Icons.calendar_month,
-              color: Theme.of(context).colorScheme.secondary,
-              onTap: () => _selectPeriod(false),
-            ),
+
+            // ── Quick preset chips ────────────────────────────────────
+            _buildPresetChips(context),
+            const SizedBox(height: 16),
+
+            // ── Custom date pickers (only in custom mode) ─────────────
+            if (selectedPreset == PeriodPreset.custom) ...[
+              _buildPeriodSelector(
+                context,
+                title: 'Period 1 (baseline)',
+                dateRange: customFirstPeriod,
+                icon: Icons.calendar_today,
+                color: Theme.of(context).colorScheme.primary,
+                onTap: () => _selectPeriod(context, isFirst: true),
+              ),
+              const SizedBox(height: 12),
+              _buildPeriodSelector(
+                context,
+                title: 'Period 2',
+                dateRange: customSecondPeriod,
+                icon: Icons.calendar_month,
+                color: Theme.of(context).colorScheme.secondary,
+                onTap: () => _selectPeriod(context, isFirst: false),
+              ),
+            ] else ...[
+              // Show read-only summary of the preset ranges
+              _buildPresetRangeSummary(context, firstPeriod, secondPeriod),
+            ],
+
             if (hasComparison &&
                 firstPeriodStats != null &&
                 secondPeriodStats != null) ...[
@@ -139,6 +268,243 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     );
   }
 
+  // ── Preset chips ──────────────────────────────────────────────────
+
+  Widget _buildPresetChips(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: PeriodPreset.values.map((preset) {
+          final isSelected = selectedPreset == preset;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(presetLabel(preset)),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  onPresetChanged(preset);
+                }
+              },
+              selectedColor: Theme.of(context).colorScheme.primaryContainer,
+              checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+              labelStyle: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ── Preset range read-only summary ────────────────────────────────
+
+  Widget _buildPresetRangeSummary(
+    BuildContext context,
+    DateTimeRange? first,
+    DateTimeRange? second,
+  ) {
+    final dateFormat = DateFormat('MMM d');
+    final yearFormat = DateFormat('MMM d, yyyy');
+    final theme = Theme.of(context);
+
+    String formatRange(DateTimeRange? range, String fallback) {
+      if (range == null) return fallback;
+      final sameYear = range.start.year == range.end.year;
+      if (sameYear && range.start.year == DateTime.now().year) {
+        return '${dateFormat.format(range.start)} – ${dateFormat.format(range.end)}';
+      }
+      return '${yearFormat.format(range.start)} – ${yearFormat.format(range.end)}';
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.4),
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: theme.colorScheme.primary.withOpacity(0.05),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Period 1',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  formatRange(first, '—'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Icon(
+            Icons.compare_arrows,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: theme.colorScheme.secondary.withOpacity(0.4),
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: theme.colorScheme.secondary.withOpacity(0.05),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Period 2',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.secondary,
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  formatRange(second, '—'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Custom period selector (tap to open date range picker) ────────
+
+  Widget _buildPeriodSelector(
+    BuildContext context, {
+    required String title,
+    required DateTimeRange? dateRange,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final dateFormat = DateFormat('MMM d, yyyy');
+    final hasSelection = dateRange != null;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: hasSelection
+                ? color
+                : Theme.of(context).colorScheme.outlineVariant,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: hasSelection ? color.withOpacity(0.05) : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hasSelection
+                        ? '${dateFormat.format(dateRange.start)} - ${dateFormat.format(dateRange.end)}'
+                        : 'Tap to select',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: hasSelection
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(hasSelection ? Icons.edit : Icons.add, color: color, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectPeriod(
+    BuildContext context, {
+    required bool isFirst,
+  }) async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: data.events.isNotEmpty
+          ? data.events
+                .map((e) => e.date)
+                .reduce((a, b) => a.isBefore(b) ? a : b)
+          : DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: isFirst ? customFirstPeriod : customSecondPeriod,
+      builder: (ctx, child) {
+        return Theme(
+          data: Theme.of(ctx).copyWith(
+            colorScheme: Theme.of(ctx).colorScheme.copyWith(
+              primary: isFirst
+                  ? Theme.of(ctx).colorScheme.primary
+                  : Theme.of(ctx).colorScheme.secondary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      if (isFirst) {
+        onCustomFirstPeriodChanged(picked);
+      } else {
+        onCustomSecondPeriodChanged(picked);
+      }
+    }
+  }
+
+  // ── Stat comparison row ───────────────────────────────────────────
+
   Widget _buildStatComparison(
     BuildContext context,
     String label,
@@ -161,7 +527,9 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -277,6 +645,8 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     );
   }
 
+  // ── Event type comparison ─────────────────────────────────────────
+
   Widget _buildEventTypeComparison(
     BuildContext context,
     _PeriodStats firstStats,
@@ -374,6 +744,8 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     );
   }
 
+  // ── Average comparison ────────────────────────────────────────────
+
   Widget _buildAverageComparison(
     BuildContext context,
     String label,
@@ -387,7 +759,9 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -460,107 +834,10 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
     );
   }
 
-  Widget _buildPeriodSelector(
-    BuildContext context, {
-    required String title,
-    required DateTimeRange? dateRange,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final hasSelection = dateRange != null;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: hasSelection
-                ? color
-                : Theme.of(context).colorScheme.outlineVariant,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          color: hasSelection ? color.withOpacity(0.05) : null,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    hasSelection
-                        ? '${dateFormat.format(dateRange.start)} - ${dateFormat.format(dateRange.end)}'
-                        : 'Tap to select',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: hasSelection
-                          ? Theme.of(context).colorScheme.onSurface
-                          : Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant.withOpacity(0.6),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(hasSelection ? Icons.edit : Icons.add, color: color, size: 18),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _selectPeriod(bool isFirst) async {
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: widget.data.events.isNotEmpty
-          ? widget.data.events
-                .map((e) => e.date)
-                .reduce((a, b) => a.isBefore(b) ? a : b)
-          : DateTime(2020),
-      lastDate: DateTime.now(),
-      initialDateRange: isFirst ? _firstPeriod : _secondPeriod,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: isFirst
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.secondary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        if (isFirst) {
-          _firstPeriod = picked;
-        } else {
-          _secondPeriod = picked;
-        }
-      });
-    }
-  }
+  // ── Period stats calculation ───────────────────────────────────────
 
   _PeriodStats _calculatePeriodStats(DateTimeRange range) {
-    final periodEvents = widget.data.events
+    final periodEvents = data.events
         .where(
           (e) =>
               e.date.isAfter(range.start.subtract(const Duration(days: 1))) &&
@@ -576,8 +853,8 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           final id = participant.participant.reference;
-          // Check if ID is in personCounts to exclude "Me" (personCounts only includes partners)
-          if (id.isNotEmpty && widget.data.personCounts.containsKey(id)) {
+          // Only include IDs present in personCounts (excludes "Me")
+          if (id.isNotEmpty && data.personCounts.containsKey(id)) {
             participantIds.add(id);
           }
         }
@@ -612,19 +889,17 @@ class _PeriodComparisonSectionState extends State<PeriodComparisonSection> {
           date.isBefore(range.end.add(const Duration(days: 1)));
     }
 
-    final soloEvents = (widget.data.eventsByType[AnalysisEventType.solo] ?? [])
+    final soloEvents = (data.eventsByType[AnalysisEventType.solo] ?? [])
         .where((e) => isInRange(e.date))
         .length;
 
-    final coupleEvents =
-        (widget.data.eventsByType[AnalysisEventType.couple] ?? [])
-            .where((e) => isInRange(e.date))
-            .length;
+    final coupleEvents = (data.eventsByType[AnalysisEventType.couple] ?? [])
+        .where((e) => isInRange(e.date))
+        .length;
 
-    final groupEvents =
-        (widget.data.eventsByType[AnalysisEventType.group] ?? [])
-            .where((e) => isInRange(e.date))
-            .length;
+    final groupEvents = (data.eventsByType[AnalysisEventType.group] ?? [])
+        .where((e) => isInRange(e.date))
+        .length;
 
     // Calculate average activities per event
     final averageActivitiesPerEvent = events > 0

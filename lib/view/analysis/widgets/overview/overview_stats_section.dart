@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 
-import '../models/analysis_data.dart';
-import '../utils/analysis_colors.dart';
-import 'marquee_text.dart';
+import '../../models/analysis_data.dart';
+import '../../utils/analysis_colors.dart';
+import '../common/marquee_text.dart';
 
 class OverviewStatsSection extends StatelessWidget {
   final AnalysisData data;

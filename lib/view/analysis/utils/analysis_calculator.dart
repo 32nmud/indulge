@@ -1,15 +1,27 @@
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:intl/intl.dart';
-import 'package:logging/logging.dart';
 import '../models/analysis_data.dart';
+import 'calculators/event_aggregator.dart';
+import 'calculators/averages_calculator.dart';
+import 'calculators/streak_calculator.dart';
+import 'calculators/comparison_calculator.dart';
+import 'calculators/co_occurrence_calculator.dart';
+import 'calculators/partner_count_converter.dart';
+import 'calculators/person_cache.dart';
 
-/// Calculates comprehensive analysis statistics from a list of events
+/// Orchestrates comprehensive analysis statistics from a list of events.
+///
+/// Delegates the heavy lifting to focused sub-calculators:
+/// - [PersonCache] — single upfront DB fetch for all person lookups
+/// - [EventAggregator] — single pass, raw count accumulation + period-scoped stats
+/// - [AveragesCalculator] — per-week, per-month, per-event averages
+/// - [StreakCalculator] — current and longest streaks
+/// - [ComparisonCalculator] — week-over-week, month-over-month comparisons
+/// - [CoOccurrenceCalculator] — category and activity co-occurrence pairs
+/// - [PartnerCountConverter] — `Set<String>` → int count conversions
 class AnalysisCalculator {
-  static final Logger _logger = Logger('AnalysisCalculator');
-
-  /// Computes all analysis data from the given events
+  /// Computes all analysis data from the given events.
   static Future<AnalysisData> calculate(
     List<SexualEvent> events,
     SexualEventsProvider provider, {
@@ -25,671 +37,153 @@ class AnalysisCalculator {
     final sortedEvents = List<SexualEvent>.from(events)
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // Calculate basic counts
-    final activityCounts = <String, int>{}; // All time for backwards compat
-    final activityCountsThisYear = <String, int>{}; // Last 12 months
-    final activityCategories = <String, SexualActivityCategory>{};
-    final personCounts = <String, int>{};
-    final personEventCounts = <String, int>{};
-    final personEvents = <String, List<SexualEvent>>{};
-    final personPropertyCounts = <String, Map<String, int>>{};
-    final sexualActivityCountsTotal = <String, int>{};
-    final sexualActivities = <String, SexualActivity>{};
-    final sexualActivityPartnerCounts =
-        <
-          String,
-          Set<String>
-        >{}; // Track unique partners per sexual activity (all time)
+    // --- 0. Build person cache (single DB query) ---
+    final personCache = await PersonCache.build(provider);
 
-    // Track category-partner and sexual activity-partner counts for last 12 months
-    final categoryPartnerCountsThisYear = <String, Set<String>>{};
-    final sexualActivityPartnerCountsThisYear = <String, Set<String>>{};
-    final categoryActivityPartnerCountsThisYear =
-        <
-          String,
-          Map<String, Set<String>>
-        >{}; // category -> sexual activity -> partners
-
-    final soloActivityCounts = <String, int>{};
-    final soloSexualActivityCounts = <String, int>{};
-    final soloActivityCountsThisYear = <String, int>{};
-    final soloSexualActivityCountsThisYear = <String, int>{};
-    int soloEventsTotal = 0;
-    int nonSoloEventsTotal = 0;
-
-    final activityCountsByType = {
-      for (var type in AnalysisEventType.values) type: <String, int>{},
-    };
-    final sexualActivityCountsByType = {
-      for (var type in AnalysisEventType.values) type: <String, int>{},
-    };
-    final monthlyCountsByType = {
-      for (var type in AnalysisEventType.values) type: <String, int>{},
-    };
-    final dayOfWeekCountsByType = {
-      for (var type in AnalysisEventType.values) type: <int, int>{},
-    };
-    final eventCountsByType = {
-      for (var type in AnalysisEventType.values) type: 0,
-    };
-    final eventsByType = {
-      for (var type in AnalysisEventType.values) type: <SexualEvent>[],
-    };
-
-    int totalActivities = 0;
-    int riskyActivityCount = 0;
-    int safeActivityCount = 0;
-    int anonymousPartnerInstances = 0;
-
-    final dailyCounts = <String, int>{};
-    final dayOfWeekCounts = <int, int>{};
-    final monthlyCounts = <String, int>{};
-    final weeklyCounts = <String, int>{}; // yyyy-Www format
-    final eventPartnerCounts = <int>{}; // Partners per individual event
-    final eventPropertyCounts = <int>{}; // Properties per individual event
-    final eventActivityCounts = <int>{}; // Activities per individual event
-
-    // Track busiest event (will be filtered to last 12 months later)
-
-    for (final event in sortedEvents) {
-      // Daily counts
-      final dateKey = DateFormat('yyyy-MM-dd').format(event.date);
-      dailyCounts[dateKey] = (dailyCounts[dateKey] ?? 0) + 1;
-
-      // Day of week counts (1 = Monday, 7 = Sunday)
-      final dayOfWeek = event.date.weekday;
-      dayOfWeekCounts[dayOfWeek] = (dayOfWeekCounts[dayOfWeek] ?? 0) + 1;
-
-      // Track partners in this event
-      final eventPartners = <String>{};
-
-      // Monthly counts
-      final monthKey = DateFormat('yyyy-MM').format(event.date);
-      monthlyCounts[monthKey] = (monthlyCounts[monthKey] ?? 0) + 1;
-
-      // Track properties and activities for this event
-      int eventProperties = 0;
-      int eventActivitiesCount = 0;
-      final eventActivityCategoryIds = <String, int>{};
-      final eventSexualActivityIds = <String, int>{};
-
-      for (final activity in event.activities) {
-        eventActivitiesCount++;
-        totalActivities++;
-
-        // Activity category counts
-        final activityCategoryId = activity.category.reference;
-        activityCounts[activityCategoryId] =
-            (activityCounts[activityCategoryId] ?? 0) + 1;
-        eventActivityCategoryIds[activityCategoryId] =
-            (eventActivityCategoryIds[activityCategoryId] ?? 0) + 1;
-        final activityCategory =
-            providerState.sexualActivityCategories?[activityCategoryId];
-        if (activityCategory != null) {
-          activityCategories[activityCategoryId] = activityCategory;
-        }
-
-        // Check if activity is risky (has any risky sexual activities)
-        bool hasRiskyProperty = false;
-
-        for (final participant in activity.participants) {
-          final personId = participant.participant.reference;
-
-          // Check if participant is "me"
-          final person = await provider.getPersonById(personId);
-          final isMe = person?.isSelf ?? false;
-
-          if (!isMe) {
-            // Count participants (partners only)
-            personCounts[personId] = (personCounts[personId] ?? 0) + 1;
-            eventPartners.add(personId); // Track unique partners in this event
-
-            // Count anonymous partner instances
-            if (personId == 'anonymous') {
-              anonymousPartnerInstances++;
-            }
-          }
-
-          // Count sexual activities (for everyone, including me)
-          for (final activityCount in participant.activityCounts) {
-            final sexualActivityId = activityCount.activityReference.reference;
-            final count = activityCount.count;
-
-            sexualActivityCountsTotal[sexualActivityId] =
-                (sexualActivityCountsTotal[sexualActivityId] ?? 0) + count;
-            eventSexualActivityIds[sexualActivityId] =
-                (eventSexualActivityIds[sexualActivityId] ?? 0) + count;
-            final sexualActivity =
-                providerState.sexualActivities?[sexualActivityId];
-            if (sexualActivity != null) {
-              sexualActivities[sexualActivityId] = sexualActivity;
-
-              // Check if this sexual activity is risky
-              if (sexualActivity.isRisky) {
-                _logger.fine(
-                  'Found risky sexual activity: ${sexualActivity.name} (${sexualActivity.id})',
-                );
-                hasRiskyProperty = true;
-              }
-            }
-            eventProperties += count; // Track sexual activities in this event
-
-            if (!isMe) {
-              // Track sexual activities per partner
-              personPropertyCounts.putIfAbsent(personId, () => {});
-              personPropertyCounts[personId]![sexualActivityId] =
-                  (personPropertyCounts[personId]![sexualActivityId] ?? 0) +
-                  count;
-
-              // Track unique partners per sexual activity
-              sexualActivityPartnerCounts.putIfAbsent(
-                sexualActivityId,
-                () => {},
-              );
-              sexualActivityPartnerCounts[sexualActivityId]!.add(personId);
-            }
-          }
-        }
-
-        // Count risky vs safe activities
-        if (hasRiskyProperty) {
-          riskyActivityCount++;
-          _logger.fine('Risky activity count: $riskyActivityCount');
-        } else {
-          safeActivityCount++;
-        }
-      }
-
-      AnalysisEventType eventType;
-      if (eventPartners.isEmpty) {
-        eventType = AnalysisEventType.solo;
-        soloEventsTotal++;
-        eventActivityCategoryIds.forEach((key, count) {
-          soloActivityCounts[key] = (soloActivityCounts[key] ?? 0) + count;
-        });
-        eventSexualActivityIds.forEach((key, count) {
-          soloSexualActivityCounts[key] =
-              (soloSexualActivityCounts[key] ?? 0) + count;
-        });
-      } else if (eventPartners.length == 1) {
-        eventType = AnalysisEventType.couple;
-        nonSoloEventsTotal++;
-      } else {
-        eventType = AnalysisEventType.group;
-        nonSoloEventsTotal++;
-      }
-
-      eventCountsByType[eventType] = (eventCountsByType[eventType] ?? 0) + 1;
-      eventsByType[eventType]!.add(event);
-
-      // Update by-type maps
-      eventActivityCategoryIds.forEach((key, count) {
-        activityCountsByType[eventType]![key] =
-            (activityCountsByType[eventType]![key] ?? 0) + count;
-      });
-      eventSexualActivityIds.forEach((key, count) {
-        sexualActivityCountsByType[eventType]![key] =
-            (sexualActivityCountsByType[eventType]![key] ?? 0) + count;
-      });
-      monthlyCountsByType[eventType]![monthKey] =
-          (monthlyCountsByType[eventType]![monthKey] ?? 0) + 1;
-      dayOfWeekCountsByType[eventType]![dayOfWeek] =
-          (dayOfWeekCountsByType[eventType]![dayOfWeek] ?? 0) + 1;
-
-      // Record partners, properties, and activities for this event
-      eventPartnerCounts.add(eventPartners.length);
-      eventPropertyCounts.add(eventProperties);
-      eventActivityCounts.add(eventActivitiesCount);
-
-      // Track events per partner
-      for (final partnerId in eventPartners) {
-        personEventCounts[partnerId] = (personEventCounts[partnerId] ?? 0) + 1;
-        personEvents.putIfAbsent(partnerId, () => []).add(event);
-      }
-
-      // Track weekly counts (ISO 8601 week)
-      final weekKey = _getWeekKey(event.date);
-      weeklyCounts[weekKey] = (weeklyCounts[weekKey] ?? 0) + 1;
-    }
-
-    // Calculate averages (All Time)
-    // Use calendar duration (weeks spanned) instead of active weeks.
-    // This answers: "Over the period I've been tracking, what is my weekly average?"
-    // If I tracked for 1 month, divides by ~4. If 1 year, divides by ~52.
-    double totalWeeksSpan = 1.0;
-    if (sortedEvents.isNotEmpty) {
-      final firstDate = sortedEvents.first.date;
-      final lastDate = sortedEvents.last.date;
-      final daysDiff = lastDate.difference(firstDate).inDays + 1;
-      // Ensure at least 1 week to avoid skewing very short durations
-      totalWeeksSpan = (daysDiff / 7.0).clamp(1.0, double.infinity);
-    }
-
-    final averageDayOfWeekCountsByType =
-        <AnalysisEventType, Map<int, double>>{};
-
-    // Initialize maps
-    for (final type in AnalysisEventType.values) {
-      averageDayOfWeekCountsByType[type] = {};
-    }
-
-    // Populate from dayOfWeekCountsByType
-    for (final type in AnalysisEventType.values) {
-      for (int day = 1; day <= 7; day++) {
-        // For Total, use the main dayOfWeekCounts map as it's the source of truth
-        int count;
-        if (type == AnalysisEventType.total) {
-          count = dayOfWeekCounts[day] ?? 0;
-        } else {
-          count = dayOfWeekCountsByType[type]?[day] ?? 0;
-        }
-        averageDayOfWeekCountsByType[type]![day] = count / totalWeeksSpan;
-      }
-    }
-
-    // Calculate this month/year stats
-    final now = DateTime.now();
-    final thisMonthStart = DateTime(now.year, now.month, 1);
-
-    // Use provided startDate or default to last 12 months
-    final thisYearStart = startDate ?? DateTime(now.year, now.month - 11, 1);
-
-    _logger.info(
-      'Filtering for selected time window starting from: $thisYearStart',
+    // --- 1. Single pass: accumulate raw counts + period-scoped stats ---
+    final agg = EventAggregator.aggregate(
+      sortedEvents,
+      personCache,
+      providerState.sexualActivityCategories,
+      providerState.sexualActivities,
+      startDate: startDate,
     );
 
-    // Track longest and current streak
-    final longestStreak = _calculateStreaks(sortedEvents).longestStreak;
-    final currentStreak = _calculateStreaks(sortedEvents).currentStreak;
+    // --- 2. Streaks ---
+    final streaks = StreakCalculator.calculate(sortedEvents);
 
-    int eventsThisMonth = 0;
-    int eventsThisYear = 0;
-    final partnersThisMonth = <String>{};
-    final partnersThisYear = <String>{};
-    int anonymousCountThisMonth = 0;
-    int anonymousCountThisYear = 0;
+    // --- 3. Averages ---
+    final now = DateTime.now();
+    final thisYearStart = startDate ?? DateTime(now.year, now.month - 11, 1);
 
-    // Solo, couple, group counts for last 12 months
-    int soloEventsThisYear = 0;
-    int coupleEventsThisYear = 0;
-    int groupEventsThisYear = 0;
+    final averages = AveragesCalculator.calculate(
+      sortedEvents: sortedEvents,
+      totalActivities: agg.totalActivities,
+      eventsThisYear: agg.eventsThisYear,
+      dayOfWeekCounts: agg.dayOfWeekCounts,
+      dayOfWeekCountsByType: agg.dayOfWeekCountsByType,
+      eventPartnerCounts: agg.eventPartnerCounts,
+      eventPropertyCounts: agg.eventPropertyCounts,
+      eventActivityCounts: agg.eventActivityCounts,
+      thisYearStart: thisYearStart,
+    );
 
-    // Track busiest day/event in last 12 months
-    final dailyCountsThisYear = <String, int>{};
-    DateTime? busiestDay;
-    int busiestDayEventCount = 0;
-    SexualEvent? busiestEventThisYear;
-    int busiestEventActivityCountThisYear = 0;
+    // --- 4. Period comparisons ---
+    final thisWeekVsLastWeek = ComparisonCalculator.calculateWeekComparison(
+      sortedEvents,
+      now,
+    );
+    final thisMonthVsLastMonth = ComparisonCalculator.calculateMonthComparison(
+      sortedEvents,
+      now,
+    );
+    final daysSinceLastRiskyActivity =
+        ComparisonCalculator.calculateDaysSinceLastRisky(
+          sortedEvents,
+          providerState,
+        );
 
-    for (final event in sortedEvents) {
-      final isThisMonth = event.date.isAfter(
-        thisMonthStart.subtract(const Duration(days: 1)),
-      );
-      final isThisYear = event.date.isAfter(
-        thisYearStart.subtract(const Duration(days: 1)),
-      );
+    // --- 5. Co-occurrence pairs ---
+    final coOccurrence = CoOccurrenceCalculator.calculate(
+      sortedEvents,
+      activityCategories: agg.activityCategories,
+      sexualActivities: agg.sexualActivities,
+    );
 
-      if (isThisMonth) {
-        eventsThisMonth++;
-        for (final activity in event.activities) {
-          for (final participant in activity.participants) {
-            final personId = participant.participant.reference;
-            final person = await provider.getPersonById(personId);
-            if (person?.isSelf ?? false) continue; // Skip "me"
+    // --- 6. Convert partner count sets → int maps ---
+    final sexualActivityPartnerCountsMap =
+        PartnerCountConverter.convertPartnerCounts(
+          agg.sexualActivityPartnerCounts,
+        );
+    final categoryPartnerCountsThisYearMap =
+        PartnerCountConverter.convertPartnerCounts(
+          agg.categoryPartnerCountsThisYear,
+        );
+    final sexualActivityPartnerCountsThisYearMap =
+        PartnerCountConverter.convertPartnerCounts(
+          agg.sexualActivityPartnerCountsThisYear,
+        );
+    final categoryActivityPartnerCountsThisYearMap =
+        PartnerCountConverter.convertNestedPartnerCounts(
+          agg.categoryActivityPartnerCountsThisYear,
+        );
 
-            if (personId == 'anonymous') {
-              anonymousCountThisMonth++;
-            } else {
-              partnersThisMonth.add(personId);
-            }
-          }
-        }
-      }
-
-      if (isThisYear) {
-        eventsThisYear++;
-
-        // Count partners in this event (excluding me)
-        final eventPartnersNoMe = <String>{};
-        final eventActivityCountsLocal = <String, int>{};
-        final eventSexualActivityCountsLocal = <String, int>{};
-
-        for (final activity in event.activities) {
-          final activityCategoryId = activity.category.reference;
-          eventActivityCountsLocal[activityCategoryId] =
-              (eventActivityCountsLocal[activityCategoryId] ?? 0) + 1;
-
-          // Track activity counts for last 12 months
-          activityCountsThisYear[activityCategoryId] =
-              (activityCountsThisYear[activityCategoryId] ?? 0) + 1;
-
-          for (final participant in activity.participants) {
-            final personId = participant.participant.reference;
-            final person = await provider.getPersonById(personId);
-            if (person?.isSelf ?? false) continue; // Skip "me"
-
-            if (personId == 'anonymous') {
-              anonymousCountThisYear++;
-            } else {
-              partnersThisYear.add(personId);
-            }
-            eventPartnersNoMe.add(personId);
-
-            // Track unique partners per activity category (last 12 months)
-            categoryPartnerCountsThisYear.putIfAbsent(
-              activityCategoryId,
-              () => {},
-            );
-            categoryPartnerCountsThisYear[activityCategoryId]!.add(personId);
-
-            // Track unique partners per sexual activity (last 12 months)
-            for (final activityCount in participant.activityCounts) {
-              final sexualActivityId =
-                  activityCount.activityReference.reference;
-              final count = activityCount.count;
-
-              eventSexualActivityCountsLocal[sexualActivityId] =
-                  (eventSexualActivityCountsLocal[sexualActivityId] ?? 0) +
-                  count;
-
-              sexualActivityPartnerCountsThisYear.putIfAbsent(
-                sexualActivityId,
-                () => {},
-              );
-              sexualActivityPartnerCountsThisYear[sexualActivityId]!.add(
-                personId,
-              );
-
-              // Track unique partners per sexual activity within each activity category
-              categoryActivityPartnerCountsThisYear.putIfAbsent(
-                activityCategoryId,
-                () => {},
-              );
-              categoryActivityPartnerCountsThisYear[activityCategoryId]!
-                  .putIfAbsent(sexualActivityId, () => {});
-              categoryActivityPartnerCountsThisYear[activityCategoryId]![sexualActivityId]!
-                  .add(personId);
-            }
-          }
-        }
-
-        // Categorize event type
-        if (eventPartnersNoMe.isEmpty) {
-          soloEventsThisYear++;
-          eventActivityCountsLocal.forEach((key, count) {
-            soloActivityCountsThisYear[key] =
-                (soloActivityCountsThisYear[key] ?? 0) + count;
-          });
-          eventSexualActivityCountsLocal.forEach((key, count) {
-            soloSexualActivityCountsThisYear[key] =
-                (soloSexualActivityCountsThisYear[key] ?? 0) + count;
-          });
-        } else if (eventPartnersNoMe.length == 1) {
-          coupleEventsThisYear++;
-        } else {
-          groupEventsThisYear++;
-        }
-
-        // Track daily counts for busiest day
-        final dateKey = DateFormat('yyyy-MM-dd').format(event.date);
-        dailyCountsThisYear[dateKey] = (dailyCountsThisYear[dateKey] ?? 0) + 1;
-
-        // Track busiest event
-        final eventActivityCount = event.activities.length;
-        if (eventActivityCount > busiestEventActivityCountThisYear) {
-          busiestEventThisYear = event;
-          busiestEventActivityCountThisYear = eventActivityCount;
-        }
-      }
-    }
-
-    // Find busiest day from last 12 months
-    dailyCountsThisYear.forEach((dateStr, count) {
-      if (count > busiestDayEventCount) {
-        busiestDayEventCount = count;
-        busiestDay = DateTime.parse(dateStr);
-      }
-    });
-
-    final uniquePartnersThisMonth =
-        partnersThisMonth.length + anonymousCountThisMonth;
-    final uniquePartnersThisYear =
-        partnersThisYear.length + anonymousCountThisYear;
-
-    // Count known partners (excluding anonymous)
-    final knownPartners = personCounts.keys
+    // --- 7. Known partners ---
+    final knownPartners = agg.personCounts.keys
         .where((id) => id != 'anonymous')
         .length;
 
-    // Calculate period comparisons (these use all events, not filtered)
-    final thisWeekVsLastWeek = _calculateWeekComparison(sortedEvents, now);
-    final thisMonthVsLastMonth = _calculateMonthComparison(sortedEvents, now);
-
-    // Calculate averages based on last 12 months only
-    final weeklyCountsThisYear = <String, int>{};
-    final monthlyCountsThisYear = <String, int>{};
-
-    for (final event in sortedEvents) {
-      if (event.date.isAfter(thisYearStart.subtract(const Duration(days: 1)))) {
-        final weekKey = _getWeekKey(event.date);
-        weeklyCountsThisYear[weekKey] =
-            (weeklyCountsThisYear[weekKey] ?? 0) + 1;
-
-        final monthKey = DateFormat('yyyy-MM').format(event.date);
-        monthlyCountsThisYear[monthKey] =
-            (monthlyCountsThisYear[monthKey] ?? 0) + 1;
-      }
-    }
-
-    final distinctWeeksThisYear = weeklyCountsThisYear.length.clamp(
-      1,
-      double.infinity,
-    );
-    final distinctMonthsThisYear = monthlyCountsThisYear.length.clamp(
-      1,
-      double.infinity,
-    );
-
-    final averageActivitiesPerWeek = totalActivities / distinctWeeksThisYear;
-    final averageActivitiesPerMonth = totalActivities / distinctMonthsThisYear;
-
-    // Calculate event-focused averages (last 12 months)
-    final averageEventsPerWeek = eventsThisYear / distinctWeeksThisYear;
-    final averageEventsPerMonth = eventsThisYear / distinctMonthsThisYear;
-
-    final averagePartnersPerEvent = eventPartnerCounts.isNotEmpty
-        ? eventPartnerCounts.reduce((a, b) => a + b) / eventPartnerCounts.length
-        : 0.0;
-
-    final averageActivitiesPerEvent = eventActivityCounts.isNotEmpty
-        ? eventActivityCounts.reduce((a, b) => a + b) /
-              eventActivityCounts.length
-        : 0.0;
-
-    final averageSexualActivitiesPerEvent = eventPropertyCounts.isNotEmpty
-        ? eventPropertyCounts.reduce((a, b) => a + b) /
-              eventPropertyCounts.length
-        : 0.0;
-
-    // Calculate average events per day of week (based on last 12 months)
-    final averageEventsPerDayOfWeekMap = <int, double>{};
-    for (int day = 1; day <= 7; day++) {
-      final count = dayOfWeekCounts[day] ?? 0;
-      averageEventsPerDayOfWeekMap[day] = count / distinctWeeksThisYear;
-    }
-
-    // Convert sexual activity-partner counts to final map (all time)
-    final sexualActivityPartnerCountsMap = <String, int>{};
-    sexualActivityPartnerCounts.forEach((sexualActivityId, partners) {
-      sexualActivityPartnerCountsMap[sexualActivityId] = partners.length;
-    });
-
-    // Convert category-partner counts for last 12 months
-    final categoryPartnerCountsThisYearMap = <String, int>{};
-    categoryPartnerCountsThisYear.forEach((categoryId, partners) {
-      categoryPartnerCountsThisYearMap[categoryId] = partners.length;
-    });
-
-    // Convert sexual activity-partner counts for last 12 months
-    final sexualActivityPartnerCountsThisYearMap = <String, int>{};
-    sexualActivityPartnerCountsThisYear.forEach((sexualActivityId, partners) {
-      sexualActivityPartnerCountsThisYearMap[sexualActivityId] =
-          partners.length;
-    });
-
-    // Convert category-sexual activity-partner counts for last 12 months
-    final categoryActivityPartnerCountsThisYearMap =
-        <String, Map<String, int>>{};
-    categoryActivityPartnerCountsThisYear.forEach((categoryId, activityMap) {
-      categoryActivityPartnerCountsThisYearMap[categoryId] = {};
-      activityMap.forEach((sexualActivityId, partners) {
-        categoryActivityPartnerCountsThisYearMap[categoryId]![sexualActivityId] =
-            partners.length;
-      });
-    });
-
-    // Calculate co-occurrence pairs
-    final categoryPairCounts = <String, int>{};
-    final activityPairCounts = <String, int>{};
-
-    for (final event in sortedEvents) {
-      final eventCategoryIds = <String>{};
-      final eventActivityIds = <String>{};
-
-      for (final activity in event.activities) {
-        eventCategoryIds.add(activity.category.reference);
-        for (final participant in activity.participants) {
-          for (final activityCount in participant.activityCounts) {
-            eventActivityIds.add(activityCount.activityReference.reference);
-          }
-        }
-      }
-
-      // Categories
-      final categoryList = eventCategoryIds.toList()..sort();
-      for (int i = 0; i < categoryList.length; i++) {
-        for (int j = i + 1; j < categoryList.length; j++) {
-          final key = '${categoryList[i]}|${categoryList[j]}';
-          categoryPairCounts[key] = (categoryPairCounts[key] ?? 0) + 1;
-        }
-      }
-
-      // Sexual Activities
-      final activityList = eventActivityIds.toList()..sort();
-      for (int i = 0; i < activityList.length; i++) {
-        for (int j = i + 1; j < activityList.length; j++) {
-          final key = '${activityList[i]}|${activityList[j]}';
-          activityPairCounts[key] = (activityPairCounts[key] ?? 0) + 1;
-        }
-      }
-    }
-
-    final topCategoryPairs = categoryPairCounts.entries.map((e) {
-      final parts = e.key.split('|');
-      final id1 = parts[0];
-      final id2 = parts[1];
-      final name1 = activityCategories[id1]?.name ?? 'Unknown';
-      final name2 = activityCategories[id2]?.name ?? 'Unknown';
-      return CoOccurrencePair(
-        id1: id1,
-        id2: id2,
-        name1: name1,
-        name2: name2,
-        count: e.value,
-      );
-    }).toList()..sort((a, b) => b.count.compareTo(a.count));
-
-    final topActivityPairs = activityPairCounts.entries.map((e) {
-      final parts = e.key.split('|');
-      final id1 = parts[0];
-      final id2 = parts[1];
-      final name1 = sexualActivities[id1]?.name ?? 'Unknown';
-      final name2 = sexualActivities[id2]?.name ?? 'Unknown';
-      return CoOccurrencePair(
-        id1: id1,
-        id2: id2,
-        name1: name1,
-        name2: name2,
-        count: e.value,
-      );
-    }).toList()..sort((a, b) => b.count.compareTo(a.count));
-
-    // Days since last risky activity
-    final daysSinceLastRiskyActivity = await _calculateDaysSinceLastRisky(
-      sortedEvents,
-      providerState,
-    );
-
-    // Days since last activity
+    // --- 8. Days since last activity ---
     final lastEventDate = sortedEvents.last.date;
     final daysSinceLastActivity = now.difference(lastEventDate).inDays;
 
+    // --- 9. Assemble final result ---
     return AnalysisData(
       totalEvents: events.length,
-      totalActivities: totalActivities,
-      uniquePartners: personCounts.length,
-      riskyActivityCount: riskyActivityCount,
-      safeActivityCount: safeActivityCount,
-      eventsThisMonth: eventsThisMonth,
-      eventsThisYear: eventsThisYear,
-      uniquePartnersThisMonth: uniquePartnersThisMonth,
-      uniquePartnersThisYear: uniquePartnersThisYear,
+      totalActivities: agg.totalActivities,
+      uniquePartners: agg.personCounts.length,
+      riskyActivityCount: agg.riskyActivityCount,
+      safeActivityCount: agg.safeActivityCount,
+      eventsThisMonth: agg.eventsThisMonth,
+      eventsThisYear: agg.eventsThisYear,
+      uniquePartnersThisMonth: agg.uniquePartnersThisMonth,
+      uniquePartnersThisYear: agg.uniquePartnersThisYear,
       knownPartners: knownPartners,
-      anonymousPartnerInstances: anonymousPartnerInstances,
-      busiestDay: busiestDay,
-      busiestDayEventCount: busiestDayEventCount,
-      busiestEvent: busiestEventThisYear,
-      busiestEventActivityCount: busiestEventActivityCountThisYear,
-      soloEventsThisYear: soloEventsThisYear,
-      coupleEventsThisYear: coupleEventsThisYear,
-      groupEventsThisYear: groupEventsThisYear,
-      soloEventsTotal: soloEventsTotal,
-      nonSoloEventsTotal: nonSoloEventsTotal,
-      soloActivityCounts: soloActivityCounts,
-      soloSexualActivityCounts: soloSexualActivityCounts,
-      soloActivityCountsThisYear: soloActivityCountsThisYear,
-      soloSexualActivityCountsThisYear: soloSexualActivityCountsThisYear,
-      activityCountsByType: activityCountsByType,
-      sexualActivityCountsByType: sexualActivityCountsByType,
-      monthlyCountsByType: monthlyCountsByType,
-      dayOfWeekCountsByType: dayOfWeekCountsByType,
-      averageDayOfWeekCountsByType: averageDayOfWeekCountsByType,
-      eventCountsByType: eventCountsByType,
-      eventsByType: eventsByType,
-      activityCounts: activityCounts,
-      activityCountsThisYear: activityCountsThisYear,
-      activityCategories: activityCategories,
-      longestStreak: longestStreak,
-      currentStreak: currentStreak,
-      personCounts: personCounts,
-      personEventCounts: personEventCounts,
-      personEvents: personEvents,
-      personPropertyCounts: personPropertyCounts,
-      sexualActivityCountsTotal: sexualActivityCountsTotal,
-      sexualActivities: sexualActivities,
+      anonymousPartnerInstances: agg.anonymousPartnerInstances,
+      busiestDay: agg.busiestDay,
+      busiestDayEventCount: agg.busiestDayEventCount,
+      busiestEvent: agg.busiestEvent,
+      busiestEventActivityCount: agg.busiestEventActivityCount,
+      soloEventsThisYear: agg.soloEventsThisYear,
+      coupleEventsThisYear: agg.coupleEventsThisYear,
+      groupEventsThisYear: agg.groupEventsThisYear,
+      soloEventsTotal: agg.soloEventsTotal,
+      nonSoloEventsTotal: agg.nonSoloEventsTotal,
+      soloActivityCounts: agg.soloActivityCounts,
+      soloSexualActivityCounts: agg.soloSexualActivityCounts,
+      soloActivityCountsThisYear: agg.soloActivityCountsThisYear,
+      soloSexualActivityCountsThisYear: agg.soloSexualActivityCountsThisYear,
+      activityCountsByType: agg.activityCountsByType,
+      sexualActivityCountsByType: agg.sexualActivityCountsByType,
+      monthlyCountsByType: agg.monthlyCountsByType,
+      dayOfWeekCountsByType: agg.dayOfWeekCountsByType,
+      averageDayOfWeekCountsByType: averages.averageDayOfWeekCountsByType,
+      eventCountsByType: agg.eventCountsByType,
+      eventsByType: agg.eventsByType,
+      activityCounts: agg.activityCounts,
+      activityCountsThisYear: agg.activityCountsThisYear,
+      activityCategories: agg.activityCategories,
+      longestStreak: streaks.longestStreak,
+      currentStreak: streaks.currentStreak,
+      personCounts: agg.personCounts,
+      personEventCounts: agg.personEventCounts,
+      personEvents: agg.personEvents,
+      personPropertyCounts: agg.personPropertyCounts,
+      sexualActivityCountsTotal: agg.sexualActivityCountsTotal,
+      sexualActivities: agg.sexualActivities,
       sexualActivityPartnerCounts: sexualActivityPartnerCountsMap,
       categoryPartnerCountsThisYear: categoryPartnerCountsThisYearMap,
       sexualActivityPartnerCountsThisYear:
           sexualActivityPartnerCountsThisYearMap,
       categoryActivityPartnerCountsThisYear:
           categoryActivityPartnerCountsThisYearMap,
-      dailyCounts: dailyCounts,
-      dayOfWeekCounts: dayOfWeekCounts,
-      monthlyCounts: monthlyCounts,
+      dailyCounts: agg.dailyCounts,
+      dayOfWeekCounts: agg.dayOfWeekCounts,
+      monthlyCounts: agg.monthlyCounts,
       daysSinceLastRiskyActivity: daysSinceLastRiskyActivity,
       daysSinceLastActivity: daysSinceLastActivity,
       thisWeekVsLastWeek: thisWeekVsLastWeek,
       thisMonthVsLastMonth: thisMonthVsLastMonth,
-      averageEventsPerWeek: averageEventsPerWeek,
-      averageEventsPerMonth: averageEventsPerMonth,
-      averageActivitiesPerWeek: averageActivitiesPerWeek,
-      averageActivitiesPerMonth: averageActivitiesPerMonth,
-      averagePartnersPerEvent: averagePartnersPerEvent,
-      averageActivitiesPerEvent: averageActivitiesPerEvent,
-      averageSexualActivitiesPerEvent: averageSexualActivitiesPerEvent,
-      averageEventsPerDayOfWeek: averageEventsPerDayOfWeekMap,
-      topActivityPairs: topActivityPairs,
-      topCategoryPairs: topCategoryPairs,
+      averageEventsPerWeek: averages.averageEventsPerWeek,
+      averageEventsPerMonth: averages.averageEventsPerMonth,
+      averageActivitiesPerWeek: averages.averageActivitiesPerWeek,
+      averageActivitiesPerMonth: averages.averageActivitiesPerMonth,
+      averagePartnersPerEvent: averages.averagePartnersPerEvent,
+      averageActivitiesPerEvent: averages.averageActivitiesPerEvent,
+      averageSexualActivitiesPerEvent: averages.averageSexualActivitiesPerEvent,
+      averageEventsPerDayOfWeek: averages.averageEventsPerDayOfWeek,
+      topActivityPairs: coOccurrence.topActivityPairs,
+      topCategoryPairs: coOccurrence.topCategoryPairs,
       startDate: startDate,
       endDate: endDate,
       events: events,
@@ -781,214 +275,4 @@ class AnalysisCalculator {
       events: events,
     );
   }
-
-  static _StreakData _calculateStreaks(List<SexualEvent> sortedEvents) {
-    if (sortedEvents.isEmpty) {
-      return _StreakData(currentStreak: 0, longestStreak: 0);
-    }
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    // Get all unique dates with events
-    final eventDates =
-        sortedEvents
-            .map((e) {
-              final date = e.date;
-              return DateTime(date.year, date.month, date.day);
-            })
-            .toSet()
-            .toList()
-          ..sort();
-
-    // Calculate current streak (working backwards from today)
-    int currentStreak = 0;
-    DateTime checkDate = today;
-
-    // Check if there's an event today or yesterday to start the streak
-    final lastEventDate = eventDates.last;
-    final daysSinceLastEvent = today.difference(lastEventDate).inDays;
-
-    if (daysSinceLastEvent <= 1) {
-      // Start counting streak
-      while (true) {
-        if (eventDates.contains(checkDate)) {
-          currentStreak++;
-          checkDate = checkDate.subtract(const Duration(days: 1));
-        } else {
-          break;
-        }
-      }
-    }
-
-    // Calculate longest streak
-    int longestStreak = 0;
-    int tempStreak = 1;
-
-    for (int i = 1; i < eventDates.length; i++) {
-      final daysDiff = eventDates[i].difference(eventDates[i - 1]).inDays;
-
-      if (daysDiff == 1) {
-        // Consecutive days
-        tempStreak++;
-      } else {
-        // Streak broken
-        if (tempStreak > longestStreak) {
-          longestStreak = tempStreak;
-        }
-        tempStreak = 1;
-      }
-    }
-
-    // Check the last streak
-    if (tempStreak > longestStreak) {
-      longestStreak = tempStreak;
-    }
-
-    // Make sure current streak is at least as long as it appears
-    if (currentStreak > longestStreak) {
-      longestStreak = currentStreak;
-    }
-
-    return _StreakData(
-      currentStreak: currentStreak,
-      longestStreak: longestStreak,
-    );
-  }
-
-  static PeriodComparison _calculateWeekComparison(
-    List<SexualEvent> sortedEvents,
-    DateTime now,
-  ) {
-    // Calculate start of this week (Monday) and last week
-    final todayWeekday = now.weekday; // 1 = Monday, 7 = Sunday
-    final thisWeekStart = now.subtract(Duration(days: todayWeekday - 1));
-    final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
-    final lastWeekEnd = thisWeekStart.subtract(const Duration(days: 1));
-
-    int thisWeekCount = 0;
-    int lastWeekCount = 0;
-
-    for (final event in sortedEvents) {
-      if (event.date.isAfter(thisWeekStart.subtract(const Duration(days: 1))) &&
-          event.date.isBefore(now.add(const Duration(days: 1)))) {
-        thisWeekCount++;
-      } else if (event.date.isAfter(
-            lastWeekStart.subtract(const Duration(days: 1)),
-          ) &&
-          event.date.isBefore(lastWeekEnd.add(const Duration(days: 1)))) {
-        lastWeekCount++;
-      }
-    }
-
-    return PeriodComparison.calculate(thisWeekCount, lastWeekCount);
-  }
-
-  static PeriodComparison _calculateMonthComparison(
-    List<SexualEvent> sortedEvents,
-    DateTime now,
-  ) {
-    final thisMonthStart = DateTime(now.year, now.month, 1);
-    final lastMonthStart = DateTime(
-      now.month == 1 ? now.year - 1 : now.year,
-      now.month == 1 ? 12 : now.month - 1,
-      1,
-    );
-    final lastMonthEnd = thisMonthStart.subtract(const Duration(days: 1));
-
-    int thisMonthCount = 0;
-    int lastMonthCount = 0;
-
-    for (final event in sortedEvents) {
-      if (event.date.isAfter(
-            thisMonthStart.subtract(const Duration(days: 1)),
-          ) &&
-          event.date.isBefore(now.add(const Duration(days: 1)))) {
-        thisMonthCount++;
-      } else if (event.date.isAfter(
-            lastMonthStart.subtract(const Duration(days: 1)),
-          ) &&
-          event.date.isBefore(lastMonthEnd.add(const Duration(days: 1)))) {
-        lastMonthCount++;
-      }
-    }
-
-    return PeriodComparison.calculate(thisMonthCount, lastMonthCount);
-  }
-
-  static Future<int> _calculateDaysSinceLastRisky(
-    List<SexualEvent> sortedEvents,
-    EventState providerState,
-  ) async {
-    final now = DateTime.now();
-    DateTime? lastRiskyDate;
-
-    for (final event in sortedEvents.reversed) {
-      for (final activity in event.activities) {
-        for (final participant in activity.participants) {
-          for (final activityCount in participant.activityCounts) {
-            final sexualActivityId = activityCount.activityReference.reference;
-            final sexualActivity =
-                providerState.sexualActivities?[sexualActivityId];
-
-            if (sexualActivity?.isRisky ?? false) {
-              lastRiskyDate = event.date;
-              _logger.fine(
-                'Last risky activity found on ${event.date} with sexual activity ${sexualActivity?.name}',
-              );
-              break;
-            }
-          }
-          if (lastRiskyDate != null) break;
-        }
-        if (lastRiskyDate != null) break;
-      }
-      if (lastRiskyDate != null) break;
-    }
-
-    if (lastRiskyDate == null) {
-      _logger.fine('No risky activities found in event history');
-      return -1; // No risky activities found
-    }
-
-    final daysSince = now.difference(lastRiskyDate).inDays;
-    _logger.fine('Days since last risky activity: $daysSince');
-    return daysSince;
-  }
-}
-
-class _StreakData {
-  final int currentStreak;
-  final int longestStreak;
-
-  _StreakData({required this.currentStreak, required this.longestStreak});
-}
-
-/// Returns a week key in ISO 8601 format (yyyy-Www)
-String _getWeekKey(DateTime date) {
-  // ISO 8601 week date calculation
-  final dayOfYear = _dayOfYear(date);
-  final dayOfWeek = date.weekday; // 1 = Monday, 7 = Sunday
-
-  // Calculate week number
-  final week = ((dayOfYear - dayOfWeek + 10) / 7).floor();
-
-  // Handle edge cases for year boundaries
-  if (week == 0) {
-    // This date belongs to the last week of the previous year
-    return _getWeekKey(DateTime(date.year - 1, 12, 28));
-  } else if (week == 53) {
-    // Check if this week belongs to next year
-    final dec31 = DateTime(date.year, 12, 31);
-    if (dec31.weekday < 4) {
-      return '${date.year + 1}-W01';
-    }
-  }
-
-  return '${date.year}-W${week.toString().padLeft(2, '0')}';
-}
-
-int _dayOfYear(DateTime date) {
-  final firstDayOfYear = DateTime(date.year, 1, 1);
-  return date.difference(firstDayOfYear).inDays + 1;
 }

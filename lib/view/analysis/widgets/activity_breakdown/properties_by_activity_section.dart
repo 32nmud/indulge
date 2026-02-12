@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:logging/logging.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/data/models.dart';
-import '../models/analysis_data.dart';
-import 'common/expandable_activity_card.dart';
+import '../../models/analysis_data.dart';
+import '../common/expandable_activity_card.dart';
 import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 
 class PropertiesByActivitySection extends StatefulWidget {

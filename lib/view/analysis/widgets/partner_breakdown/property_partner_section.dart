@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/analysis_data.dart';
-import 'common/expandable_activity_card.dart';
+import '../../models/analysis_data.dart';
+import '../common/expandable_activity_card.dart';
 
 class PropertyPartnerSection extends StatefulWidget {
   final AnalysisData data;
