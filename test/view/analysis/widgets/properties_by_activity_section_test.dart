@@ -22,7 +22,7 @@ void main() {
       (tester) async {
         // Pre-populate mock SharedPreferences with a persisted selection
         SharedPreferences.setMockInitialValues({
-          'pref_category_selected_ids': jsonEncode(['a1']),
+          'pref_properties_category_selected_ids': jsonEncode(['a1']),
         });
 
         // Build the PreferencesService (reads from the mock SharedPreferences)
@@ -134,7 +134,7 @@ void main() {
 
         // Now change the persisted selection via PreferencesService and ensure
         // the widget updates (it listens to the notifier).
-        await prefsService.setCategorySelectedIds(['a2']);
+        await prefsService.setPropertiesCategorySelectedIds(['a2']);
 
         // Pump to reflect notifier-triggered UI changes
         await tester.pumpAndSettle();
@@ -252,14 +252,14 @@ void main() {
         expect(find.text('Act2'), findsOneWidget);
 
         // Programmatically set the selection to only 'a1'
-        await prefsService.setCategorySelectedIds(['a1']);
+        await prefsService.setPropertiesCategorySelectedIds(['a1']);
         await tester.pumpAndSettle();
 
         expect(find.text('Act1'), findsOneWidget);
         expect(find.text('Act2'), findsNothing);
 
         // Clear selection
-        await prefsService.setCategorySelectedIds([]);
+        await prefsService.setPropertiesCategorySelectedIds([]);
         await tester.pumpAndSettle();
 
         // Both activities visible again

@@ -33,12 +33,15 @@ class PreferencesService {
   static const String _kActivityShowPattern = 'pref_activity_show_pattern';
 
   // Selected IDs (JSON-encoded lists) - used to persist user-selected
-  // category and activity IDs for trends widgets.
+  // category and activity IDs for trends widgets, and a separate key for the
+  // properties-by-activity section so each widget can persist its own selection.
   static const String _kCategorySelectedIds = 'pref_category_selected_ids';
+  static const String _kPropertiesCategorySelectedIds =
+      'pref_properties_category_selected_ids';
   static const String _kActivitySelectedIds = 'pref_activity_selected_ids';
 
   // Current preferences version. Increment when stored keys/shape change.
-  static const int _currentPreferencesVersion = 3;
+  static const int _currentPreferencesVersion = 4;
 
   // Default values
   static const PeriodPreset _defaultPreset = PeriodPreset.lastMonthVsThisMonth;
@@ -68,6 +71,7 @@ class PreferencesService {
   // Persisted selected IDs (lists). These hold the user's selected category
   // and activity IDs for the trends widgets and are stored as JSON arrays in prefs.
   final ValueNotifier<List<String>> categorySelectedIdsNotifier;
+  final ValueNotifier<List<String>> propertiesCategorySelectedIdsNotifier;
   final ValueNotifier<List<String>> activitySelectedIdsNotifier;
 
   PreferencesService._(
@@ -82,6 +86,7 @@ class PreferencesService {
     this.categoryShowPatternNotifier,
     this.activityShowPatternNotifier,
     this.categorySelectedIdsNotifier,
+    this.propertiesCategorySelectedIdsNotifier,
     this.activitySelectedIdsNotifier,
   );
 
@@ -171,8 +176,14 @@ class PreferencesService {
     }
 
     final categorySelectedJson = prefs.getString(_kCategorySelectedIds);
+    final propertiesCategorySelectedJson = prefs.getString(
+      _kPropertiesCategorySelectedIds,
+    );
     final activitySelectedJson = prefs.getString(_kActivitySelectedIds);
     final categorySelected = _parseStringList(categorySelectedJson);
+    final propertiesCategorySelected = _parseStringList(
+      propertiesCategorySelectedJson,
+    );
     final activitySelected = _parseStringList(activitySelectedJson);
 
     return PreferencesService._(
@@ -187,6 +198,7 @@ class PreferencesService {
       ValueNotifier<bool>(categoryPattern),
       ValueNotifier<bool>(activityPattern),
       ValueNotifier<List<String>>(categorySelected),
+      ValueNotifier<List<String>>(propertiesCategorySelected),
       ValueNotifier<List<String>>(activitySelected),
     );
   }
@@ -365,6 +377,22 @@ class PreferencesService {
     }
   }
 
+  // Properties-section selected category IDs (separate from category trends)
+  List<String> getPropertiesCategorySelectedIds() =>
+      List.unmodifiable(propertiesCategorySelectedIdsNotifier.value);
+  Future<void> setPropertiesCategorySelectedIds(List<String> ids) async {
+    final jsonStr = jsonEncode(ids);
+    final success = await _prefs.setString(
+      _kPropertiesCategorySelectedIds,
+      jsonStr,
+    );
+    if (success) {
+      propertiesCategorySelectedIdsNotifier.value = List.unmodifiable(ids);
+    } else {
+      propertiesCategorySelectedIdsNotifier.value = List.unmodifiable(ids);
+    }
+  }
+
   // Activity selected IDs
   List<String> getActivitySelectedIds() =>
       List.unmodifiable(activitySelectedIdsNotifier.value);
@@ -394,6 +422,7 @@ class PreferencesService {
     await _prefs.remove(_kCategoryShowPattern);
     await _prefs.remove(_kActivityShowPattern);
     await _prefs.remove(_kCategorySelectedIds);
+    await _prefs.remove(_kPropertiesCategorySelectedIds);
     await _prefs.remove(_kActivitySelectedIds);
 
     periodPresetNotifier.value = _defaultPreset;
@@ -408,6 +437,7 @@ class PreferencesService {
     activityShowPatternNotifier.value = false;
 
     categorySelectedIdsNotifier.value = <String>[];
+    propertiesCategorySelectedIdsNotifier.value = <String>[];
     activitySelectedIdsNotifier.value = <String>[];
   }
 
@@ -458,6 +488,18 @@ class PreferencesService {
 
       // Ensure the stored preferences version reflects the migration we've just applied.
       // This helps older installs get upgraded immediately to the new version.
+      await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
+    }
+
+    if (fromVersion < 4) {
+      // Version 4: introduce a separate selected-IDs key for the properties-by-activity
+      // section so it doesn't share selection state with the category trends widget.
+      const propertiesCategoryKey = _kPropertiesCategorySelectedIds;
+      if (!prefs.containsKey(propertiesCategoryKey)) {
+        await prefs.setString(propertiesCategoryKey, jsonEncode(<String>[]));
+      }
+
+      // Update stored version to reflect this migration step.
       await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
     }
 

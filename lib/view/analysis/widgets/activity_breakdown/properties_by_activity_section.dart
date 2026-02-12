@@ -41,9 +41,10 @@ class _PropertiesByActivitySectionState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         _prefsService = Provider.of<PreferencesService>(context, listen: false);
-        // Seed initial selection from persisted preferences.
+        // Seed initial selection from persisted preferences (properties-specific).
         final ids =
-            _prefsService?.getCategorySelectedIds().toSet() ?? <String>{};
+            _prefsService?.getPropertiesCategorySelectedIds().toSet() ??
+            <String>{};
         if (mounted) {
           setState(() {
             _selectedCategoryIds = ids;
@@ -55,7 +56,8 @@ class _PropertiesByActivitySectionState
         // Keep UI in sync if preferences change elsewhere.
         _prefsListener = () {
           final newIds =
-              _prefsService?.getCategorySelectedIds().toSet() ?? <String>{};
+              _prefsService?.getPropertiesCategorySelectedIds().toSet() ??
+              <String>{};
           if (mounted) {
             setState(() {
               _selectedCategoryIds = newIds;
@@ -64,7 +66,9 @@ class _PropertiesByActivitySectionState
             _selectedCategoryIds = newIds;
           }
         };
-        _prefsService?.categorySelectedIdsNotifier.addListener(_prefsListener);
+        _prefsService?.propertiesCategorySelectedIdsNotifier.addListener(
+          _prefsListener,
+        );
       } catch (e) {
         _logger.warning(
           'Failed to initialize persisted category selection: $e',
@@ -76,7 +80,9 @@ class _PropertiesByActivitySectionState
   @override
   void dispose() {
     try {
-      _prefsService?.categorySelectedIdsNotifier.removeListener(_prefsListener);
+      _prefsService?.propertiesCategorySelectedIdsNotifier.removeListener(
+        _prefsListener,
+      );
     } catch (_) {
       // ignore
     }
@@ -292,7 +298,7 @@ class _PropertiesByActivitySectionState
       // Persist the user's selection via PreferencesService (best-effort).
       try {
         final svc = Provider.of<PreferencesService>(context, listen: false);
-        await svc.setCategorySelectedIds(result.toList());
+        await svc.setPropertiesCategorySelectedIds(result.toList());
       } catch (e) {
         _logger.warning('Failed to persist selected categories: $e');
       }

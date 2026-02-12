@@ -183,11 +183,16 @@ void main() {
         final svc = await PreferencesService.build();
 
         final prefs = await SharedPreferences.getInstance();
-        // Migration should have set the new keys to false and updated the version to current (3).
+        // Migration should have set the new keys to false and updated the version to current (4).
         expect(prefs.getBool('pref_monthly_show_pattern'), isFalse);
         expect(prefs.getBool('pref_category_show_pattern'), isFalse);
         expect(prefs.getBool('pref_activity_show_pattern'), isFalse);
-        expect(prefs.getInt('pref_version'), equals(3));
+        // The properties key should have been created as an empty JSON array.
+        expect(
+          prefs.getString('pref_properties_category_selected_ids'),
+          equals(jsonEncode(<String>[])),
+        );
+        expect(prefs.getInt('pref_version'), equals(4));
 
         // Service getters should reflect defaults
         expect(svc.getMonthlyShowPattern(), isFalse);
@@ -294,13 +299,67 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'pref_category_selected_ids': jsonEncode(['c1']),
         'pref_activity_selected_ids': jsonEncode(['a1', 'a2']),
+        'pref_properties_category_selected_ids': jsonEncode(['pc1', 'pc2']),
       });
 
       final svc = await PreferencesService.build();
 
       expect(svc.getCategorySelectedIds(), equals(['c1']));
       expect(svc.getActivitySelectedIds(), equals(['a1', 'a2']));
+      expect(svc.getPropertiesCategorySelectedIds(), equals(['pc1', 'pc2']));
     });
+
+    test(
+      'setPropertiesCategorySelectedIds persists value and notifies',
+      () async {
+        final svc = await PreferencesService.build();
+
+        var notified = false;
+        svc.propertiesCategorySelectedIdsNotifier.addListener(() {
+          notified = true;
+        });
+
+        final sample = ['pcatA', 'pcatB'];
+        await svc.setPropertiesCategorySelectedIds(sample);
+
+        expect(svc.getPropertiesCategorySelectedIds(), equals(sample));
+        expect(notified, isTrue);
+
+        final prefs = await SharedPreferences.getInstance();
+        final stored =
+            jsonDecode(
+                  prefs.getString('pref_properties_category_selected_ids') ??
+                      '[]',
+                )
+                as List<dynamic>;
+        expect(stored.map((e) => e.toString()).toList(), equals(sample));
+      },
+    );
+
+    test(
+      'clearAll removes properties selected-ids key and resets notifier',
+      () async {
+        final svc = await PreferencesService.build();
+
+        // Set values first
+        await svc.setPropertiesCategorySelectedIds(['px', 'py']);
+
+        // Verify set
+        expect(svc.getPropertiesCategorySelectedIds(), equals(['px', 'py']));
+
+        // Clear all
+        await svc.clearAll();
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.containsKey('pref_properties_category_selected_ids'),
+          isFalse,
+        );
+
+        // Notifier should be reset to default (empty list)
+        expect(svc.getPropertiesCategorySelectedIds(), isEmpty);
+      },
+    );
 
     test('clearAll removes selected-ids keys and resets notifiers', () async {
       final svc = await PreferencesService.build();
