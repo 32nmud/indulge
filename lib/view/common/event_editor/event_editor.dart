@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:indulge/view/person_editor/person_editor_page.dart';
+import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:uuid/uuid.dart';
 import 'utils/event_mutations.dart';
 import 'widgets/widgets.dart';
@@ -314,7 +314,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     if (result == 'ADD_NEW') {
       final newPerson = await Navigator.push<Person>(
         context,
-        MaterialPageRoute(builder: (context) => const PersonEditorPage()),
+        MaterialPageRoute(builder: (context) => const ContactEditorPage()),
       );
 
       if (newPerson != null) {

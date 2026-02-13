@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
-import 'location_map.dart';
+import '../../location_map.dart';
 
 /// A composed location editor widget that encapsulates:
 ///  - the Location header row (title + GPS action),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/view/common/event_card/event_card.dart';
+import 'package:indulge/view/common/event_card.dart';
 import 'package:indulge/view/common/dialogs/partner_filter_dialog.dart';
 import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 import 'package:indulge/view/common/dialogs/activity_filter_dialog.dart';

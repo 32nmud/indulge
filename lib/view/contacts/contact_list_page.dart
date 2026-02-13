@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:indulge/view/person_editor/person_editor_page.dart';
+import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:logging/logging.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 
-class PersonListPage extends StatefulWidget {
-  const PersonListPage({super.key});
+class ContactListPage extends StatefulWidget {
+  const ContactListPage({super.key});
 
   @override
-  State<PersonListPage> createState() => _PersonListPageState();
+  State<ContactListPage> createState() => _ContactListPageState();
 }
 
-class _PersonListPageState extends State<PersonListPage>
+class _ContactListPageState extends State<ContactListPage>
     with AutomaticKeepAliveClientMixin {
   final Logger _logger = Logger('PersonListPage');
   List<Person> _persons = [];
@@ -89,7 +89,9 @@ class _PersonListPageState extends State<PersonListPage>
   Future<void> _navigateToEditor({Person? person}) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => PersonEditorPage(person: person)),
+      MaterialPageRoute(
+        builder: (context) => ContactEditorPage(person: person),
+      ),
     );
     // Refresh the list when returning from editor
     _loadPersons();

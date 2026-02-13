@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:indulge/view/daily_event_view/daily_event_view.dart';
+import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
+import 'package:indulge/view/home/daily_event_view.dart';
 import 'package:indulge/view/bottom_nav_bar.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/view/event_editor/event_editor.dart';
-import 'package:indulge/view/person_list/person_list_page.dart';
-import 'package:indulge/view/person_editor/person_editor_page.dart';
+import 'package:indulge/view/common/event_editor/event_editor.dart';
+import 'package:indulge/view/contacts/contact_list_page.dart';
 import 'package:indulge/view/settings/settings_page.dart';
 import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
@@ -214,7 +214,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 const EventViewPage(),
                 SearchPage(key: _searchPageKey),
                 const AnalysisPage(),
-                const PersonListPage(),
+                const ContactListPage(),
                 const SettingsPage(),
               ],
             );
@@ -259,7 +259,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => const PersonEditorPage(),
+                builder: (context) => const ContactEditorPage(),
               ),
             );
           },

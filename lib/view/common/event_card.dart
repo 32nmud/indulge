@@ -5,8 +5,16 @@ import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:indulge/view/event_editor/event_editor.dart';
+import 'location_map.dart';
+import 'package:flutter_map/flutter_map.dart' as fm;
+import 'package:latlong2/latlong.dart' as ll;
 import 'package:provider/provider.dart';
 
+/// EventCard
+///
+/// Displays a compact/expandable card for a single `SexualEvent`. When the
+/// event has a `location` embedded, the expanded card shows a non-interactive
+/// map preview (tiles are rendered, but the preview ignores user gestures).
 class EventCard extends StatefulWidget {
   final SexualEvent event;
   const EventCard({super.key, required this.event});
@@ -19,6 +27,7 @@ class _EventCardState extends State<EventCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
+  late final fm.MapController _previewMapController;
 
   @override
   void initState() {
@@ -30,6 +39,9 @@ class _EventCardState extends State<EventCard>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
       CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
     );
+
+    // Controller for the small preview map (kept per-card lifetime).
+    _previewMapController = fm.MapController();
   }
 
   @override
@@ -40,7 +52,7 @@ class _EventCardState extends State<EventCard>
 
   @override
   Widget build(BuildContext context) {
-    SexualEventsProvider provider = context.watch<SexualEventsProvider>();
+    final SexualEventsProvider provider = context.watch<SexualEventsProvider>();
     final List<EventActivity> activities = widget.event.activities;
     final EventState eventState = provider.state;
     final Future<List<Person>> participants = provider.getPersonsForEvent(
@@ -56,7 +68,7 @@ class _EventCardState extends State<EventCard>
         child: FutureBuilder<List<Person>>(
           future: participants,
           builder: (context, snapshot) {
-            // Skip loading state to avoid choppy animations
+            // Use empty participant list while loading to keep UI stable.
             final persons = snapshot.data ?? [];
             if (snapshot.hasError) {
               return Padding(
@@ -114,6 +126,7 @@ class _EventCardState extends State<EventCard>
             )
           else
             _buildDetailedActivitiesList(activities, persons, eventState),
+
           if (widget.event.notes != null &&
               widget.event.notes!.trim().isNotEmpty) ...[
             const Divider(),
@@ -140,6 +153,40 @@ class _EventCardState extends State<EventCard>
               ),
             ),
           ],
+
+          // Show an embedded, non-interactive map preview when a location exists.
+          if (widget.event.location != null) ...[
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  // Use the shared LocationMap so the preview uses the same
+                  // center-fixed pin as the editor. Keep it non-interactive.
+                  child: LocationMap(
+                    mapController: _previewMapController,
+                    latitude: widget.event.location!.latitude,
+                    longitude: widget.event.location!.longitude,
+                    zoom: 13.0,
+                    isFetching: false,
+                    interactive: false,
+                    height: 140,
+                    pinSize: 28,
+                    pinColor: Theme.of(context).colorScheme.primary,
+                    onCenterChanged: (lat, lng) {},
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
           const Divider(),
           _buildButtonRow(context),
         ],
@@ -258,17 +305,14 @@ class _EventCardState extends State<EventCard>
     List<Person> persons,
     EventState eventState,
   ) {
-    // Get the person IDs who actually participated in this activity
     final activityParticipantIds = activity.participants
         .map((p) => p.participant.reference)
         .toSet();
 
-    // Filter persons to only those in this activity
     final activityPersons = persons
         .where((person) => activityParticipantIds.contains(person.id))
         .toList();
 
-    // Group participants by property with counts
     final Map<String, Map<Person, int>> propertyGroups = {};
 
     for (var participant in activity.participants) {
@@ -281,7 +325,6 @@ class _EventCardState extends State<EventCard>
       );
 
       if (participant.activityCounts.isEmpty) {
-        // Group under "no activities"
         propertyGroups.putIfAbsent('_no_activity', () => {});
         propertyGroups['_no_activity']![person] = 1;
       } else {

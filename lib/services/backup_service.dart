@@ -27,11 +27,12 @@ class BackupService {
       final persons = await _repository.getAllPersons();
       final categories = await _repository.getAllSexualActivityCategories();
       final activities = await _repository.getAllSexualActivities();
+
       // Extract embedded locations from events (one per event where present).
-      // Since `Location` no longer has a standalone `id`, we export each embedded
-      // Location as a JSON file named by the event id so consumers can correlate
-      // an exported location back to its event.
-      final locations = <Map<String, dynamic>>[];
+      // Since `Location` is embedded on SexualEvent (no standalone id), export
+      // each embedded Location as a JSON file named by the event id so consumers
+      // can correlate an exported location back to its event.
+      final List<Map<String, dynamic>> locations = [];
       for (final ev in events) {
         final loc = ev.location;
         if (loc == null) continue;
@@ -308,11 +309,10 @@ class BackupService {
       }
 
       // -- Locations --
-      // Currently repository doesn't have a saveLocation method exposed publicly
-      // or visible in the outline, but models exist.
-      // If needed, we would add a saveLocation method to repository.
-      // Skipping for now based on repository interface availability,
-      // but the folder is there for future proofing.
+      // The service writes embedded locations into 'locations/' during export.
+      // Import logic for standalone locations could be added here if repository
+      // gains an API to persist them, but for now locations are provided for
+      // reference and correlation with events (we skip persisting them separately).
 
       // -- Events --
       yield 'Importing events...';

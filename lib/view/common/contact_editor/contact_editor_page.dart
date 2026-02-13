@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:indulge/view/common/notes_section.dart';
-import 'package:indulge/view/person_editor/widgets/widgets.dart';
+import '../notes_section.dart';
+import 'widgets/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
-class PersonEditorPage extends StatefulWidget {
+class ContactEditorPage extends StatefulWidget {
   final Person? person;
 
-  const PersonEditorPage({super.key, this.person});
+  const ContactEditorPage({super.key, this.person});
 
   @override
-  State<PersonEditorPage> createState() => _PersonEditorPageState();
+  State<ContactEditorPage> createState() => _ContactEditorPageState();
 }
 
-class _PersonEditorPageState extends State<PersonEditorPage> {
+class _ContactEditorPageState extends State<ContactEditorPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Basic Info
