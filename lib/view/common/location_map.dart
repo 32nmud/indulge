@@ -72,7 +72,7 @@ class LocationMap extends StatelessWidget {
                       headers: {
                         // Replace with a production UA per OSM tile usage policy.
                         'User-Agent':
-                            'indulge/0.0.2-beta (dalton.craig1234@gmail.com)',
+                            'indulge/0.0.3-beta (dalton.craig1234@gmail.com)',
                       },
                     ),
                   ),

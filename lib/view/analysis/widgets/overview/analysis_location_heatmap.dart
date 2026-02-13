@@ -274,7 +274,7 @@ class _AnalysisLocationHeatmapState extends State<AnalysisLocationHeatmap> {
                     tileProvider: fm.NetworkTileProvider(
                       headers: {
                         'User-Agent':
-                            'indulge/0.0.2-beta (dalton.craig1234@gmail.com)',
+                            'indulge/0.0.3-beta (dalton.craig1234@gmail.com)',
                       },
                     ),
                   ),
