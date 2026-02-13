@@ -7,7 +7,6 @@ import 'package:indulge/view/common/dialogs/activity_filter_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:indulge/view/common/person_avatar.dart';
 
 class SearchPage extends StatefulWidget {
   final List<String>? initialPartnerIds;

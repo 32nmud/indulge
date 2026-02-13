@@ -4,10 +4,9 @@ import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/common/person_avatar.dart';
-import 'package:indulge/view/event_editor/event_editor.dart';
+import 'package:indulge/view/common/event_editor/event_editor.dart';
 import 'location_map.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
-import 'package:latlong2/latlong.dart' as ll;
 import 'package:provider/provider.dart';
 
 /// EventCard

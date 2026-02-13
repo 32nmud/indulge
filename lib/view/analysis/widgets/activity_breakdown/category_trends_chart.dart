@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/services/preferences_service.dart';
 import '../../models/analysis_data.dart';
-import '../../utils/analysis_colors.dart';
 
 class CategoryTrendsChart extends StatefulWidget {
   final AnalysisData data;
@@ -432,7 +431,6 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final dayName = _getDayName(group.x.toInt() + 1);
               // rodIndex is always 0 because we have 1 rod per group in stacked
-              final total = rod.toY;
 
               // Customize tooltip to show breakdown
               final dayCategories = dayCounts[group.x.toInt() + 1]!;
@@ -663,7 +661,6 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                   group.x.toInt() < sortedMonths.length) {
                 final monthKey = sortedMonths[group.x.toInt()];
                 final date = DateTime.parse('$monthKey-01');
-                final total = rod.toY;
 
                 final dayCategories = monthlyCounts[monthKey]!;
                 final sortedCats = dayCategories.entries.toList()

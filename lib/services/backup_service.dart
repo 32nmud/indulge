@@ -26,24 +26,9 @@ class BackupService {
       final events = await _repository.getAllEvents();
       final persons = await _repository.getAllPersons();
       final categories = await _repository.getAllSexualActivityCategories();
-      final activities = await _repository.getAllSexualActivities();
+      final activities = await _repository
+          .getAllSexualActivities(); // 2. Create temporary directory for staging files
 
-      // Extract embedded locations from events (one per event where present).
-      // Since `Location` is embedded on SexualEvent (no standalone id), export
-      // each embedded Location as a JSON file named by the event id so consumers
-      // can correlate an exported location back to its event.
-      final List<Map<String, dynamic>> locations = [];
-      for (final ev in events) {
-        final loc = ev.location;
-        if (loc == null) continue;
-        // Ensure we have a plain JSON map for the Location
-        final locJson = loc is Location
-            ? loc.toJson()
-            : (loc as Map<String, dynamic>);
-        locations.add({'eventId': ev.id, 'location': locJson});
-      }
-
-      // 2. Create temporary directory for staging files
       final tempDir = await getTemporaryDirectory();
       final backupDir = Directory(p.join(tempDir.path, 'backup_staging'));
       if (await backupDir.exists()) {
@@ -84,20 +69,6 @@ class BackupService {
         (a) => a.toJson(),
       );
 
-      // Write extracted embedded locations into a dedicated locations directory.
-      // Each file is named by the event id that contained the embedded location.
-      final locDir = Directory(p.join(backupDir.path, 'locations'));
-      await locDir.create();
-      for (final item in locations) {
-        final eventId =
-            item['eventId'] as String? ??
-            DateTime.now().millisecondsSinceEpoch.toString();
-        final locJson = item['location'] as Map<String, dynamic>;
-        final file = File(p.join(locDir.path, '${eventId}.json'));
-        final jsonString = const JsonEncoder.withIndent('  ').convert(locJson);
-        await file.writeAsString(jsonString);
-      }
-
       // Add metadata file
       final metadata = {
         'version': '1.0.0',
@@ -131,10 +102,6 @@ class BackupService {
       );
       await encoder.addDirectory(
         Directory(p.join(backupDir.path, 'activities')),
-        includeDirName: true,
-      );
-      await encoder.addDirectory(
-        Directory(p.join(backupDir.path, 'locations')),
         includeDirName: true,
       );
       await encoder.addFile(metadataFile, 'metadata.json');
@@ -307,12 +274,6 @@ class BackupService {
           }
         }
       }
-
-      // -- Locations --
-      // The service writes embedded locations into 'locations/' during export.
-      // Import logic for standalone locations could be added here if repository
-      // gains an API to persist them, but for now locations are provided for
-      // reference and correlation with events (we skip persisting them separately).
 
       // -- Events --
       yield 'Importing events...';
