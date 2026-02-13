@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/home/daily_event_view.dart';
-import 'package:indulge/view/bottom_nav_bar.dart';
+import 'package:indulge/view/common/bottom_nav_bar.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
