@@ -44,10 +44,8 @@ class LocationMap extends StatelessWidget {
                 initialCenter: ll.LatLng(latitude, longitude),
                 initialZoom: zoom,
                 onPositionChanged: (pos, hasGesture) {
-                  final center = pos?.center;
-                  if (center != null) {
-                    onCenterChanged(center.latitude, center.longitude);
-                  }
+                  final center = pos.center;
+                  onCenterChanged(center.latitude, center.longitude);
                 },
               ),
               children: [
