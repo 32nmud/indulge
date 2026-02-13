@@ -27,9 +27,20 @@ class BackupService {
       final persons = await _repository.getAllPersons();
       final categories = await _repository.getAllSexualActivityCategories();
       final activities = await _repository.getAllSexualActivities();
-      // Note: Locations are fetched in settings_page.dart, let's include them if possible.
-      // The repository has getAllLocations().
-      final locations = await _repository.getAllLocations();
+      // Extract embedded locations from events (one per event where present).
+      // Since `Location` no longer has a standalone `id`, we export each embedded
+      // Location as a JSON file named by the event id so consumers can correlate
+      // an exported location back to its event.
+      final locations = <Map<String, dynamic>>[];
+      for (final ev in events) {
+        final loc = ev.location;
+        if (loc == null) continue;
+        // Ensure we have a plain JSON map for the Location
+        final locJson = loc is Location
+            ? loc.toJson()
+            : (loc as Map<String, dynamic>);
+        locations.add({'eventId': ev.id, 'location': locJson});
+      }
 
       // 2. Create temporary directory for staging files
       final tempDir = await getTemporaryDirectory();
@@ -72,13 +83,19 @@ class BackupService {
         (a) => a.toJson(),
       );
 
-      await _writeFiles<Location>(
-        backupDir,
-        'locations',
-        locations,
-        (l) => l.id,
-        (l) => l.toJson(),
-      );
+      // Write extracted embedded locations into a dedicated locations directory.
+      // Each file is named by the event id that contained the embedded location.
+      final locDir = Directory(p.join(backupDir.path, 'locations'));
+      await locDir.create();
+      for (final item in locations) {
+        final eventId =
+            item['eventId'] as String? ??
+            DateTime.now().millisecondsSinceEpoch.toString();
+        final locJson = item['location'] as Map<String, dynamic>;
+        final file = File(p.join(locDir.path, '${eventId}.json'));
+        final jsonString = const JsonEncoder.withIndent('  ').convert(locJson);
+        await file.writeAsString(jsonString);
+      }
 
       // Add metadata file
       final metadata = {

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualEvent {
 
- String get id; DateTime get date; DateTime? get lastModifiedDate; List<EventActivity> get activities; Reference? get location;// optional reference to a Location resource
+ String get id; DateTime get date; DateTime? get lastModifiedDate; List<EventActivity> get activities; Location? get location;// embedded Location resource (optional)
  String? get notes;
 /// Create a copy of SexualEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -49,11 +49,11 @@ abstract mixin class $SexualEventCopyWith<$Res>  {
   factory $SexualEventCopyWith(SexualEvent value, $Res Function(SexualEvent) _then) = _$SexualEventCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, Reference? location, String? notes
+ String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, Location? location, String? notes
 });
 
 
-$ReferenceCopyWith<$Res>? get location;
+$LocationCopyWith<$Res>? get location;
 
 }
 /// @nodoc
@@ -73,7 +73,7 @@ as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non
 as DateTime,lastModifiedDate: freezed == lastModifiedDate ? _self.lastModifiedDate : lastModifiedDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,activities: null == activities ? _self.activities : activities // ignore: cast_nullable_to_non_nullable
 as List<EventActivity>,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
-as Reference?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as Location?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -81,12 +81,12 @@ as String?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ReferenceCopyWith<$Res>? get location {
+$LocationCopyWith<$Res>? get location {
     if (_self.location == null) {
     return null;
   }
 
-  return $ReferenceCopyWith<$Res>(_self.location!, (value) {
+  return $LocationCopyWith<$Res>(_self.location!, (value) {
     return _then(_self.copyWith(location: value));
   });
 }
@@ -171,7 +171,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Reference? location,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Location? location,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualEvent() when $default != null:
 return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.location,_that.notes);case _:
@@ -192,7 +192,7 @@ return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Reference? location,  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Location? location,  String? notes)  $default,) {final _that = this;
 switch (_that) {
 case _SexualEvent():
 return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.location,_that.notes);case _:
@@ -212,7 +212,7 @@ return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Reference? location,  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Location? location,  String? notes)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualEvent() when $default != null:
 return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.location,_that.notes);case _:
@@ -240,8 +240,8 @@ class _SexualEvent extends SexualEvent {
   return EqualUnmodifiableListView(_activities);
 }
 
-@override final  Reference? location;
-// optional reference to a Location resource
+@override final  Location? location;
+// embedded Location resource (optional)
 @override final  String? notes;
 
 /// Create a copy of SexualEvent
@@ -277,11 +277,11 @@ abstract mixin class _$SexualEventCopyWith<$Res> implements $SexualEventCopyWith
   factory _$SexualEventCopyWith(_SexualEvent value, $Res Function(_SexualEvent) _then) = __$SexualEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, Reference? location, String? notes
+ String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, Location? location, String? notes
 });
 
 
-@override $ReferenceCopyWith<$Res>? get location;
+@override $LocationCopyWith<$Res>? get location;
 
 }
 /// @nodoc
@@ -301,7 +301,7 @@ as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non
 as DateTime,lastModifiedDate: freezed == lastModifiedDate ? _self.lastModifiedDate : lastModifiedDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,activities: null == activities ? _self._activities : activities // ignore: cast_nullable_to_non_nullable
 as List<EventActivity>,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
-as Reference?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as Location?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -310,12 +310,12 @@ as String?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$ReferenceCopyWith<$Res>? get location {
+$LocationCopyWith<$Res>? get location {
     if (_self.location == null) {
     return null;
   }
 
-  return $ReferenceCopyWith<$Res>(_self.location!, (value) {
+  return $LocationCopyWith<$Res>(_self.location!, (value) {
     return _then(_self.copyWith(location: value));
   });
 }

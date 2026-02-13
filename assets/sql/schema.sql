@@ -1,10 +1,6 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE location (
-    id TEXT PRIMARY KEY,
-    last_modified TIMESTAMP NOT NULL,
-    json VARCHAR NOT NULL
-);
+
 
 CREATE TABLE person (
     id TEXT PRIMARY KEY,

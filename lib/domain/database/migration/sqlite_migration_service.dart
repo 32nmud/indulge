@@ -285,8 +285,27 @@ class SQLiteMigrationService {
         );
       }
 
-      // Update schema version
-      await setMetadata('schema_version', '2');
+      // Perform DB schema upgrades beyond JSON model migrations (e.g. v2 -> v3)
+      final currentSchemaVersion =
+          int.tryParse(await getMetadata('schema_version') ?? '1') ?? 1;
+      _logger.info('Current DB schema version: $currentSchemaVersion');
+
+      // If the DB schema is older than 3, run the v2->v3 upgrade which embeds
+      // Location records directly into SexualEvent JSON and removes the
+      // standalone `location` table.
+      if (currentSchemaVersion < 3) {
+        _logger.info(
+          'Upgrading database schema from v$currentSchemaVersion to v3',
+        );
+        await _writeLog('Starting DB schema upgrade to v3');
+        await _migrateV2toV3(onProgress: onProgress);
+        await setMetadata('schema_version', '3');
+        await _writeLog('DB schema upgraded to v3');
+      } else {
+        // Ensure metadata reflects at least the current value
+        await setMetadata('schema_version', currentSchemaVersion.toString());
+      }
+
       await setMetadata(
         'migration_completed_at',
         DateTime.now().toIso8601String(),
@@ -480,6 +499,107 @@ class SQLiteMigrationService {
           'Cannot infer resource type for table: $tableName',
           tableName: tableName,
         );
+    }
+  }
+
+  /// Migrate DB schema v2 -> v3
+  ///
+  /// This migration:
+  /// - Finds any `location` table rows and loads them into memory
+  /// - For each sexual_event, if `location` is a Reference to a Location,
+  ///   replaces that reference with the actual Location JSON (removing any
+  ///   `id` field in the embedded Location)
+  /// - Drops the standalone `location` table
+  Future<void> _migrateV2toV3({ProgressCallback? onProgress}) async {
+    try {
+      // Check if the location table exists; if not, nothing to do.
+      final tables = await database.query(
+        'sqlite_master',
+        where: 'type = ? AND name = ?',
+        whereArgs: ['table', 'location'],
+      );
+      if (tables.isEmpty) {
+        _logger.info('No location table found; skipping v2->v3 migration');
+        await _writeLog('No location table found; skipping v2->v3 migration');
+        return;
+      }
+
+      // Load locations into a map for quick lookup
+      final locRows = await database.query('location');
+      final Map<String, Map<String, dynamic>> locationsById = {};
+      for (final row in locRows) {
+        final id = row['id'] as String;
+        final locJson =
+            jsonDecode(row['json'] as String) as Map<String, dynamic>;
+        locationsById[id] = locJson;
+      }
+
+      // Iterate over sexual_event rows and embed location JSON where a Reference exists
+      final eventRows = await database.query('sexual_event');
+      for (var i = 0; i < eventRows.length; i++) {
+        final row = eventRows[i];
+        final eventId = row['id'] as String;
+        try {
+          final jsonMap =
+              jsonDecode(row['json'] as String) as Map<String, dynamic>;
+          final locField = jsonMap['location'];
+
+          // Only handle the case where location is a Reference-like map
+          if (locField is Map &&
+              locField['resourceType'] == 'Location' &&
+              locField['reference'] != null) {
+            final refId = locField['reference'] as String;
+            final locJson = locationsById[refId];
+            if (locJson != null) {
+              // Remove any id from the embedded location (locations in v3 are embedded
+              // and do not carry a top-level id field)
+              locJson.remove('id');
+
+              // Replace the reference with the actual location JSON
+              jsonMap['location'] = locJson;
+
+              // Persist the updated sexual_event row
+              await database.update(
+                'sexual_event',
+                {
+                  'json': jsonEncode(jsonMap),
+                  'last_modified': DateTime.now().toIso8601String(),
+                },
+                where: 'id = ?',
+                whereArgs: [eventId],
+              );
+
+              await _writeLog('Embedded location $refId into event $eventId');
+            } else {
+              await _writeLog(
+                'Location reference $refId not found for event $eventId',
+              );
+            }
+          }
+        } catch (e) {
+          _logger.warning('Failed to migrate location for event $eventId: $e');
+          await _writeLog('ERROR migrating event $eventId location: $e');
+        }
+
+        // Report progress if caller provided a callback
+        onProgress?.call(
+          'sexual_event_location_migration',
+          i + 1,
+          eventRows.length,
+          'Migrating event locations',
+        );
+      }
+
+      // After embedding locations into events, drop the standalone location table
+      await database.execute('DROP TABLE IF EXISTS location');
+      await _writeLog('Dropped location table after v2->v3 migration');
+      _logger.info(
+        'v2->v3 migration completed: embedded locations and dropped table',
+      );
+    } catch (e, stackTrace) {
+      _logger.severe('v2->v3 migration failed', e, stackTrace);
+      await _writeLog('ERROR: v2->v3 migration failed: $e');
+      throw MigrationException('v2->v3 migration failed: $e', isFatal: true);
     }
   }
 

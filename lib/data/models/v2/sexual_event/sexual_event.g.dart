@@ -17,7 +17,7 @@ _SexualEvent _$SexualEventFromJson(Map<String, dynamic> json) => _SexualEvent(
       .toList(),
   location: json['location'] == null
       ? null
-      : Reference.fromJson(json['location'] as Map<String, dynamic>),
+      : Location.fromJson(json['location'] as Map<String, dynamic>),
   notes: json['notes'] as String?,
 );
 

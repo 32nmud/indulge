@@ -41,7 +41,7 @@ class DatabaseEngine {
           databasePath: dbPath,
         );
         await migrationService.ensureMetadataTableExists();
-        await migrationService.setMetadata('schema_version', '2');
+        await migrationService.setMetadata('schema_version', '3');
       },
       version: 1,
     );

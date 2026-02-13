@@ -357,9 +357,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
           _pendingLocationLat!,
           _pendingLocationLng!,
         );
-        _workingEvent = _workingEvent.copyWith(
-          location: Reference(reference: loc.id, resourceType: 'Location'),
-        );
+        _workingEvent = _workingEvent.copyWith(location: loc);
         _clearPendingLocation();
       }
 

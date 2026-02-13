@@ -54,7 +54,8 @@ class LocationMap extends StatelessWidget {
                   tileProvider: fm.NetworkTileProvider(
                     headers: {
                       // Replace with a production UA per OSM tile usage policy.
-                      'User-Agent': 'indulge/0.0.2-beta (you@yourdomain.com)',
+                      'User-Agent':
+                          'indulge/0.0.2-beta (dalton.craig1234@gmail.com)',
                     },
                   ),
                 ),

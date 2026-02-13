@@ -316,6 +316,14 @@ class MockSexualEventsProvider extends _i1.Mock
           as _i5.Future<_i3.Location>);
 
   @override
+  _i5.Future<List<_i3.Location>> getAllLocations() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAllLocations, []),
+            returnValue: _i5.Future<List<_i3.Location>>.value(<_i3.Location>[]),
+          )
+          as _i5.Future<List<_i3.Location>>);
+
+  @override
   _i5.Future<void> attachLocationToSelectedEvent(_i3.Location? location) =>
       (super.noSuchMethod(
             Invocation.method(#attachLocationToSelectedEvent, [location]),

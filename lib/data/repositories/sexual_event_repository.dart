@@ -92,56 +92,50 @@ class SexualEventRepository {
   }
 
   Future<List<Location>> getAllLocations() async {
-    _logger.info('Getting all locations');
-
-    final rows = await _db.query('location');
-
-    final locations = <Location>[];
-    for (final row in rows) {
-      locations.add(
-        Location.fromJson(
-          jsonDecode(row['json'] as String) as Map<String, dynamic>,
-        ),
-      );
-    }
-    return locations;
+    _logger.info(
+      'Locations are embedded in sexual_event; getAllLocations is not supported.',
+    );
+    throw UnsupportedError(
+      'Locations are embedded in sexual_event; standalone Location table no longer used.',
+    );
   }
 
-  /// Gets a single Location by ID, or null if not found.
+  /// Gets a single Location by ID.
+  ///
+  /// Note: Locations are now embedded directly in the `sexual_event.json`.
+  /// Standalone location lookups by ID are not supported anymore.
   Future<Location?> getLocationById(String id) async {
-    _logger.info('Getting location by id: $id');
-
-    final rows = await _db.query(
-      'location',
-      where: 'id = ?',
-      whereArgs: [id],
-      limit: 1,
+    _logger.info(
+      'Locations are embedded in sexual_event; getLocationById is not supported.',
     );
-
-    if (rows.isEmpty) return null;
-
-    return Location.fromJson(
-      jsonDecode(rows.first['json'] as String) as Map<String, dynamic>,
+    throw UnsupportedError(
+      'Locations are embedded in sexual_event; standalone Location table no longer used.',
     );
   }
 
-  /// Resolves a Reference to a Location, returning null if the reference is
-  /// null, not a Location, or the referenced Location cannot be found.
+  /// Resolves a Reference to a Location.
+  ///
+  /// Note: In the new model locations are embedded inside `sexual_event` JSON.
+  /// References to standalone Location records cannot be resolved anymore.
   Future<Location?> getLocationForReference(Reference? ref) async {
-    if (ref == null) return null;
-    if (ref.resourceType != 'Location') return null;
-    return await getLocationById(ref.reference);
+    _logger.info(
+      'Location references cannot be resolved; locations are embedded in sexual_event.',
+    );
+    throw UnsupportedError(
+      'Location references cannot be resolved; locations are embedded in sexual_event.',
+    );
   }
 
-  /// Saves a Location record to the local database.
+  /// Saving locations to a standalone table is no longer supported.
+  /// Locations should be embedded within `SexualEvent` objects and those events
+  /// persisted via `save(SexualEvent)`.
   Future<void> saveLocation(Location location) async {
-    _logger.info('Saving location: ${location.id}');
-
-    await _db.insert('location', {
-      'id': location.id,
-      'last_modified': DateTime.now().toIso8601String(),
-      'json': jsonEncode(location.toJson()),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _logger.info(
+      'Attempted to save standalone Location; operation not supported.',
+    );
+    throw UnsupportedError(
+      'Standalone location persistence is not supported. Embed locations in SexualEvent instead.',
+    );
   }
 
   Future<List<Person>> getPersonsFromActivity(EventActivity activity) async {

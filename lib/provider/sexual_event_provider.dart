@@ -123,14 +123,13 @@ class SexualEventsProvider extends ChangeNotifier {
       final sapList = sapMap.values.toList();
 
       // 3. Update State
-      // Resolve location reference (if present) and include in state.
+      // Location is embedded directly on the event now (no longer a Reference).
       Location? resolvedLocation;
       try {
-        resolvedLocation = await _repository.getLocationForReference(
-          event.location,
-        );
+        // event.location is already an embedded Location? value in the model.
+        resolvedLocation = event.location;
       } catch (e) {
-        debugPrint("Error resolving event location: $e");
+        debugPrint("Error reading embedded event location: $e");
       }
 
       _state = _state.copyWith(
@@ -442,8 +441,9 @@ class SexualEventsProvider extends ChangeNotifier {
   // Location-related helpers
   // -------------------------
 
-  /// Create and persist a Location that only contains coordinates.
-  /// Returns the created Location.
+  /// Create a Location object from coordinates.
+  /// Note: Locations are embedded in events; this does NOT persist anything
+  /// on its own. To persist, attach the Location to an event and save the event.
   Future<Location> createLocationFromCoordinates(
     double latitude,
     double longitude,
@@ -451,17 +451,25 @@ class SexualEventsProvider extends ChangeNotifier {
     // Construct a Location with the required latitude/longitude.
     // `address` is optional on Location now, so we omit it when not needed.
     final loc = Location(latitude: latitude, longitude: longitude);
-    await _repository.saveLocation(loc);
     return loc;
   }
 
-  /// Attach a Location to the currently selected event (by reference) and save.
+  /// Returns all persisted Location records.
+  /// Deprecated: Locations are now embedded per-event. Use events to access
+  /// embedded locations or query events instead.
+  Future<List<Location>> getAllLocations() async {
+    throw UnsupportedError(
+      'Locations are embedded per-event; use events to access locations.',
+    );
+  }
+
+  /// Attach an embedded Location to the currently selected event and save.
   Future<void> attachLocationToSelectedEvent(Location location) async {
     if (_state.selectedEvent == null) return;
 
-    final ref = Reference(reference: location.id, resourceType: 'Location');
+    // Embed the Location object directly on the event (no reference).
     final updatedEvent = _state.selectedEvent!.copyWith(
-      location: ref,
+      location: location,
       lastModifiedDate: DateTime.now(),
     );
 
