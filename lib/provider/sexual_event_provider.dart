@@ -111,11 +111,22 @@ class SexualEventsProvider extends ChangeNotifier {
       final sapList = sapMap.values.toList();
 
       // 3. Update State
+      // Resolve location reference (if present) and include in state.
+      Location? resolvedLocation;
+      try {
+        resolvedLocation = await _repository.getLocationForReference(
+          event.location,
+        );
+      } catch (e) {
+        debugPrint("Error resolving event location: $e");
+      }
+
       _state = _state.copyWith(
         selectedEvent: event,
         selectedEventSexualActivityParticipants: sapList,
         selectedEventParticipants: eventParticipants,
         selectedEventActivityParticipants: activityParticipantsMap,
+        selectedEventLocation: resolvedLocation,
       );
     } catch (e) {
       debugPrint("Error loading event details: $e");

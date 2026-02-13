@@ -7,6 +7,7 @@ class EventState {
   final Map<String, List<Person>>? selectedEventActivityParticipants;
   final Map<String, SexualActivityCategory>? sexualActivityCategories;
   final Map<String, SexualActivity>? sexualActivities;
+  final Location? selectedEventLocation;
   final List<SexualEvent>? currentEvents;
   final DateTime? selectedDate;
   final Map<DateTime, int>? dailyEventCount;
@@ -19,6 +20,7 @@ class EventState {
     this.selectedEventActivityParticipants,
     this.sexualActivityCategories,
     this.sexualActivities,
+    this.selectedEventLocation,
     this.currentEvents,
     this.selectedDate,
     this.dailyEventCount,
@@ -32,6 +34,7 @@ class EventState {
     Map<String, List<Person>>? selectedEventActivityParticipants,
     Map<String, SexualActivityCategory>? sexualActivityCategories,
     Map<String, SexualActivity>? sexualActivities,
+    Location? selectedEventLocation,
     List<SexualEvent>? currentEvents,
     DateTime? selectedDate,
     Map<DateTime, int>? dailyEventCount,
@@ -50,6 +53,8 @@ class EventState {
       sexualActivityCategories:
           sexualActivityCategories ?? this.sexualActivityCategories,
       sexualActivities: sexualActivities ?? this.sexualActivities,
+      selectedEventLocation:
+          selectedEventLocation ?? this.selectedEventLocation,
       currentEvents: currentEvents ?? this.currentEvents,
       selectedDate: selectedDate ?? this.selectedDate,
       dailyEventCount: dailyEventCount ?? this.dailyEventCount,

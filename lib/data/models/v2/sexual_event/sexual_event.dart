@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../event_activity/event_activity.dart';
+import '../reference/reference.dart';
 
 part 'sexual_event.freezed.dart';
 part 'sexual_event.g.dart';
@@ -14,6 +15,7 @@ abstract class SexualEvent with _$SexualEvent {
     required DateTime date,
     DateTime? lastModifiedDate,
     required List<EventActivity> activities,
+    Reference? location, // optional reference to a Location resource
     String? notes, // free-form text notes for the event
   }) = _SexualEvent;
 

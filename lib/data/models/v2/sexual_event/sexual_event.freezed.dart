@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualEvent {
 
- String get id; DateTime get date; DateTime? get lastModifiedDate; List<EventActivity> get activities; String? get notes;
+ String get id; DateTime get date; DateTime? get lastModifiedDate; List<EventActivity> get activities; Reference? get location;// optional reference to a Location resource
+ String? get notes;
 /// Create a copy of SexualEvent
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +29,16 @@ $SexualEventCopyWith<SexualEvent> get copyWith => _$SexualEventCopyWithImpl<Sexu
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastModifiedDate, lastModifiedDate) || other.lastModifiedDate == lastModifiedDate)&&const DeepCollectionEquality().equals(other.activities, activities)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastModifiedDate, lastModifiedDate) || other.lastModifiedDate == lastModifiedDate)&&const DeepCollectionEquality().equals(other.activities, activities)&&(identical(other.location, location) || other.location == location)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,lastModifiedDate,const DeepCollectionEquality().hash(activities),notes);
+int get hashCode => Object.hash(runtimeType,id,date,lastModifiedDate,const DeepCollectionEquality().hash(activities),location,notes);
 
 @override
 String toString() {
-  return 'SexualEvent(id: $id, date: $date, lastModifiedDate: $lastModifiedDate, activities: $activities, notes: $notes)';
+  return 'SexualEvent(id: $id, date: $date, lastModifiedDate: $lastModifiedDate, activities: $activities, location: $location, notes: $notes)';
 }
 
 
@@ -48,11 +49,11 @@ abstract mixin class $SexualEventCopyWith<$Res>  {
   factory $SexualEventCopyWith(SexualEvent value, $Res Function(SexualEvent) _then) = _$SexualEventCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, String? notes
+ String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, Reference? location, String? notes
 });
 
 
-
+$ReferenceCopyWith<$Res>? get location;
 
 }
 /// @nodoc
@@ -65,17 +66,30 @@ class _$SexualEventCopyWithImpl<$Res>
 
 /// Create a copy of SexualEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? lastModifiedDate = freezed,Object? activities = null,Object? notes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? lastModifiedDate = freezed,Object? activities = null,Object? location = freezed,Object? notes = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as DateTime,lastModifiedDate: freezed == lastModifiedDate ? _self.lastModifiedDate : lastModifiedDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,activities: null == activities ? _self.activities : activities // ignore: cast_nullable_to_non_nullable
-as List<EventActivity>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as List<EventActivity>,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
+as Reference?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
+/// Create a copy of SexualEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReferenceCopyWith<$Res>? get location {
+    if (_self.location == null) {
+    return null;
+  }
 
+  return $ReferenceCopyWith<$Res>(_self.location!, (value) {
+    return _then(_self.copyWith(location: value));
+  });
+}
 }
 
 
@@ -157,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Reference? location,  String? notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualEvent() when $default != null:
-return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.notes);case _:
+return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.location,_that.notes);case _:
   return orElse();
 
 }
@@ -178,10 +192,10 @@ return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  String? notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Reference? location,  String? notes)  $default,) {final _that = this;
 switch (_that) {
 case _SexualEvent():
-return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.notes);case _:
+return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.location,_that.notes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +212,10 @@ return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  String? notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastModifiedDate,  List<EventActivity> activities,  Reference? location,  String? notes)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualEvent() when $default != null:
-return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.notes);case _:
+return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_that.location,_that.notes);case _:
   return null;
 
 }
@@ -213,7 +227,7 @@ return $default(_that.id,_that.date,_that.lastModifiedDate,_that.activities,_tha
 @JsonSerializable()
 
 class _SexualEvent extends SexualEvent {
-  const _SexualEvent({this.id = "", required this.date, this.lastModifiedDate, required final  List<EventActivity> activities, this.notes}): _activities = activities,super._();
+  const _SexualEvent({this.id = "", required this.date, this.lastModifiedDate, required final  List<EventActivity> activities, this.location, this.notes}): _activities = activities,super._();
   factory _SexualEvent.fromJson(Map<String, dynamic> json) => _$SexualEventFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -226,6 +240,8 @@ class _SexualEvent extends SexualEvent {
   return EqualUnmodifiableListView(_activities);
 }
 
+@override final  Reference? location;
+// optional reference to a Location resource
 @override final  String? notes;
 
 /// Create a copy of SexualEvent
@@ -241,16 +257,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastModifiedDate, lastModifiedDate) || other.lastModifiedDate == lastModifiedDate)&&const DeepCollectionEquality().equals(other._activities, _activities)&&(identical(other.notes, notes) || other.notes == notes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualEvent&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastModifiedDate, lastModifiedDate) || other.lastModifiedDate == lastModifiedDate)&&const DeepCollectionEquality().equals(other._activities, _activities)&&(identical(other.location, location) || other.location == location)&&(identical(other.notes, notes) || other.notes == notes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,lastModifiedDate,const DeepCollectionEquality().hash(_activities),notes);
+int get hashCode => Object.hash(runtimeType,id,date,lastModifiedDate,const DeepCollectionEquality().hash(_activities),location,notes);
 
 @override
 String toString() {
-  return 'SexualEvent(id: $id, date: $date, lastModifiedDate: $lastModifiedDate, activities: $activities, notes: $notes)';
+  return 'SexualEvent(id: $id, date: $date, lastModifiedDate: $lastModifiedDate, activities: $activities, location: $location, notes: $notes)';
 }
 
 
@@ -261,11 +277,11 @@ abstract mixin class _$SexualEventCopyWith<$Res> implements $SexualEventCopyWith
   factory _$SexualEventCopyWith(_SexualEvent value, $Res Function(_SexualEvent) _then) = __$SexualEventCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, String? notes
+ String id, DateTime date, DateTime? lastModifiedDate, List<EventActivity> activities, Reference? location, String? notes
 });
 
 
-
+@override $ReferenceCopyWith<$Res>? get location;
 
 }
 /// @nodoc
@@ -278,18 +294,31 @@ class __$SexualEventCopyWithImpl<$Res>
 
 /// Create a copy of SexualEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? lastModifiedDate = freezed,Object? activities = null,Object? notes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? lastModifiedDate = freezed,Object? activities = null,Object? location = freezed,Object? notes = freezed,}) {
   return _then(_SexualEvent(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as DateTime,lastModifiedDate: freezed == lastModifiedDate ? _self.lastModifiedDate : lastModifiedDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,activities: null == activities ? _self._activities : activities // ignore: cast_nullable_to_non_nullable
-as List<EventActivity>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as List<EventActivity>,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
+as Reference?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
 
+/// Create a copy of SexualEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReferenceCopyWith<$Res>? get location {
+    if (_self.location == null) {
+    return null;
+  }
 
+  return $ReferenceCopyWith<$Res>(_self.location!, (value) {
+    return _then(_self.copyWith(location: value));
+  });
+}
 }
 
 // dart format on

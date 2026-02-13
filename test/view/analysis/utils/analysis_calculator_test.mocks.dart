@@ -289,6 +289,28 @@ class MockSexualEventsProvider extends _i1.Mock
           as _i4.Future<int>);
 
   @override
+  _i4.Future<_i6.Location?> createLocationFromCoordinates(
+    double? latitude,
+    double? longitude,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#createLocationFromCoordinates, [
+              latitude,
+              longitude,
+            ]),
+            returnValue: _i4.Future<_i6.Location?>.value(),
+          )
+          as _i4.Future<_i6.Location?>);
+
+  @override
+  _i4.Future<_i6.Location?> getLocationById(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#getLocationById, [id]),
+            returnValue: _i4.Future<_i6.Location?>.value(),
+          )
+          as _i4.Future<_i6.Location?>);
+
+  @override
   void addListener(_i7.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,

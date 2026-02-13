@@ -107,6 +107,43 @@ class SexualEventRepository {
     return locations;
   }
 
+  /// Gets a single Location by ID, or null if not found.
+  Future<Location?> getLocationById(String id) async {
+    _logger.info('Getting location by id: $id');
+
+    final rows = await _db.query(
+      'location',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) return null;
+
+    return Location.fromJson(
+      jsonDecode(rows.first['json'] as String) as Map<String, dynamic>,
+    );
+  }
+
+  /// Resolves a Reference to a Location, returning null if the reference is
+  /// null, not a Location, or the referenced Location cannot be found.
+  Future<Location?> getLocationForReference(Reference? ref) async {
+    if (ref == null) return null;
+    if (ref.resourceType != 'Location') return null;
+    return await getLocationById(ref.reference);
+  }
+
+  /// Saves a Location record to the local database.
+  Future<void> saveLocation(Location location) async {
+    _logger.info('Saving location: ${location.id}');
+
+    await _db.insert('location', {
+      'id': location.id,
+      'last_modified': DateTime.now().toIso8601String(),
+      'json': jsonEncode(location.toJson()),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
   Future<List<Person>> getPersonsFromActivity(EventActivity activity) async {
     _logger.info('Getting persons from activity: $activity');
 
