@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:indulge/view/common/event_card/event_card.dart';
+import 'package:indulge/view/common/event_card.dart';
 import '../../models/analysis_data.dart';
 
 class RecordsSection extends StatelessWidget {

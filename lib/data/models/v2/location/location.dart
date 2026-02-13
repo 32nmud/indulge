@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:uuid/uuid.dart';
 import '../address/address.dart';
 
 part 'location.freezed.dart';
@@ -9,8 +8,11 @@ part 'location.g.dart';
 abstract class Location with _$Location {
   const Location._();
 
-  const factory Location({@Default("") String id, required Address address}) =
-      _Location;
+  const factory Location({
+    required double latitude,
+    required double longitude,
+    Address? address,
+  }) = _Location;
 
   // -----------------------------------------------------------------
   // Custom JSON (de)serialization
@@ -38,8 +40,4 @@ abstract class Location with _$Location {
   @override
   @JsonKey(name: 'resourceType')
   String get resourceType => "Location";
-
-  @override
-  String get id =>
-      (this as _Location).id == "" ? const Uuid().v4() : (this as _Location).id;
 }

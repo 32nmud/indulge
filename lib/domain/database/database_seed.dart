@@ -44,7 +44,10 @@ class DatabaseSeed {
           } else if (file.name.contains('sexual_events/')) {
             await _seedSexualEvent(txn, 'sexual_event', json);
           } else if (file.name.contains('locations/')) {
-            await _seedLocation(txn, 'location', json);
+            // Locations are now embedded within sexual_event JSON and the
+            // standalone `location` table is no longer used. Seed data for
+            // locations should be provided via the sexual_events/ entries.
+            // Skipping legacy standalone location seeding.
           }
         }
       });
@@ -96,25 +99,11 @@ class DatabaseSeed {
     );
   }
 
-  /// Seed location types with their properties
-  Future<void> _seedLocation(
-    Transaction txn,
-    String tableName,
-    Map<String, dynamic> resourceData,
-  ) async {
-    // Create the model with properties
-    final location = Location.fromJson(resourceData);
-
-    // Insert into database
-    await txn.rawInsert(
-      'INSERT OR REPLACE INTO $tableName (id, last_modified, json) VALUES (?, ?, ?)',
-      [
-        location.id,
-        DateTime.now().toIso8601String(),
-        jsonEncode(location.toJson()),
-      ],
-    );
-  }
+  /// Legacy standalone location seeding is intentionally omitted.
+  /// Locations are now embedded per-event inside `sexual_event` JSON.
+  /// If seed data contains locations, they should be represented by the
+  /// corresponding sexual_event entries in the seed archive and will be
+  /// loaded by `_seedSexualEvent`.
 
   /// Seed person types with their properties
   Future<void> _seedPerson(

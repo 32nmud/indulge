@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:indulge/data/models.dart';
 import '../../models/analysis_data.dart';
 import '../../utils/analysis_colors.dart';
 import 'package:provider/provider.dart';
@@ -20,18 +19,6 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
     with AutomaticKeepAliveClientMixin {
   AnalysisEventType? _selectedType; // null for Total
   bool _showPattern = false;
-
-  // Persist activity type selection via PreferencesService.
-  // Call this whenever the user changes the event type filter so the choice
-  // is stored and available across screens / app restarts.
-  Future<void> _persistActivityFilter(AnalysisEventType? type) async {
-    try {
-      final svc = Provider.of<PreferencesService>(context, listen: false);
-      await svc.setActivityFilter(type);
-    } catch (_) {
-      // Best-effort: ignore persistence failures to avoid blocking the UI.
-    }
-  }
 
   // The show-pattern preference is persisted and exposed via PreferencesService.
   // `true` -> Pattern view, `false` -> History view.

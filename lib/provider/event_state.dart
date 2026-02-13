@@ -7,6 +7,14 @@ class EventState {
   final Map<String, List<Person>>? selectedEventActivityParticipants;
   final Map<String, SexualActivityCategory>? sexualActivityCategories;
   final Map<String, SexualActivity>? sexualActivities;
+
+  /// Embedded Location object for the currently selected event.
+  ///
+  /// As of the schema migration to v3, `Location` objects are stored embedded
+  /// directly on the `SexualEvent` JSON (i.e. `sexual_event.json` contains a
+  /// `location` object). This field holds that embedded `Location` (if any).
+  final Location? selectedEventLocation;
+
   final List<SexualEvent>? currentEvents;
   final DateTime? selectedDate;
   final Map<DateTime, int>? dailyEventCount;
@@ -19,6 +27,7 @@ class EventState {
     this.selectedEventActivityParticipants,
     this.sexualActivityCategories,
     this.sexualActivities,
+    this.selectedEventLocation,
     this.currentEvents,
     this.selectedDate,
     this.dailyEventCount,
@@ -32,6 +41,9 @@ class EventState {
     Map<String, List<Person>>? selectedEventActivityParticipants,
     Map<String, SexualActivityCategory>? sexualActivityCategories,
     Map<String, SexualActivity>? sexualActivities,
+
+    /// Embedded Location for the selected event (if available).
+    Location? selectedEventLocation,
     List<SexualEvent>? currentEvents,
     DateTime? selectedDate,
     Map<DateTime, int>? dailyEventCount,
@@ -50,6 +62,8 @@ class EventState {
       sexualActivityCategories:
           sexualActivityCategories ?? this.sexualActivityCategories,
       sexualActivities: sexualActivities ?? this.sexualActivities,
+      selectedEventLocation:
+          selectedEventLocation ?? this.selectedEventLocation,
       currentEvents: currentEvents ?? this.currentEvents,
       selectedDate: selectedDate ?? this.selectedDate,
       dailyEventCount: dailyEventCount ?? this.dailyEventCount,

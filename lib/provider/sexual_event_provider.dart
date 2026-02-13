@@ -8,12 +8,21 @@ class SexualEventsProvider extends ChangeNotifier {
   late SexualEventRepository _repository;
   late final Future<String> _ready;
 
-  SexualEventsProvider() {
-    _ready = _initProvider();
+  SexualEventsProvider({SexualEventRepository? repository}) {
+    // Single init path that accepts an optional repository. This avoids
+    // duplicating initialization logic across two functions.
+    _ready = _initProvider(repository: repository);
   }
 
-  Future<String> _initProvider() async {
-    _repository = await SexualEventRepository.create();
+  Future<String> _initProvider({SexualEventRepository? repository}) async {
+    // If a repository instance was provided, use it; otherwise create one.
+    if (repository == null) {
+      _repository = await SexualEventRepository.create();
+    } else {
+      _repository = repository;
+    }
+
+    // Shared initialization logic (single place).
     final counts = await _repository.getDailyEventCount();
     final categories = await _loadSexualActivityCategories();
     final activities = await _loadSexualActivities();
@@ -26,6 +35,9 @@ class SexualEventsProvider extends ChangeNotifier {
     );
     return "ready!";
   }
+
+  /// Initialize provider using an already-constructed repository instance.
+  // _initProviderWithRepository removed — use `_initProvider(repository: yourRepo)` instead.
 
   /// Reloads all data from the repository and updates the state.
   /// Useful after bulk operations like import.
@@ -111,11 +123,21 @@ class SexualEventsProvider extends ChangeNotifier {
       final sapList = sapMap.values.toList();
 
       // 3. Update State
+      // Location is embedded directly on the event now (no longer a Reference).
+      Location? resolvedLocation;
+      try {
+        // event.location is already an embedded Location? value in the model.
+        resolvedLocation = event.location;
+      } catch (e) {
+        debugPrint("Error reading embedded event location: $e");
+      }
+
       _state = _state.copyWith(
         selectedEvent: event,
         selectedEventSexualActivityParticipants: sapList,
         selectedEventParticipants: eventParticipants,
         selectedEventActivityParticipants: activityParticipantsMap,
+        selectedEventLocation: resolvedLocation,
       );
     } catch (e) {
       debugPrint("Error loading event details: $e");
@@ -413,5 +435,70 @@ class SexualEventsProvider extends ChangeNotifier {
       categoryMap[category.id] = category;
     }
     return categoryMap;
+  }
+
+  // -------------------------
+  // Location-related helpers
+  // -------------------------
+
+  /// Create a Location object from coordinates.
+  /// Note: Locations are embedded in events; this does NOT persist anything
+  /// on its own. To persist, attach the Location to an event and save the event.
+  Future<Location> createLocationFromCoordinates(
+    double latitude,
+    double longitude,
+  ) async {
+    // Construct a Location with the required latitude/longitude.
+    // `address` is optional on Location now, so we omit it when not needed.
+    final loc = Location(latitude: latitude, longitude: longitude);
+    return loc;
+  }
+
+  /// Returns all persisted Location records.
+  /// Deprecated: Locations are now embedded per-event. Use events to access
+  /// embedded locations or query events instead.
+  Future<List<Location>> getAllLocations() async {
+    throw UnsupportedError(
+      'Locations are embedded per-event; use events to access locations.',
+    );
+  }
+
+  /// Attach an embedded Location to the currently selected event and save.
+  Future<void> attachLocationToSelectedEvent(Location location) async {
+    if (_state.selectedEvent == null) return;
+
+    // Embed the Location object directly on the event (no reference).
+    final updatedEvent = _state.selectedEvent!.copyWith(
+      location: location,
+      lastModifiedDate: DateTime.now(),
+    );
+
+    await _repository.save(updatedEvent);
+    await selectEvent(updatedEvent);
+  }
+
+  /// Remove any attached Location reference from the currently selected event.
+  Future<void> removeLocationFromSelectedEvent() async {
+    if (_state.selectedEvent == null) return;
+
+    final updatedEvent = _state.selectedEvent!.copyWith(
+      location: null,
+      lastModifiedDate: DateTime.now(),
+    );
+
+    // Clear any resolved location before we re-select the event to avoid a
+    // transient state where UI may still show the old location.
+    _state = _state.copyWith(selectedEventLocation: null);
+    notifyListeners();
+
+    await _repository.save(updatedEvent);
+
+    // Re-select the updated event so UI gets the latest event (which has no location).
+    await selectEvent(updatedEvent);
+
+    // Defensively clear the resolved location again after re-selection so that
+    // any async resolution path cannot re-populate it unexpectedly.
+    _state = _state.copyWith(selectedEventLocation: null);
+    notifyListeners();
   }
 }

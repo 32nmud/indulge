@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Location {
 
- String get id; Address get address;
+ double get latitude; double get longitude; Address? get address;
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $LocationCopyWith<Location> get copyWith => _$LocationCopyWithImpl<Location>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Location&&(identical(other.id, id) || other.id == id)&&(identical(other.address, address) || other.address == address));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Location&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.address, address) || other.address == address));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,address);
+int get hashCode => Object.hash(runtimeType,latitude,longitude,address);
 
 @override
 String toString() {
-  return 'Location(id: $id, address: $address)';
+  return 'Location(latitude: $latitude, longitude: $longitude, address: $address)';
 }
 
 
@@ -48,11 +48,11 @@ abstract mixin class $LocationCopyWith<$Res>  {
   factory $LocationCopyWith(Location value, $Res Function(Location) _then) = _$LocationCopyWithImpl;
 @useResult
 $Res call({
- String id, Address address
+ double latitude, double longitude, Address? address
 });
 
 
-$AddressCopyWith<$Res> get address;
+$AddressCopyWith<$Res>? get address;
 
 }
 /// @nodoc
@@ -65,20 +65,24 @@ class _$LocationCopyWithImpl<$Res>
 
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? address = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? latitude = null,Object? longitude = null,Object? address = freezed,}) {
   return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
-as Address,
+latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
+as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
+as double,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
+as Address?,
   ));
 }
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AddressCopyWith<$Res> get address {
-  
-  return $AddressCopyWith<$Res>(_self.address, (value) {
+$AddressCopyWith<$Res>? get address {
+    if (_self.address == null) {
+    return null;
+  }
+
+  return $AddressCopyWith<$Res>(_self.address!, (value) {
     return _then(_self.copyWith(address: value));
   });
 }
@@ -163,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  Address address)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double latitude,  double longitude,  Address? address)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Location() when $default != null:
-return $default(_that.id,_that.address);case _:
+return $default(_that.latitude,_that.longitude,_that.address);case _:
   return orElse();
 
 }
@@ -184,10 +188,10 @@ return $default(_that.id,_that.address);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  Address address)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double latitude,  double longitude,  Address? address)  $default,) {final _that = this;
 switch (_that) {
 case _Location():
-return $default(_that.id,_that.address);case _:
+return $default(_that.latitude,_that.longitude,_that.address);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +208,10 @@ return $default(_that.id,_that.address);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  Address address)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double latitude,  double longitude,  Address? address)?  $default,) {final _that = this;
 switch (_that) {
 case _Location() when $default != null:
-return $default(_that.id,_that.address);case _:
+return $default(_that.latitude,_that.longitude,_that.address);case _:
   return null;
 
 }
@@ -219,11 +223,12 @@ return $default(_that.id,_that.address);case _:
 @JsonSerializable()
 
 class _Location extends Location {
-  const _Location({this.id = "", required this.address}): super._();
+  const _Location({required this.latitude, required this.longitude, this.address}): super._();
   factory _Location.fromJson(Map<String, dynamic> json) => _$LocationFromJson(json);
 
-@override@JsonKey() final  String id;
-@override final  Address address;
+@override final  double latitude;
+@override final  double longitude;
+@override final  Address? address;
 
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
@@ -238,16 +243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Location&&(identical(other.id, id) || other.id == id)&&(identical(other.address, address) || other.address == address));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Location&&(identical(other.latitude, latitude) || other.latitude == latitude)&&(identical(other.longitude, longitude) || other.longitude == longitude)&&(identical(other.address, address) || other.address == address));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,address);
+int get hashCode => Object.hash(runtimeType,latitude,longitude,address);
 
 @override
 String toString() {
-  return 'Location(id: $id, address: $address)';
+  return 'Location(latitude: $latitude, longitude: $longitude, address: $address)';
 }
 
 
@@ -258,11 +263,11 @@ abstract mixin class _$LocationCopyWith<$Res> implements $LocationCopyWith<$Res>
   factory _$LocationCopyWith(_Location value, $Res Function(_Location) _then) = __$LocationCopyWithImpl;
 @override @useResult
 $Res call({
- String id, Address address
+ double latitude, double longitude, Address? address
 });
 
 
-@override $AddressCopyWith<$Res> get address;
+@override $AddressCopyWith<$Res>? get address;
 
 }
 /// @nodoc
@@ -275,11 +280,12 @@ class __$LocationCopyWithImpl<$Res>
 
 /// Create a copy of Location
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? address = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? latitude = null,Object? longitude = null,Object? address = freezed,}) {
   return _then(_Location(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
-as Address,
+latitude: null == latitude ? _self.latitude : latitude // ignore: cast_nullable_to_non_nullable
+as double,longitude: null == longitude ? _self.longitude : longitude // ignore: cast_nullable_to_non_nullable
+as double,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
+as Address?,
   ));
 }
 
@@ -287,9 +293,12 @@ as Address,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$AddressCopyWith<$Res> get address {
-  
-  return $AddressCopyWith<$Res>(_self.address, (value) {
+$AddressCopyWith<$Res>? get address {
+    if (_self.address == null) {
+    return null;
+  }
+
+  return $AddressCopyWith<$Res>(_self.address!, (value) {
     return _then(_self.copyWith(address: value));
   });
 }

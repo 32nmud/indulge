@@ -26,12 +26,9 @@ class BackupService {
       final events = await _repository.getAllEvents();
       final persons = await _repository.getAllPersons();
       final categories = await _repository.getAllSexualActivityCategories();
-      final activities = await _repository.getAllSexualActivities();
-      // Note: Locations are fetched in settings_page.dart, let's include them if possible.
-      // The repository has getAllLocations().
-      final locations = await _repository.getAllLocations();
+      final activities = await _repository
+          .getAllSexualActivities(); // 2. Create temporary directory for staging files
 
-      // 2. Create temporary directory for staging files
       final tempDir = await getTemporaryDirectory();
       final backupDir = Directory(p.join(tempDir.path, 'backup_staging'));
       if (await backupDir.exists()) {
@@ -72,14 +69,6 @@ class BackupService {
         (a) => a.toJson(),
       );
 
-      await _writeFiles<Location>(
-        backupDir,
-        'locations',
-        locations,
-        (l) => l.id,
-        (l) => l.toJson(),
-      );
-
       // Add metadata file
       final metadata = {
         'version': '1.0.0',
@@ -113,10 +102,6 @@ class BackupService {
       );
       await encoder.addDirectory(
         Directory(p.join(backupDir.path, 'activities')),
-        includeDirName: true,
-      );
-      await encoder.addDirectory(
-        Directory(p.join(backupDir.path, 'locations')),
         includeDirName: true,
       );
       await encoder.addFile(metadataFile, 'metadata.json');
@@ -289,13 +274,6 @@ class BackupService {
           }
         }
       }
-
-      // -- Locations --
-      // Currently repository doesn't have a saveLocation method exposed publicly
-      // or visible in the outline, but models exist.
-      // If needed, we would add a saveLocation method to repository.
-      // Skipping for now based on repository interface availability,
-      // but the folder is there for future proofing.
 
       // -- Events --
       yield 'Importing events...';

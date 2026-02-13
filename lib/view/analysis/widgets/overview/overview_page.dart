@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+
+import 'package:indulge/data/models.dart';
 import '../../models/analysis_data.dart';
 import 'overview_stats_section.dart';
 import 'monthly_activity_chart.dart';
-import 'calendar_heatmap.dart';
 import 'records_section.dart';
 import '../common/page_title.dart';
-import 'package:indulge/view/common/navigation_helper.dart';
+import 'analysis_location_heatmap.dart';
 
 class OverviewPage extends StatelessWidget {
   final AnalysisData data;
@@ -33,19 +34,52 @@ class OverviewPage extends StatelessWidget {
         ),
         MonthlyActivityChart(data: data),
         const SizedBox(height: 16),
+
+        // Event locations heatmap (per-event)
         Card(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: CalendarHeatmap(
-              dailyCounts: data.dailyCounts,
-              startDate:
-                  data.startDate ??
-                  DateTime.now().subtract(const Duration(days: 365)),
-              endDate: data.endDate ?? DateTime.now(),
-              onDaySelected: (date) {
-                NavigationHelper.of(context)?.navigateToSearch(
-                  dateRange: DateTimeRange(start: date, end: date),
+            child: FutureBuilder<List<Location>>(
+              // Build a list of Location objects, preserving duplicates per-event
+              future: () async {
+                // Build a list of embedded Location objects from events.
+                final perEventLocations = <Location>[];
+                for (final ev in data.events) {
+                  final loc = ev.location;
+                  if (loc == null) continue;
+                  perEventLocations.add(loc);
+                }
+                return perEventLocations;
+              }(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SizedBox(
+                    height: 220,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                final locations = snapshot.data ?? [];
+
+                if (locations.isEmpty) {
+                  return SizedBox(
+                    height: 100,
+                    child: Center(
+                      child: Text(
+                        'No event locations to display',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  );
+                }
+
+                // Delegate rendering to the aggregated heatmap widget which now
+                // receives one Location entry per event (duplicates preserved).
+                return AnalysisLocationHeatmap(
+                  locations: locations,
+                  // Slightly higher gridSize gives better separation for mixed-state data
+                  gridSize: 120,
                 );
               },
             ),
