@@ -9,8 +9,12 @@ part 'location.g.dart';
 abstract class Location with _$Location {
   const Location._();
 
-  const factory Location({@Default("") String id, required Address address}) =
-      _Location;
+  const factory Location({
+    @Default("") String id,
+    required double latitude,
+    required double longitude,
+    Address? address,
+  }) = _Location;
 
   // -----------------------------------------------------------------
   // Custom JSON (de)serialization
