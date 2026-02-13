@@ -582,191 +582,46 @@ class _EventEditorPageState extends State<EventEditorPage> {
   // Location section (UI)
   // -------------------------
   Widget _buildLocationSection() {
-    final provider = context.watch<SexualEventsProvider>();
-
-    // Debug logging to help trace why UI thinks a location is attached.
-    // This prints the working event's location reference, any editor-pending
-    // coordinates, and the provider's selectedEvent / selectedEventLocation
-    // so we can detect stale provider state vs. actual working-event state.
-    debugPrint(
-      'EventEditor: buildLocationSection -> '
-      'workingEvent.id=${_workingEvent.id} '
-      'workingEvent.location=${_workingEvent.location} '
-      'pendingLat=${_pendingLocationLat?.toStringAsFixed(6)} '
-      'pendingLng=${_pendingLocationLng?.toStringAsFixed(6)} '
-      'provider.selectedEvent=${provider.state.selectedEvent?.id} '
-      'provider.resolvedLocation=${provider.state.selectedEventLocation}',
-    );
-
     // Determine attached state from the editor's working event and pending coords.
-    // We intentionally DO NOT rely solely on provider.state.selectedEventLocation
-    // because provider state may reflect a previously-selected event.
     final hasAttached =
         _workingEvent.location != null ||
         (_pendingLocationLat != null && _pendingLocationLng != null);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Location',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-            Tooltip(
-              message: 'Tap to request location permission and center map',
-              child: IconButton(
-                icon: const Icon(Icons.gps_fixed),
-                tooltip: 'Use current location',
-                onPressed: _openLocationMap,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (!_showLocationMap)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Theme.of(context).colorScheme.primaryContainer,
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    hasAttached
-                        ? 'A location is attached to this event.'
-                        : 'Press the GPS icon or tap Open to center the map on your current location (will fallback to a default if unavailable).',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _openLocationMap,
-                  child: const Text('Open'),
-                ),
-                if (hasAttached) ...[
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: _removeAttachedLocation,
-                    child: const Text('Remove'),
-                  ),
-                ],
-              ],
-            ),
-          )
-        else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 220,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade400),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      fm.FlutterMap(
-                        mapController: _mapController,
-                        options: fm.MapOptions(
-                          initialCenter: ll.LatLng(_pinLatitude, _pinLongitude),
-                          initialZoom: _mapZoom,
-                          onPositionChanged: (pos, hasGesture) {
-                            final center = pos?.center;
-                            if (center != null) {
-                              setState(() {
-                                _pinLatitude = center.latitude;
-                                _pinLongitude = center.longitude;
-                                _pendingLocationLat = _pinLatitude;
-                                _pendingLocationLng = _pinLongitude;
-                              });
-                            }
-                          },
-                        ),
-                        children: [
-                          fm.TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            tileProvider: fm.NetworkTileProvider(
-                              headers: {
-                                // Keep a placeholder UA; adjust for production per OSM policy.
-                                'User-Agent':
-                                    'indulge/0.0.2-beta (you@yourdomain.com)',
-                              },
-                            ),
-                          ),
-                          fm.RichAttributionWidget(
-                            attributions: [
-                              fm.TextSourceAttribution(
-                                'OpenStreetMap contributors',
-                                onTap: () {},
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const Positioned(
-                        top: (220 / 2) - 24,
-                        child: Icon(
-                          Icons.location_pin,
-                          size: 48,
-                          color: Colors.red,
-                        ),
-                      ),
-                      if (_isFetchingLocation)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.black45,
-                            child: const Center(
-                              child: SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const SizedBox.shrink(),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      // Close the map view without persisting a change.
-                      setState(() {
-                        _showLocationMap = false;
-                      });
-                    },
-                    child: const Text('Remove'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-      ],
+    return LocationEditor(
+      showMap: _showLocationMap,
+      isFetchingLocation: _isFetchingLocation,
+      hasAttached: hasAttached,
+      pinLatitude: _pinLatitude,
+      pinLongitude: _pinLongitude,
+      mapZoom: _mapZoom,
+      mapController: _mapController,
+      pendingLatitude: _pendingLocationLat,
+      pendingLongitude: _pendingLocationLng,
+      onRequestLocation: () {
+        // Request device location and open the map (preserves existing logic).
+        _openLocationMap();
+      },
+      onOpen: () {
+        setState(() {
+          _showLocationMap = true;
+        });
+        // Also attempt to center using existing resolution or device location.
+        _openLocationMap();
+      },
+      onClose: () {
+        setState(() {
+          _showLocationMap = false;
+        });
+      },
+      onRemove: _removeAttachedLocation,
+      onCenterChanged: (lat, lng) {
+        setState(() {
+          _pinLatitude = lat;
+          _pinLongitude = lng;
+          _pendingLocationLat = lat;
+          _pendingLocationLng = lng;
+        });
+      },
     );
   }
 
