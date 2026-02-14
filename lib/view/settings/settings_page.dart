@@ -5,6 +5,7 @@ import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
 
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
+import 'package:indulge/data/repositories/clinical_event_repository.dart';
 import 'package:indulge/services/backup_service.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -174,8 +175,9 @@ class SettingsPage extends StatelessWidget {
         builder: (ctx) => const Center(child: CircularProgressIndicator()),
       );
 
-      final repo = await SexualEventRepository.create();
-      final backupService = BackupService(repo);
+      final sexualRepo = await SexualEventRepository.create();
+      final clinicalRepo = await ClinicalEventRepository.create();
+      final backupService = BackupService(sexualRepo, clinicalRepo);
 
       await backupService.exportData();
 
@@ -223,8 +225,9 @@ class SettingsPage extends StatelessWidget {
     );
 
     try {
-      final repo = await SexualEventRepository.create();
-      final backupService = BackupService(repo);
+      final sexualRepo = await SexualEventRepository.create();
+      final clinicalRepo = await ClinicalEventRepository.create();
+      final backupService = BackupService(sexualRepo, clinicalRepo);
 
       await for (final update in backupService.importData()) {
         streamController.add(update);

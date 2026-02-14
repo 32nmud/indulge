@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:logging/logging.dart';
@@ -28,26 +30,25 @@ class _ContactListPageState extends State<ContactListPage>
   void initState() {
     super.initState();
     _loadPersons();
-    // Listen to provider changes to reload when persons are added/modified
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SexualEventsProvider>().addListener(_onProviderChange);
-    });
+    // No manual listener attachment here. We rely on `context.watch<EventStateStore>()`
+    // in `build` to trigger rebuilds and then schedule any necessary refresh of
+    // the local cached list via a post-frame callback.
   }
 
   @override
   void dispose() {
-    context.read<SexualEventsProvider>().removeListener(_onProviderChange);
+    // No manual listener was attached in initState anymore.
     super.dispose();
-  }
-
-  void _onProviderChange() {
-    _loadPersons();
   }
 
   Future<void> _loadPersons() async {
     setState(() => _isLoading = true);
     final provider = context.read<SexualEventsProvider>();
-    final persons = await provider.getAllPersons();
+    final store = context.read<EventStateStore>();
+
+    // Prefer the cached list of persons from the centralized store when available
+    // to avoid an extra DB call; fall back to the provider otherwise.
+    final persons = store.state.allPersons ?? await provider.getAllPersons();
 
     // Calculate event counts for each person
     final allEvents = await provider.getAllEvents();
@@ -152,6 +153,23 @@ class _ContactListPageState extends State<ContactListPage>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    // Watch EventStateStore so this widget rebuilds when the centralized store changes.
+    // Use the store's person map for an efficient membership comparison and refresh
+    // our local list only when the cached IDs differ from our local IDs.
+    final store = context.watch<EventStateStore>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cachedMap = store.allPersonsMap;
+      if (cachedMap != null) {
+        final localIds = _persons.map((p) => p.id).toSet();
+        final cachedIds = cachedMap.keys.toSet();
+        if (!setEquals(localIds, cachedIds)) {
+          // Defer to existing loader which prefers the store cache when available.
+          _loadPersons();
+        }
+      }
+    });
+
     return Scaffold(
       body: SafeArea(
         child: Column(

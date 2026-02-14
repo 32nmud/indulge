@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import 'package:intl/intl.dart';
 import '../../models/analysis_data.dart';
@@ -56,9 +57,29 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
               final partnerEvents = widget.data.personEvents[partnerId] ?? [];
 
               return FutureBuilder(
-                future: context.read<SexualEventsProvider>().getPersonById(
-                  partnerId,
-                ),
+                future: (() {
+                  // Prefer the centralized store's cached persons to avoid extra DB calls.
+                  final storePersons = context
+                      .read<EventStateStore>()
+                      .state
+                      .allPersons;
+                  if (storePersons != null &&
+                      storePersons.any((p) => p.id == partnerId)) {
+                    return Future.value(
+                      storePersons.firstWhere((p) => p.id == partnerId),
+                    );
+                  }
+
+                  // Fall back to analysis pre-fetched person map if available.
+                  if (widget.data.personMap[partnerId] != null) {
+                    return Future.value(widget.data.personMap[partnerId]);
+                  }
+
+                  // Final fallback to provider which will query the repository.
+                  return context.read<SexualEventsProvider>().getPersonById(
+                    partnerId,
+                  );
+                })(),
                 builder: (context, snapshot) {
                   final person = snapshot.data;
                   final displayName =

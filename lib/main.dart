@@ -3,9 +3,11 @@ import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/home/daily_event_view.dart';
 import 'package:indulge/view/common/bottom_nav_bar.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/view/common/event_editor/event_editor.dart';
+import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
 import 'package:indulge/view/contacts/contact_list_page.dart';
 import 'package:indulge/view/settings/settings_page.dart';
 import 'package:indulge/view/analysis/analysis_page.dart';
@@ -49,7 +51,29 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SexualEventsProvider()),
+        // Central EventState store shared between providers
+        ChangeNotifierProvider(create: (context) => EventStateStore()),
+
+        // SexualEventsProvider receives the shared EventStateStore so it can
+        // bridge updates into the centralized store (step 1 of migration).
+        ChangeNotifierProvider(
+          create: (context) {
+            final store = context.read<EventStateStore>();
+            return SexualEventsProvider(stateStore: store);
+          },
+        ),
+
+        // ClinicalEventsProvider: construct and pass the same EventStateStore.
+        // The provider receives the shared EventStateStore so it can bridge
+        // clinical-state updates into the centralized store as well.
+        ChangeNotifierProvider(
+          create: (context) {
+            final store = context.read<EventStateStore>();
+            return ClinicalEventsProvider(stateStore: store);
+          },
+        ),
+
+        // UI theme provider
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
@@ -238,14 +262,14 @@ class _MyHomePageState extends State<MyHomePage> {
           heroTag: 'events_add_fab',
           onPressed: () {
             final selectedDate = context
-                .read<SexualEventsProvider>()
+                .read<EventStateStore>()
                 .state
                 .selectedDate;
             Navigator.push(
               context,
               MaterialPageRoute<void>(
                 builder: (context) =>
-                    EventEditorPage(initialDate: selectedDate),
+                    SexualEventEditorPage(initialDate: selectedDate),
               ),
             );
           },

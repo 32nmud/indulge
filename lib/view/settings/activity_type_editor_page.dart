@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import 'package:uuid/uuid.dart';
 
@@ -35,9 +36,10 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     // Load existing activities or start with empty list
     _activities = [];
     if (widget.activityCategory != null) {
-      final provider = context.read<SexualEventsProvider>();
+      final store = context.read<EventStateStore>();
+
       for (var ref in widget.activityCategory!.activities) {
-        final activity = provider.state.sexualActivities?[ref.reference];
+        final activity = store.state.sexualActivities?[ref.reference];
         if (activity != null) {
           _activities.add(
             _ActivityRow(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import '../../models/analysis_data.dart';
 import '../common/expandable_activity_card.dart';
@@ -195,8 +195,8 @@ class _PropertiesByActivitySectionState
       var property = widget.data.sexualActivities[propertyId];
 
       if (property == null) {
-        final providerState = context.read<SexualEventsProvider>().state;
-        property = providerState.sexualActivities?[propertyId];
+        final store = context.read<EventStateStore>();
+        property = store.state.sexualActivities?[propertyId];
       }
 
       if (property != null) {

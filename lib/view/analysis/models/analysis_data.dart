@@ -68,6 +68,8 @@ class AnalysisData {
   final Map<String, int> personCounts; // Total activities with each partner
   final Map<String, int> personEventCounts; // Total events with each partner
   final Map<String, List<SexualEvent>> personEvents; // Events for each partner
+  // Optional map of person id -> Person objects for quick lookup (may be empty)
+  final Map<String, Person> personMap;
   final Map<String, Map<String, int>>
   personPropertyCounts; // Property counts per partner
 
@@ -161,6 +163,7 @@ class AnalysisData {
     required this.personCounts,
     required this.personEventCounts,
     required this.personEvents,
+    this.personMap = const {},
     required this.personPropertyCounts,
     required this.sexualActivityCountsTotal,
     required this.sexualActivities,

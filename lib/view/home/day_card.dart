@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 
 class DayCard extends StatefulWidget {
   const DayCard({super.key});
@@ -31,8 +32,8 @@ class _DayCardState extends State<DayCard> {
   DateTime _getLatestEvent() => DateTime(2026, 12, 31);
 
   Widget _dayPicker() {
-    final provider = context.watch<SexualEventsProvider>();
-    final selectedDay = provider.state.selectedDate ?? DateTime.now();
+    final store = context.watch<EventStateStore>();
+    final selectedDay = store.state.selectedDate ?? DateTime.now();
 
     // Animate to the new date when it changes
     if (_previousSelectedDate != selectedDay) {
@@ -70,10 +71,10 @@ class _DayCardState extends State<DayCard> {
     bool isToday,
     VoidCallback onTap,
   ) {
-    final provider = context.watch<SexualEventsProvider>();
+    final store = context.watch<EventStateStore>();
     // Normalize date to match the keys in dailyEventCount (removes time component)
     final normalizedDate = DateTime(date.year, date.month, date.day);
-    final count = provider.state.dailyEventCount?[normalizedDate] ?? 0;
+    final count = store.state.dailyEventCount?[normalizedDate] ?? 0;
     final theme = Theme.of(context);
 
     return InkResponse(

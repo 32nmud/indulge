@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import 'package:logging/logging.dart';
 import 'models/analysis_data.dart';
@@ -57,8 +59,8 @@ class _AnalysisPageState extends State<AnalysisPage>
     super.initState();
     // Listen to provider changes to reload when data changes and load persisted prefs
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Attach provider change listener
-      context.read<SexualEventsProvider>().addListener(_onProviderChange);
+      // Attach centralized EventStateStore listener
+      context.read<EventStateStore>().addListener(_onStoreChange);
       // Load persisted UI preferences (if any)
       _loadPreferences();
     });
@@ -68,7 +70,7 @@ class _AnalysisPageState extends State<AnalysisPage>
   void dispose() {
     _debounceTimer?.cancel();
     _pageController.dispose();
-    context.read<SexualEventsProvider>().removeListener(_onProviderChange);
+    context.read<EventStateStore>().removeListener(_onStoreChange);
     super.dispose();
   }
 
@@ -127,7 +129,7 @@ class _AnalysisPageState extends State<AnalysisPage>
     }
   }
 
-  void _onProviderChange() {
+  void _onStoreChange() {
     // Mark data as stale so the next load actually recalculates.
     _isDirty = true;
 
@@ -151,6 +153,9 @@ class _AnalysisPageState extends State<AnalysisPage>
 
     final allEvents = await provider.getAllEvents();
     _logger.info('Loaded ${allEvents.length} events');
+    final store = context.read<EventStateStore>();
+    // Prefer cached persons from the centralized store when available to avoid an extra DB call.
+    final allPersons = store.state.allPersons ?? await provider.getAllPersons();
 
     // Calculate available years from data
     if (allEvents.isNotEmpty) {
@@ -211,8 +216,10 @@ class _AnalysisPageState extends State<AnalysisPage>
     final analysisData = await AnalysisCalculator.calculate(
       events,
       provider,
+      store.state,
       startDate: startDate,
       endDate: endDate,
+      preFetchedPersons: allPersons,
     );
 
     _logger.info('Calculated data - ${analysisData.totalEvents} total events');

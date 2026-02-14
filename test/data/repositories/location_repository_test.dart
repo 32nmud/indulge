@@ -13,7 +13,7 @@ void main() {
   group('Location repository', () {
     test('saveLocation and getLocationById roundtrip', () async {
       // Use a real repository (integration-style). This uses the local test DB.
-      final repo = await SexualEventRepository.create();
+      final repo = await EventRepository.create();
 
       final loc = Location(
         address: const Address(city: 'TestCity'),
@@ -35,7 +35,7 @@ void main() {
 
   group('Provider location flows', () {
     test('create location, attach to event, and remove it', () async {
-      final repo = await SexualEventRepository.create();
+      final repo = await EventRepository.create();
       final provider = SexualEventsProvider(repository: repo);
 
       // Wait for provider initialization

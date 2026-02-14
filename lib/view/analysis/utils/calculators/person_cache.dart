@@ -7,17 +7,39 @@ import 'package:indulge/provider/sexual_event_provider.dart';
 /// in every event (potentially thousands of queries for the same few people),
 /// this cache loads all persons in a single query upfront and provides
 /// synchronous O(1) lookups.
+///
+/// Migration note:
+/// - `build` still accepts a `SexualEventsProvider` for backward compatibility,
+///   but now also accepts an optional `preFetched` list of persons. Callers
+///   that already have a snapshot (for example from `EventStateStore.state`)
+///   can pass that list to avoid an extra DB call.
 class PersonCache {
   final Map<String, Person> _cache;
 
   PersonCache._(this._cache);
 
   /// Builds a [PersonCache] by fetching all persons from the provider
-  /// in a single database call.
-  static Future<PersonCache> build(SexualEventsProvider provider) async {
-    final allPersons = await provider.getAllPersons();
+  /// in a single database call, unless an optional pre-fetched list is supplied.
+  ///
+  /// Usage:
+  /// - `PersonCache.build(provider)` (existing behavior)
+  /// - `PersonCache.build(provider, preFetched: personsFromStore)` to avoid an extra DB call.
+  static Future<PersonCache> build(
+    SexualEventsProvider provider, {
+    List<Person>? preFetched,
+  }) async {
+    final allPersons = preFetched ?? await provider.getAllPersons();
     final cache = <String, Person>{};
     for (final person in allPersons) {
+      cache[person.id] = person;
+    }
+    return PersonCache._(cache);
+  }
+
+  /// Convenience constructor when callers already have the full list synchronously.
+  static PersonCache fromList(List<Person> persons) {
+    final cache = <String, Person>{};
+    for (final person in persons) {
       cache[person.id] = person;
     }
     return PersonCache._(cache);

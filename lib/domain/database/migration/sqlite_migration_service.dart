@@ -260,6 +260,10 @@ class SQLiteMigrationService {
         'sexual_activity_type',
         'sexual_activity_type_property',
         'sexual_event',
+        // Add clinical_event to ensure any pre-existing clinical event JSON rows
+        // are processed during migration. Use singular table name to match the
+        // project's naming convention for event tables.
+        'clinical_event',
       ];
 
       for (var i = 0; i < tables.length; i++) {
@@ -304,6 +308,38 @@ class SQLiteMigrationService {
       } else {
         // Ensure metadata reflects at least the current value
         await setMetadata('schema_version', currentSchemaVersion.toString());
+      }
+
+      // Ensure an index exists on sexual_event.date to speed up date queries.
+      // Some older DBs may not have this index; creating it is idempotent.
+      try {
+        await database.execute(
+          'CREATE INDEX IF NOT EXISTS idx_sexual_event_date ON sexual_event(date)',
+        );
+        _logger.info('Ensured index idx_sexual_event_date exists');
+      } catch (e, stackTrace) {
+        _logger.warning('Failed to create/ensure idx_sexual_event_date: $e');
+      }
+
+      // Ensure clinical_event table exists for storing ClinicalEvent JSON blobs.
+      // Newer app versions will use this table; create it if missing so
+      // migrations and imports have a place to write data.
+      try {
+        await database.execute('''
+          CREATE TABLE IF NOT EXISTS clinical_event (
+            id TEXT PRIMARY KEY,
+            date TEXT NOT NULL,
+            last_modified TEXT,
+            json TEXT NOT NULL
+          )
+        ''');
+        // Index to speed up lookups by date for calendar highlighting.
+        await database.execute(
+          'CREATE INDEX IF NOT EXISTS idx_clinical_event_date ON clinical_event(date)',
+        );
+        _logger.info('Ensured clinical_event table and index exist');
+      } catch (e, stackTrace) {
+        _logger.warning('Failed to create clinical_event table or index: $e');
       }
 
       await setMetadata(

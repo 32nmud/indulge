@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/provider/sexual_event_provider.dart';
-import 'package:indulge/view/common/event_card.dart';
+import 'package:indulge/provider/event_state_store.dart';
+import 'package:indulge/view/common/sexual_event_card.dart';
 
 typedef RemovedItemBuilder<T> =
     Widget Function(T item, BuildContext context, Animation<double> animation);
@@ -22,8 +22,8 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
   @override
   void initState() {
     super.initState();
-    final provider = context.read<SexualEventsProvider>();
-    final currentEvents = provider.state.currentEvents ?? [];
+    final store = context.read<EventStateStore>();
+    final currentEvents = store.state.currentEvents ?? [];
     _list = ListModel<SexualEvent>(
       listKey: _listKey,
       removedItemBuilder: _buildRemovedItem,
@@ -90,7 +90,7 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
         ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-          child: EventCard(event: _list[index]),
+          child: SexualEventCard(event: _list[index]),
         ),
       ),
     );
@@ -110,7 +110,7 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
         ).animate(CurvedAnimation(parent: animation, curve: Curves.easeIn)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-          child: EventCard(event: event),
+          child: SexualEventCard(event: event),
         ),
       ),
     );
@@ -118,8 +118,8 @@ class _AnimatedEventListState extends State<AnimatedEventList> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<SexualEventsProvider>();
-    final currentEvents = provider.state.currentEvents ?? [];
+    final store = context.watch<EventStateStore>();
+    final currentEvents = store.state.currentEvents ?? [];
 
     // Only sync if events actually changed
     _syncIfChanged(currentEvents);

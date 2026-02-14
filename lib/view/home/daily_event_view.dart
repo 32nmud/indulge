@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'day_card.dart';
 import 'event_list.dart';
 
@@ -19,21 +20,28 @@ class _EventViewPageState extends State<EventViewPage> {
     super.initState();
     // Trigger the initial load for the current day once the widget tree is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Use the provider to perform the repository-backed select (ensures events are loaded)
       context.read<SexualEventsProvider>().selectDate(_selectedDay);
     });
   }
 
   void _navigateToNextDay() {
     final provider = context.read<SexualEventsProvider>();
-    final currentDate = provider.state.selectedDate ?? DateTime.now();
+    final store = context.read<EventStateStore>();
+    final currentDate = store.state.selectedDate ?? DateTime.now();
     final nextDate = currentDate.add(const Duration(days: 1));
+    // Use the provider to trigger the load/update flow while reading the current
+    // date from the centralized EventStateStore.
     provider.selectDate(nextDate);
   }
 
   void _navigateToPreviousDay() {
     final provider = context.read<SexualEventsProvider>();
-    final currentDate = provider.state.selectedDate ?? DateTime.now();
+    final store = context.read<EventStateStore>();
+    final currentDate = store.state.selectedDate ?? DateTime.now();
     final previousDate = currentDate.subtract(const Duration(days: 1));
+    // Use the provider to trigger the load/update flow while reading the current
+    // date from the centralized EventStateStore.
     provider.selectDate(previousDate);
   }
 
