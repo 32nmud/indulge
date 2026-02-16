@@ -25,6 +25,14 @@ class SQLiteMigrationService {
   final String databasePath;
   IOSink? _logFile;
 
+  /// Tables that may contain v1 JSON documents which need v1->v2 migration.
+  static const tables = [
+    'person',
+    'sexual_activity_type',
+    'sexual_activity_type_property',
+    'sexual_event',
+  ];
+
   SQLiteMigrationService({required this.database, required this.databasePath});
 
   /// Initialize log file for migration
@@ -137,6 +145,123 @@ class SQLiteMigrationService {
       _logger.warning('Error checking migration status: $e');
       // If we can't determine, assume migration is needed
       return true;
+    }
+  }
+
+  /// Check if JSON document migration is needed (v1 -> v2).
+  /// This is separate from schema migration - JSON migration can be slow
+  /// for large databases, so callers may want to show a progress UI.
+  Future<bool> needsJsonMigration() async {
+    try {
+      // First ensure metadata table exists
+      await ensureMetadataTableExists();
+
+      // Check if we've already completed JSON migration
+      final jsonMigrationCompleted = await getMetadata(
+        'json_migration_completed',
+      );
+      if (jsonMigrationCompleted != null) {
+        _logger.info('JSON migration already completed');
+        return false;
+      }
+
+      // Check if there are v1 documents that need migration
+      return await detectV1Documents();
+    } catch (e) {
+      _logger.warning('Error checking JSON migration status: $e');
+      return true; // Be conservative
+    }
+  }
+
+  /// Detect whether any table contains v1 JSON documents.
+  /// Public method for checking migration status separately from running migration.
+  ///
+  /// This is more robust than just checking the version field - it also detects
+  /// v2-format data that lacks a version field (e.g., from corrupted backups).
+  Future<bool> detectV1Documents() async {
+    try {
+      for (final table in tables) {
+        // If the table doesn't exist, skip it.
+        final exists = await database.query(
+          'sqlite_master',
+          where: 'type = ? AND name = ?',
+          whereArgs: ['table', table],
+        );
+        if (exists.isEmpty) continue;
+
+        // Read a small sample of rows to detect legacy JSON.
+        final rows = await database.query(table, limit: 10);
+
+        for (final row in rows) {
+          final jsonString = row['json'] as String?;
+          if (jsonString == null) continue;
+          try {
+            final doc = jsonDecode(jsonString) as Map<String, dynamic>;
+            final version = ModelVersionMigration.getVersion(doc);
+
+            // If version field exists and is current, no migration needed
+            if (version == ModelVersionMigration.currentVersion) {
+              continue;
+            }
+
+            // No version field (defaults to 1) - check if data is actually v2 format
+            // by looking for v2-specific fields
+            if (!_hasV2Format(table, doc)) {
+              _logger.info(
+                'Detected v$version (or no version) document in $table with v1 format -> needs migration',
+              );
+              return true;
+            }
+
+            // Has v2 format but no version field - this is the corrupted backup case
+            // Treat as already migrated (v2 format present)
+            _logger.info(
+              'Document in $table has v2 format but no version field - treating as already migrated',
+            );
+          } catch (_) {
+            // Ignore parse errors
+          }
+        }
+      }
+    } catch (e) {
+      _logger.warning('Error while detecting v1 documents: $e');
+      return true;
+    }
+    return false;
+  }
+
+  /// Check if a document has v2 format by looking for v2-specific fields
+  bool _hasV2Format(String table, Map<String, dynamic> doc) {
+    switch (table) {
+      case 'person':
+        // v2 Person has new fields like 'location', 'notes', 'isSelf'
+        return doc.containsKey('isSelf') || doc.containsKey('notes');
+      case 'sexual_activity_type':
+        // v2 SexualActivityCategory has 'activities' (list of references) and new fields
+        return doc.containsKey('activities') && doc['activities'] is List;
+      case 'sexual_activity_type_property':
+        // v2 SexualActivity has 'category' reference and new fields
+        return doc.containsKey('category') ||
+            doc.containsKey('displayCharacter');
+      case 'sexual_event':
+        // v2 SexualEvent has 'location', 'notes', and uses 'EventActivity' not 'SexualActivity'
+        // v1 uses 'SexualActivity' objects, v2 uses 'EventActivity'
+        if (doc.containsKey('location') || doc.containsKey('notes')) {
+          return true;
+        }
+        // Check if activities are in v2 format (EventActivity has 'category' and 'participants')
+        final activities = doc['activities'];
+        if (activities is List && activities.isNotEmpty) {
+          final firstActivity = activities.first as Map<String, dynamic>?;
+          if (firstActivity != null) {
+            // v2 EventActivity has 'category' and 'participants'
+            // v1 SexualActivity has 'type' and 'participants'
+            return firstActivity.containsKey('category');
+          }
+        }
+        return false;
+      default:
+        return false;
     }
   }
 
@@ -314,16 +439,6 @@ class SQLiteMigrationService {
       backupPath = await createBackup();
       await _writeLog('Backup created at: $backupPath');
 
-      // Tables that may contain v1 JSON documents which need v1->v2 migration.
-      final tables = [
-        'person',
-        'sexual_activity_type',
-        'sexual_activity_type_property',
-        'sexual_event',
-        // Include clinical_event so any legacy clinical JSON rows are caught.
-        'clinical_event',
-      ];
-
       // Helper: detect whether any table contains v1 JSON documents.
       Future<bool> _detectV1Documents() async {
         try {
@@ -397,12 +512,18 @@ class SQLiteMigrationService {
       }
 
       // Step 1/2: Detect & perform v1 -> v2 JSON migrations if needed.
+      // Note: v1 documents can exist in v2 schema, so we always check for v1 docs.
       final hasV1Docs = await _detectV1Documents();
       if (hasV1Docs) {
         _logger.info('v1 documents detected - performing v1->v2 migration');
         await _writeLog('Performing v1->v2 migrations');
         await _performV1toV2Migration();
         await _writeLog('Completed v1->v2 migrations');
+        // Mark JSON migration as completed to avoid re-running
+        await setMetadata(
+          'json_migration_completed',
+          DateTime.now().toIso8601String(),
+        );
       } else {
         _logger.info('No v1 documents detected - skipping v1->v2 migration');
         await _writeLog('No v1->v2 migrations required');

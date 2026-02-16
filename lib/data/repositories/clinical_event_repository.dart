@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:indulge/data/models.dart';
+import 'package:indulge/data/models/versioned_model.dart';
 import 'package:logging/logging.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -29,7 +30,12 @@ class ClinicalEventRepository {
   /// Save (insert or update) a clinical event.
   Future<void> save(ClinicalEvent event) async {
     _logger.info('Saving clinical event: ${event.id}');
-    final jsonStr = jsonEncode(event.toJson());
+    final jsonStr = jsonEncode(
+      ModelVersionMigration.addVersion(
+        event.toJson(),
+        ModelVersionMigration.currentVersion,
+      ),
+    );
     // Normalize to midnight local time to ensure consistent day queries.
     final normalizedDate = DateTime(
       event.date.year,

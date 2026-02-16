@@ -30,38 +30,34 @@ class AnimatedEventList extends StatelessWidget {
 
     // If both lists are empty, show an empty state
     if (combined.isEmpty) {
-      return Expanded(
-        child: Center(
-          child: Text(
-            'No events for this day',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
+      return Center(
+        child: Text(
+          'No events for this day',
+          style: TextStyle(color: Colors.grey[600]),
         ),
       );
     }
 
-    return Expanded(
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-        itemCount: combined.length,
-        itemBuilder: (context, idx) {
-          final item = combined[idx];
-          Widget card;
-          if (item is SexualEvent) {
-            card = SexualEventCard(event: item);
-          } else if (item is ClinicalEvent) {
-            card = ClinicalEventCard(event: item);
-          } else {
-            // Fallback for unknown types
-            card = const SizedBox.shrink();
-          }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+      itemCount: combined.length,
+      itemBuilder: (context, idx) {
+        final item = combined[idx];
+        Widget card;
+        if (item is SexualEvent) {
+          card = SexualEventCard(event: item);
+        } else if (item is ClinicalEvent) {
+          card = ClinicalEventCard(event: item);
+        } else {
+          // Fallback for unknown types
+          card = const SizedBox.shrink();
+        }
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: card,
-          );
-        },
-      ),
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: card,
+        );
+      },
     );
   }
 }
