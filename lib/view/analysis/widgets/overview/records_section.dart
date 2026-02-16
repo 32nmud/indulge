@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:indulge/view/common/event_card.dart';
+import 'package:indulge/view/common/sexual_event_card.dart';
 import '../../models/analysis_data.dart';
 
 class RecordsSection extends StatelessWidget {
@@ -63,7 +63,7 @@ class RecordsSection extends StatelessWidget {
             .map(
               (event) => Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
-                child: EventCard(event: event),
+                child: SexualEventCard(event: event),
               ),
             )
             .toList(),
@@ -101,7 +101,7 @@ class RecordsSection extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [EventCard(event: event)],
+        children: [SexualEventCard(event: event)],
       ),
     );
   }

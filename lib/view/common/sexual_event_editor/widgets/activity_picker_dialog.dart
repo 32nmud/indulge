@@ -8,9 +8,13 @@ class ActivityPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sort categories alphabetically by name
+    final sortedCategories = availableCategories.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
     return SimpleDialog(
       title: const Text('Select Activity Category'),
-      children: availableCategories.values.map((category) {
+      children: sortedCategories.map((category) {
         return SimpleDialogOption(
           onPressed: () => Navigator.pop(context, category),
           child: Row(

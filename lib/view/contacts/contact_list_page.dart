@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:logging/logging.dart';
@@ -28,29 +30,45 @@ class _ContactListPageState extends State<ContactListPage>
   void initState() {
     super.initState();
     _loadPersons();
-    // Listen to provider changes to reload when persons are added/modified
+    // Add listener to store to refresh when data changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SexualEventsProvider>().addListener(_onProviderChange);
+      context.read<EventStateStore>().addListener(_onStoreChange);
     });
+  }
+
+  void _onStoreChange() {
+    if (!mounted) return;
+    final store = context.read<EventStateStore>();
+    if (store.needsDataRefresh) {
+      _loadPersons(forceLoadEvents: true);
+    }
   }
 
   @override
   void dispose() {
-    context.read<SexualEventsProvider>().removeListener(_onProviderChange);
+    context.read<EventStateStore>().removeListener(_onStoreChange);
     super.dispose();
   }
 
-  void _onProviderChange() {
-    _loadPersons();
-  }
-
-  Future<void> _loadPersons() async {
+  Future<void> _loadPersons({bool forceLoadEvents = false}) async {
     setState(() => _isLoading = true);
     final provider = context.read<SexualEventsProvider>();
-    final persons = await provider.getAllPersons();
+    final store = context.read<EventStateStore>();
 
-    // Calculate event counts for each person
-    final allEvents = await provider.getAllEvents();
+    // Prefer the cached list of persons from the centralized store when available
+    // to avoid an extra DB call; fall back to the provider otherwise.
+    final persons = store.state.allPersons ?? await provider.getAllPersons();
+
+    // Fetch all events if data has changed, if force is specified, or on initial load
+    // (when we don't have cached event counts yet)
+    List<SexualEvent> allEvents = [];
+    final hasEventCounts = _personEventCounts.isNotEmpty;
+    if (forceLoadEvents || store.needsDataRefresh || !hasEventCounts) {
+      allEvents = await provider.getAllEvents();
+      if (store.needsDataRefresh) {
+        store.clearDataDirty();
+      }
+    }
     _logger.info(
       'Counting events for ${persons.length} persons across ${allEvents.length} events',
     );
@@ -93,8 +111,8 @@ class _ContactListPageState extends State<ContactListPage>
         builder: (context) => ContactEditorPage(person: person),
       ),
     );
-    // Refresh the list when returning from editor
-    _loadPersons();
+    // Refresh the list when returning from editor (force load events for accurate counts)
+    _loadPersons(forceLoadEvents: true);
   }
 
   Future<void> _deletePerson(Person person) async {
@@ -125,7 +143,8 @@ class _ContactListPageState extends State<ContactListPage>
       try {
         final provider = context.read<SexualEventsProvider>();
         await provider.deletePerson(person.id);
-        _loadPersons();
+        // Force reload events for accurate counts after deletion
+        _loadPersons(forceLoadEvents: true);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -152,6 +171,11 @@ class _ContactListPageState extends State<ContactListPage>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    // Watch EventStateStore so this widget rebuilds when the centralized store changes.
+    // The _onStoreChange listener handles data refresh on changes.
+    context.watch<EventStateStore>();
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -167,7 +191,7 @@ class _ContactListPageState extends State<ContactListPage>
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  await _loadPersons();
+                  await _loadPersons(forceLoadEvents: true);
                 },
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())

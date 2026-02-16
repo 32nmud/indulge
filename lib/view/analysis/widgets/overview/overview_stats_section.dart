@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 
 import '../../models/analysis_data.dart';
@@ -274,8 +275,120 @@ class OverviewStatsSection extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Busiest Day and Event (Last 12 Months)
+
+        // STI Test Date Card
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.medical_services,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'STI/STD Test Status',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Last STI/STD test:',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              data.lastStiTestDate != null
+                                  ? DateFormat.yMMMd().format(
+                                      data.lastStiTestDate!,
+                                    )
+                                  : 'No test recorded',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Recommended next test:',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              data.lastStiTestDate != null
+                                  ? DateFormat.yMMMd().format(
+                                      data.lastStiTestDate!.add(
+                                        const Duration(days: 90),
+                                      ),
+                                    )
+                                  : 'N/A',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _getNextTestColor(
+                                      context,
+                                      data.lastStiTestDate,
+                                    ),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
+  }
+
+  Color _getNextTestColor(BuildContext context, DateTime? lastTestDate) {
+    if (lastTestDate == null) {
+      return Theme.of(context).colorScheme.onSurface;
+    }
+    final nextTestDate = lastTestDate.add(const Duration(days: 90));
+    final now = DateTime.now();
+    if (nextTestDate.isBefore(now)) {
+      return Colors.red;
+    } else if (nextTestDate.difference(now).inDays < 14) {
+      return Colors.orange;
+    }
+    return Theme.of(context).colorScheme.primary;
   }
 
   Widget _buildEventTypeLegendItem(

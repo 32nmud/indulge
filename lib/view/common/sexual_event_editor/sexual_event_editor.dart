@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:uuid/uuid.dart';
 import 'utils/event_mutations.dart';
@@ -11,18 +12,19 @@ import 'utils/event_validator.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
+import 'package:indulge/services/preferences_service.dart';
 
-class EventEditorPage extends StatefulWidget {
+class SexualEventEditorPage extends StatefulWidget {
   final SexualEvent? event;
   final DateTime? initialDate;
 
-  const EventEditorPage({super.key, this.event, this.initialDate});
+  const SexualEventEditorPage({super.key, this.event, this.initialDate});
 
   @override
-  State<EventEditorPage> createState() => _EventEditorPageState();
+  State<SexualEventEditorPage> createState() => _SexualEventEditorPageState();
 }
 
-class _EventEditorPageState extends State<EventEditorPage> {
+class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
   late SexualEvent _workingEvent;
   bool _isLoading = true;
   List<Person> _availablePersons = [];
@@ -81,9 +83,10 @@ class _EventEditorPageState extends State<EventEditorPage> {
     final provider = context.read<SexualEventsProvider>();
     await provider.ready;
 
-    final persons = await provider.getAllPersons();
-    final activityCategories = provider.state.sexualActivityCategories ?? {};
-    final activities = provider.state.sexualActivities ?? {};
+    final store = context.read<EventStateStore>();
+    final persons = store.state.allPersons ?? await provider.getAllPersons();
+    final activityCategories = store.state.sexualActivityCategories ?? {};
+    final activities = store.state.sexualActivities ?? {};
 
     if (widget.event != null) {
       // Editing existing event: set working event and ensure provider resolves
@@ -100,9 +103,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
       // If the event already has an attached (persisted) Location reference,
       // prefer the resolved provider location to initialize the map pin.
       if (_workingEvent.location != null &&
-          provider.state.selectedEvent?.id == _workingEvent.id &&
-          provider.state.selectedEventLocation != null) {
-        final resolved = provider.state.selectedEventLocation!;
+          store.state.selectedEvent?.id == _workingEvent.id &&
+          store.state.selectedEventLocation != null) {
+        final resolved = store.state.selectedEventLocation!;
         _pinLatitude = resolved.latitude;
         _pinLongitude = resolved.longitude;
         // No pending selection: this is an already-saved location.
@@ -122,12 +125,24 @@ class _EventEditorPageState extends State<EventEditorPage> {
       _clearPendingLocation();
     }
 
+    // Check if auto-add location setting is enabled
+    final prefs = await PreferencesService.build();
+    final shouldAutoAddLocation =
+        widget.event == null && prefs.getAutoAddLocation();
+
     setState(() {
       _availablePersons = persons;
       _availableActivityCategories = activityCategories;
       _availableActivities = activities;
       _isLoading = false;
     });
+
+    // After UI loads, if auto-add is enabled, show map and fetch location
+    if (shouldAutoAddLocation) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openLocationMap();
+      });
+    }
   }
 
   void _updateNotes(String notes) {
@@ -224,8 +239,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   void _toggleMyselfForProperty(int activityIndex, String activityId) {
-    final provider = context.read<SexualEventsProvider>();
-    final myself = provider.state.myself;
+    final myself = context.read<EventStateStore>().state.myself;
     if (myself == null) return;
 
     setState(() {
@@ -295,8 +309,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   Future<void> _showPersonPicker(int activityIndex) async {
-    final provider = context.read<SexualEventsProvider>();
-    final myself = provider.state.myself;
+    final myself = context.read<EventStateStore>().state.myself;
 
     final EventActivity activity = _workingEvent.activities[activityIndex];
     final existingParticipantIds = activity.participants
@@ -319,7 +332,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
       if (newPerson != null) {
         final provider = context.read<SexualEventsProvider>();
-        final persons = await provider.getAllPersons();
+        final store = context.read<EventStateStore>();
+        final persons =
+            store.state.allPersons ?? await provider.getAllPersons();
         setState(() {
           _availablePersons = persons;
         });
@@ -331,8 +346,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   bool _validateEvent() {
-    final provider = context.read<SexualEventsProvider>();
-    final myself = provider.state.myself;
+    final myself = context.read<EventStateStore>().state.myself;
 
     return EventValidator.validateEvent(
       context: context,
@@ -383,7 +397,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   /// selectedEvent matches the working event; otherwise prefer device location
   /// or default.
   Future<void> _openLocationMap() async {
-    final provider = context.read<SexualEventsProvider>();
+    final store = context.read<EventStateStore>();
 
     setState(() {
       _showLocationMap = true;
@@ -393,9 +407,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
     // If the current working event has a saved location and the provider has
     // resolved it for this same event, initialize from that resolved Location.
     if (_workingEvent.location != null &&
-        provider.state.selectedEvent?.id == _workingEvent.id &&
-        provider.state.selectedEventLocation != null) {
-      final resolved = provider.state.selectedEventLocation!;
+        store.state.selectedEvent?.id == _workingEvent.id &&
+        store.state.selectedEventLocation != null) {
+      final resolved = store.state.selectedEventLocation!;
       _setPin(resolved.latitude, resolved.longitude);
       _setPendingLocationFromCoords(resolved.latitude, resolved.longitude);
       setState(() => _isFetchingLocation = false);
@@ -468,6 +482,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   /// Remove any attached location from the currently selected event or clear
   /// the editor's pending selection if not persisted yet.
   Future<void> _removeAttachedLocation() async {
+    final store = context.read<EventStateStore>();
     final provider = context.read<SexualEventsProvider>();
 
     // If the working event has a persisted Location reference, call provider
@@ -476,7 +491,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
       await provider.removeLocationFromSelectedEvent();
 
       // After provider operation, sync local working event to provider state if possible.
-      final selected = provider.state.selectedEvent;
+      final selected = store.state.selectedEvent;
       if (selected != null && selected.id == _workingEvent.id) {
         setState(() {
           _workingEvent = selected;
@@ -537,8 +552,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   Widget _buildActivityCard(int activityIndex, EventActivity activity) {
-    final provider = context.read<SexualEventsProvider>();
-    final myself = provider.state.myself;
+    final myself = context.read<EventStateStore>().state.myself;
     final isExpanded = _expandedActivities.contains(activityIndex);
 
     return ActivityCard(

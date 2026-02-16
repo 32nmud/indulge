@@ -17,6 +17,8 @@ export 'activity_participant/activity_participant.dart';
 export 'address/address.dart';
 export 'person/person.dart';
 export 'sexual_event/sexual_event.dart';
+export 'clinical_event/clinical_event.dart';
+export 'clinical_test_result/clinical_test_result.dart';
 export 'event_activity/event_activity.dart';
 export 'location/location.dart';
 export 'name/name.dart';

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/view/common/event_card.dart';
+import 'package:indulge/view/common/sexual_event_card.dart';
 import 'package:indulge/view/common/dialogs/partner_filter_dialog.dart';
 import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 import 'package:indulge/view/common/dialogs/activity_filter_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 
 class SearchPage extends StatefulWidget {
   final List<String>? initialPartnerIds;
@@ -101,24 +102,28 @@ class SearchPageState extends State<SearchPage>
 
     _scrollController.addListener(_onScroll);
 
-    // Listen to provider changes to refresh search results if data changes
+    // Listen to centralized EventStateStore changes to refresh search results
     // (e.g. event edited/deleted)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SexualEventsProvider>().addListener(_onProviderChange);
+      context.read<EventStateStore>().addListener(_onStoreChange);
     });
   }
 
   @override
   void dispose() {
-    context.read<SexualEventsProvider>().removeListener(_onProviderChange);
+    context.read<EventStateStore>().removeListener(_onStoreChange);
     _scrollController.dispose();
     _notesSearchController.dispose();
     super.dispose();
   }
 
-  void _onProviderChange() {
-    if (mounted) {
-      // Schedule the search to ensure it doesn't conflict with current build/notify cycle
+  void _onStoreChange() {
+    if (!mounted) return;
+
+    final store = context.read<EventStateStore>();
+    // Only refresh search results if data has actually changed (not on date changes)
+    // Note: don't clear dirty flag here - let _performSearch do it after loading
+    if (store.needsDataRefresh) {
       Future.microtask(() => _performSearch());
     }
   }
@@ -196,8 +201,16 @@ class SearchPageState extends State<SearchPage>
 
     try {
       final provider = context.read<SexualEventsProvider>();
+      final store = context.read<EventStateStore>();
+
+      // Clear dirty flag after loading
+      if (store.needsDataRefresh) {
+        store.clearDataDirty();
+      }
+
       final allEvents = await provider.getAllEvents();
-      final myId = provider.state.myself?.id;
+      // Read 'myself' from the centralized store snapshot
+      final myId = store.state.myself?.id;
 
       final filteredEvents = allEvents.where((event) {
         // Date range filter
@@ -335,7 +348,9 @@ class SearchPageState extends State<SearchPage>
 
   Future<void> _showPartnerFilter() async {
     final provider = context.read<SexualEventsProvider>();
-    final allPersons = await provider.getAllPersons();
+    final store = context.read<EventStateStore>();
+    // Prefer cached persons from the centralized store when available to avoid a DB call.
+    final allPersons = store.state.allPersons ?? await provider.getAllPersons();
     // Filter out anonymous and "me"
     final filterablePersons = allPersons
         .where((p) => p.id != 'anonymous' && !p.isSelf)
@@ -360,9 +375,15 @@ class SearchPageState extends State<SearchPage>
   }
 
   Future<void> _showCategoryFilter() async {
-    final provider = context.read<SexualEventsProvider>();
+    // Read categories from centralized store snapshot
     final categories =
-        provider.state.sexualActivityCategories?.values.toList() ?? [];
+        context
+            .read<EventStateStore>()
+            .state
+            .sexualActivityCategories
+            ?.values
+            .toList() ??
+        [];
 
     if (!mounted) return;
 
@@ -383,10 +404,16 @@ class SearchPageState extends State<SearchPage>
   }
 
   Future<void> _showActivityFilter() async {
-    final provider = context.read<SexualEventsProvider>();
     final categories =
-        provider.state.sexualActivityCategories?.values.toList() ?? [];
-    final activities = provider.state.sexualActivities ?? {};
+        context
+            .read<EventStateStore>()
+            .state
+            .sexualActivityCategories
+            ?.values
+            .toList() ??
+        [];
+    final activities =
+        context.read<EventStateStore>().state.sexualActivities ?? {};
 
     if (!mounted) return;
 
@@ -690,7 +717,7 @@ class SearchPageState extends State<SearchPage>
                   ),
                 ),
               ),
-            EventCard(event: event),
+            SexualEventCard(event: event),
           ],
         );
       },

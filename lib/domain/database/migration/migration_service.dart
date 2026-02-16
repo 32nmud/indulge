@@ -1,4 +1,5 @@
 import 'package:logging/logging.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../../data/models/versioned_model.dart';
 import '../../../data/models/v1/property_count/property_count.dart' as v1;
 import '../../../data/models/v2/activity_count/activity_count.dart';
@@ -178,5 +179,54 @@ class MigrationService {
       fromVersion,
       toVersion,
     );
+  }
+
+  /// -------------------------------------------------------------------------
+  /// Database schema helpers
+  ///
+  /// These helpers allow callers to ensure that required schema elements for
+  /// v2 models (e.g. `clinical_event` table and metadata table) exist. This is
+  /// useful as a defensive fallback in environments where automatic migration
+  /// may not have executed (or failed) before repository operations run.
+  /// -------------------------------------------------------------------------
+
+  /// Ensure the `clinical_event` table and an index on `date` exist.
+  /// This is idempotent and safe to call on newer databases.
+  static Future<void> ensureClinicalEventTableExists(Database db) async {
+    // Create the clinical_event table if it doesn't exist.
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS clinical_event (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        last_modified TEXT,
+        json TEXT NOT NULL
+      )
+    ''');
+
+    // Create an index on date to speed up queries used by the UI.
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_clinical_event_date ON clinical_event(date)',
+    );
+  }
+
+  /// Ensure a lightweight metadata table exists to track schema/migration state.
+  /// Some code paths rely on this table being present; creating it here is
+  /// defensive and idempotent.
+  static Future<void> ensureDatabaseMetadataTableExists(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS database_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+  }
+
+  /// Combined helper that attempts to ensure v2 schema elements are present.
+  /// Callers (e.g. DB open logic) should call this after opening the DB to
+  /// guarantee required tables exist even if migrations did not run.
+  static Future<void> ensureV2SchemaElements(Database db) async {
+    await ensureDatabaseMetadataTableExists(db);
+    await ensureClinicalEventTableExists(db);
   }
 }

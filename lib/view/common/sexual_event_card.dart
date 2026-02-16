@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/common/person_avatar.dart';
-import 'package:indulge/view/common/event_editor/event_editor.dart';
+import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
 import 'location_map.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:provider/provider.dart';
@@ -14,15 +15,15 @@ import 'package:provider/provider.dart';
 /// Displays a compact/expandable card for a single `SexualEvent`. When the
 /// event has a `location` embedded, the expanded card shows a non-interactive
 /// map preview (tiles are rendered, but the preview ignores user gestures).
-class EventCard extends StatefulWidget {
+class SexualEventCard extends StatefulWidget {
   final SexualEvent event;
-  const EventCard({super.key, required this.event});
+  const SexualEventCard({super.key, required this.event});
 
   @override
-  State<EventCard> createState() => _EventCardState();
+  State<SexualEventCard> createState() => _SexualEventCardState();
 }
 
-class _EventCardState extends State<EventCard>
+class _SexualEventCardState extends State<SexualEventCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
@@ -51,9 +52,10 @@ class _EventCardState extends State<EventCard>
 
   @override
   Widget build(BuildContext context) {
-    final SexualEventsProvider provider = context.watch<SexualEventsProvider>();
+    final provider = context.read<SexualEventsProvider>();
+    final store = context.watch<EventStateStore>();
     final List<EventActivity> activities = widget.event.activities;
-    final EventState eventState = provider.state;
+    final eventState = store.state;
     final Future<List<Person>> participants = provider.getPersonsForEvent(
       widget.event.id,
     );
@@ -202,12 +204,24 @@ class _EventCardState extends State<EventCard>
       return const Text('No activities');
     }
 
+    // Sort activities by category name alphabetically
+    final sortedActivities = List<EventActivity>.from(activities)
+      ..sort((a, b) {
+        final nameA =
+            eventState.sexualActivityCategories?[a.category.reference]?.name ??
+            '';
+        final nameB =
+            eventState.sexualActivityCategories?[b.category.reference]?.name ??
+            '';
+        return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+      });
+
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
       child: Wrap(
         spacing: 8,
         runSpacing: 4,
-        children: activities.map((activity) {
+        children: sortedActivities.map((activity) {
           final activityCategory =
               eventState.sexualActivityCategories?[activity.category.reference];
           final emoji = activityCategory?.displayCharacter ?? '❔';
@@ -229,9 +243,20 @@ class _EventCardState extends State<EventCard>
     List<Person> persons,
     EventState eventState,
   ) {
+    // Sort activities by category name alphabetically
+    final sortedActivities = List<EventActivity>.from(activities)
+      ..sort((a, b) {
+        final nameA =
+            eventState.sexualActivityCategories?[a.category.reference]?.name ??
+            '';
+        final nameB =
+            eventState.sexualActivityCategories?[b.category.reference]?.name ??
+            '';
+        return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+      });
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: activities.map((activity) {
+      children: sortedActivities.map((activity) {
         return _buildActivityCard(activity, persons, eventState);
       }).toList(),
     );
@@ -421,7 +446,8 @@ class _EventCardState extends State<EventCard>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EventEditorPage(event: widget.event),
+                  builder: (context) =>
+                      SexualEventEditorPage(event: widget.event),
                 ),
               );
             },

@@ -3,15 +3,19 @@ import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/home/daily_event_view.dart';
 import 'package:indulge/view/common/bottom_nav_bar.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/view/common/event_editor/event_editor.dart';
+import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
 import 'package:indulge/view/contacts/contact_list_page.dart';
 import 'package:indulge/view/settings/settings_page.dart';
 import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
 import 'package:indulge/view/migration/migration_check.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
+import 'package:indulge/view/common/speed_dial_fab.dart';
+import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
 import 'package:logging/logging.dart';
 
 // Preferences service (SharedPreferences wrapper) - initialize at startup
@@ -49,7 +53,29 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SexualEventsProvider()),
+        // Central EventState store shared between providers
+        ChangeNotifierProvider(create: (context) => EventStateStore()),
+
+        // SexualEventsProvider receives the shared EventStateStore so it can
+        // bridge updates into the centralized store (step 1 of migration).
+        ChangeNotifierProvider(
+          create: (context) {
+            final store = context.read<EventStateStore>();
+            return SexualEventsProvider(stateStore: store);
+          },
+        ),
+
+        // ClinicalEventsProvider: construct and pass the same EventStateStore.
+        // The provider receives the shared EventStateStore so it can bridge
+        // clinical-state updates into the centralized store as well.
+        ChangeNotifierProvider(
+          create: (context) {
+            final store = context.read<EventStateStore>();
+            return ClinicalEventsProvider(stateStore: store);
+          },
+        ),
+
+        // UI theme provider
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
@@ -233,24 +259,66 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget? _buildFloatingActionButton() {
     // Show different FAB based on current page
     switch (currentPageIndex) {
-      case 0: // Events page
-        return FloatingActionButton(
-          heroTag: 'events_add_fab',
-          onPressed: () {
-            final selectedDate = context
-                .read<SexualEventsProvider>()
-                .state
-                .selectedDate;
-            Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) =>
-                    EventEditorPage(initialDate: selectedDate),
-              ),
-            );
-          },
-          tooltip: 'Add a new encounter',
-          child: const Icon(Icons.add),
+      case 0: // Events page - show speed-dial FAB with Sexual + Clinical actions
+        return SpeedDialFab(
+          items: [
+            SpeedDialItem(
+              icon: const Icon(Icons.local_fire_department),
+              label: 'Sexual',
+              onPressed: () {
+                final selectedDate = context
+                    .read<EventStateStore>()
+                    .state
+                    .selectedDate;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) =>
+                        SexualEventEditorPage(initialDate: selectedDate),
+                  ),
+                );
+              },
+            ),
+            SpeedDialItem(
+              icon: const Icon(Icons.medical_services),
+              label: 'Clinical',
+              onPressed: () {
+                final selectedDate = context
+                    .read<EventStateStore>()
+                    .state
+                    .selectedDate;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => ClinicalEventEditorPage(
+                      initialDate: selectedDate,
+                      onSave: (clinicalEvent) async {
+                        try {
+                          await context
+                              .read<ClinicalEventsProvider>()
+                              .saveEvent(clinicalEvent);
+                          return true;
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Error saving clinical event: $e',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                          return false;
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+          closedIcon: Icons.add,
         );
       case 3: // Contacts page
         return FloatingActionButton(

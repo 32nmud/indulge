@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
+import 'package:indulge/services/preferences_service.dart';
 
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
+import 'package:indulge/data/repositories/clinical_event_repository.dart';
 import 'package:indulge/services/backup_service.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -31,6 +33,9 @@ class SettingsPage extends StatelessWidget {
               children: [
                 _buildSectionHeader('Appearance'),
                 _buildThemeSwitchTile(context),
+                const Divider(),
+                _buildSectionHeader('Event Creation'),
+                _buildAutoAddLocationTile(context),
                 const Divider(),
                 _buildSectionHeader('Activity Configuration'),
                 _buildListTile(
@@ -78,7 +83,7 @@ class SettingsPage extends StatelessWidget {
                   context,
                   icon: Icons.info,
                   title: 'Version',
-                  subtitle: 'Beta 0.0.3',
+                  subtitle: 'Beta 0.1.0',
                   onTap: null,
                 ),
               ],
@@ -100,6 +105,33 @@ class SettingsPage extends StatelessWidget {
           color: Colors.grey,
         ),
       ),
+    );
+  }
+
+  Widget _buildAutoAddLocationTile(BuildContext context) {
+    return FutureBuilder<PreferencesService>(
+      future: PreferencesService.build(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final prefs = snapshot.data!;
+        return ValueListenableBuilder<bool>(
+          valueListenable: prefs.autoAddLocationNotifier,
+          builder: (context, autoAdd, _) {
+            return SwitchListTile(
+              title: const Text('Auto-add Location'),
+              subtitle: const Text(
+                'Automatically add current location to new events',
+              ),
+              value: autoAdd,
+              onChanged: (value) {
+                prefs.setAutoAddLocation(value);
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -174,8 +206,9 @@ class SettingsPage extends StatelessWidget {
         builder: (ctx) => const Center(child: CircularProgressIndicator()),
       );
 
-      final repo = await SexualEventRepository.create();
-      final backupService = BackupService(repo);
+      final sexualRepo = await SexualEventRepository.create();
+      final clinicalRepo = await ClinicalEventRepository.create();
+      final backupService = BackupService(sexualRepo, clinicalRepo);
 
       await backupService.exportData();
 
@@ -223,8 +256,9 @@ class SettingsPage extends StatelessWidget {
     );
 
     try {
-      final repo = await SexualEventRepository.create();
-      final backupService = BackupService(repo);
+      final sexualRepo = await SexualEventRepository.create();
+      final clinicalRepo = await ClinicalEventRepository.create();
+      final backupService = BackupService(sexualRepo, clinicalRepo);
 
       await for (final update in backupService.importData()) {
         streamController.add(update);

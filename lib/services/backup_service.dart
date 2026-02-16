@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
+import 'package:indulge/data/repositories/clinical_event_repository.dart';
 import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,9 +14,10 @@ import 'package:path/path.dart' as p;
 
 class BackupService {
   final Logger _logger = Logger('BackupService');
-  final SexualEventRepository _repository;
+  final SexualEventRepository sexualRepo;
+  final ClinicalEventRepository clinicalRepo;
 
-  BackupService(this._repository);
+  BackupService(this.sexualRepo, this.clinicalRepo);
 
   /// Exports all data to a zip file and allows the user to save it.
   Future<void> exportData() async {
@@ -23,12 +25,13 @@ class BackupService {
       _logger.info('Starting data export');
 
       // 1. Fetch all data
-      final events = await _repository.getAllEvents();
-      final persons = await _repository.getAllPersons();
-      final categories = await _repository.getAllSexualActivityCategories();
-      final activities = await _repository
-          .getAllSexualActivities(); // 2. Create temporary directory for staging files
+      final events = await sexualRepo.getAllEvents();
+      final clinicalEvents = await clinicalRepo.getAllEvents();
+      final persons = await sexualRepo.getAllPersons();
+      final categories = await sexualRepo.getAllSexualActivityCategories();
+      final activities = await sexualRepo.getAllSexualActivities();
 
+      // 2. Create temporary directory for staging files
       final tempDir = await getTemporaryDirectory();
       final backupDir = Directory(p.join(tempDir.path, 'backup_staging'));
       if (await backupDir.exists()) {
@@ -43,6 +46,14 @@ class BackupService {
         events,
         (e) => e.id,
         (e) => e.toJson(),
+      );
+
+      await _writeFiles<ClinicalEvent>(
+        backupDir,
+        'clinical_events',
+        clinicalEvents,
+        (c) => c.id,
+        (c) => c.toJson(),
       );
 
       await _writeFiles<Person>(
@@ -71,9 +82,9 @@ class BackupService {
 
       // Add metadata file
       final metadata = {
-        'version': '1.0.0',
+        'version': '1.1.0',
         'exportDate': DateTime.now().toIso8601String(),
-        'appVersion': '1.0.0', // TODO: Get from package info
+        'appVersion': '0.1.0-beta', // TODO: Get from package info
       };
       final metadataFile = File(p.join(backupDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode(metadata));
@@ -90,6 +101,10 @@ class BackupService {
       // We use filename parameter to ensure relative paths in the zip
       await encoder.addDirectory(
         Directory(p.join(backupDir.path, 'sexual_events')),
+        includeDirName: true,
+      );
+      await encoder.addDirectory(
+        Directory(p.join(backupDir.path, 'clinical_events')),
         includeDirName: true,
       );
       await encoder.addDirectory(
@@ -239,7 +254,7 @@ class BackupService {
             final content = await file.readAsString();
             final json = jsonDecode(content);
             final item = SexualActivityCategory.fromJson(json);
-            await _repository.saveActivityCategory(item);
+            await sexualRepo.saveActivityCategory(item);
           }
         }
       }
@@ -253,7 +268,7 @@ class BackupService {
             final content = await file.readAsString();
             final json = jsonDecode(content);
             final item = SexualActivity.fromJson(json);
-            await _repository.saveSexualActivity(item);
+            await sexualRepo.saveSexualActivity(item);
           }
         }
       }
@@ -269,8 +284,24 @@ class BackupService {
             final item = Person.fromJson(json);
             // Skip anonymous if it exists in backup (it should exist in DB)
             if (item.id != 'anonymous') {
-              await _repository.savePerson(item);
+              await sexualRepo.savePerson(item);
             }
+          }
+        }
+      }
+
+      // -- Clinical Events --
+      yield 'Importing clinical events...';
+      final clinicalDir = Directory(
+        p.join(extractionDir.path, 'clinical_events'),
+      );
+      if (await clinicalDir.exists()) {
+        await for (final file in clinicalDir.list()) {
+          if (file is File && file.path.endsWith('.json')) {
+            final content = await file.readAsString();
+            final json = jsonDecode(content);
+            final item = ClinicalEvent.fromJson(json);
+            await clinicalRepo.save(item);
           }
         }
       }
@@ -284,7 +315,7 @@ class BackupService {
             final content = await file.readAsString();
             final json = jsonDecode(content);
             final item = SexualEvent.fromJson(json);
-            await _repository.save(item);
+            await sexualRepo.save(item);
           }
         }
       }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/view/settings/activity_type_editor_page.dart';
 
@@ -14,9 +15,9 @@ class ActivityTypeListPage extends StatefulWidget {
 class _ActivityTypeListPageState extends State<ActivityTypeListPage> {
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<SexualEventsProvider>();
+    final store = context.watch<EventStateStore>();
     final activityCategories =
-        provider.state.sexualActivityCategories?.values.toList() ?? [];
+        store.state.sexualActivityCategories?.values.toList() ?? [];
 
     // Sort alphabetically
     activityCategories.sort((a, b) => a.name.compareTo(b.name));

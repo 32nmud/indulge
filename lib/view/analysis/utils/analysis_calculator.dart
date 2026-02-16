@@ -22,15 +22,31 @@ import 'calculators/person_cache.dart';
 /// - [PartnerCountConverter] — `Set<String>` → int count conversions
 class AnalysisCalculator {
   /// Computes all analysis data from the given events.
+  ///
+  /// Migration notes:
+  /// - Accepts an optional [ss] so callers can provide a snapshot
+  ///   of `EventState` (for example from `EventStateStore.state`) to avoid
+  ///   reading provider.state directly.
+  /// - Accepts an optional [preFetchedPersons] list which, when provided, will
+  ///   be forwarded to the [PersonCache] builder to avoid an extra DB call.
   static Future<AnalysisData> calculate(
     List<SexualEvent> events,
-    SexualEventsProvider provider, {
+    SexualEventsProvider provider,
+    EventState stateSnapshot, {
     DateTime? startDate,
     DateTime? endDate,
+    List<Person>? preFetchedPersons,
+    DateTime? lastStiTestDate,
   }) async {
-    final providerState = provider.state;
+    // Prefer the supplied snapshot if available, otherwise fall back to the provider.
     if (events.isEmpty) {
-      return _emptyAnalysisData(events, providerState, startDate, endDate);
+      return _emptyAnalysisData(
+        events,
+        stateSnapshot,
+        startDate,
+        endDate,
+        lastStiTestDate,
+      );
     }
 
     // Sort events by date
@@ -38,14 +54,19 @@ class AnalysisCalculator {
       ..sort((a, b) => a.date.compareTo(b.date));
 
     // --- 0. Build person cache (single DB query) ---
-    final personCache = await PersonCache.build(provider);
+    // If the caller provided a pre-fetched persons list, pass it through to
+    // PersonCache.build so we can avoid an extra DB round-trip.
+    final personCache = await PersonCache.build(
+      provider,
+      preFetched: preFetchedPersons ?? stateSnapshot.selectedEventParticipants,
+    );
 
     // --- 1. Single pass: accumulate raw counts + period-scoped stats ---
     final agg = EventAggregator.aggregate(
       sortedEvents,
       personCache,
-      providerState.sexualActivityCategories,
-      providerState.sexualActivities,
+      stateSnapshot.sexualActivityCategories,
+      stateSnapshot.sexualActivities,
       startDate: startDate,
     );
 
@@ -80,7 +101,7 @@ class AnalysisCalculator {
     final daysSinceLastRiskyActivity =
         ComparisonCalculator.calculateDaysSinceLastRisky(
           sortedEvents,
-          providerState,
+          stateSnapshot,
         );
 
     // --- 5. Co-occurrence pairs ---
@@ -118,6 +139,15 @@ class AnalysisCalculator {
     final daysSinceLastActivity = now.difference(lastEventDate).inDays;
 
     // --- 9. Assemble final result ---
+    // Build an optional personMap from provided pre-fetched persons so UI widgets
+    // (e.g. partner lists) can lookup Person objects without triggering extra DB calls.
+    final personMap = <String, Person>{};
+    if (preFetchedPersons != null) {
+      for (final p in preFetchedPersons) {
+        personMap[p.id] = p;
+      }
+    }
+
     return AnalysisData(
       totalEvents: events.length,
       totalActivities: agg.totalActivities,
@@ -155,6 +185,7 @@ class AnalysisCalculator {
       activityCategories: agg.activityCategories,
       longestStreak: streaks.longestStreak,
       currentStreak: streaks.currentStreak,
+      lastStiTestDate: lastStiTestDate,
       personCounts: agg.personCounts,
       personEventCounts: agg.personEventCounts,
       personEvents: agg.personEvents,
@@ -184,6 +215,8 @@ class AnalysisCalculator {
       averageEventsPerDayOfWeek: averages.averageEventsPerDayOfWeek,
       topActivityPairs: coOccurrence.topActivityPairs,
       topCategoryPairs: coOccurrence.topCategoryPairs,
+      // Forward the optional personMap for UI consumption
+      personMap: personMap,
       startDate: startDate,
       endDate: endDate,
       events: events,
@@ -195,6 +228,7 @@ class AnalysisCalculator {
     EventState providerState,
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? lastStiTestDate,
   ) {
     return AnalysisData(
       totalEvents: 0,
@@ -235,6 +269,7 @@ class AnalysisCalculator {
       activityCategories: {},
       longestStreak: 0,
       currentStreak: 0,
+      lastStiTestDate: lastStiTestDate,
       personCounts: {},
       personEventCounts: {},
       personEvents: {},

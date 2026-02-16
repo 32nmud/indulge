@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 
 class DayCard extends StatefulWidget {
   const DayCard({super.key});
@@ -31,8 +33,8 @@ class _DayCardState extends State<DayCard> {
   DateTime _getLatestEvent() => DateTime(2026, 12, 31);
 
   Widget _dayPicker() {
-    final provider = context.watch<SexualEventsProvider>();
-    final selectedDay = provider.state.selectedDate ?? DateTime.now();
+    final store = context.watch<EventStateStore>();
+    final selectedDay = store.state.selectedDate ?? DateTime.now();
 
     // Animate to the new date when it changes
     if (_previousSelectedDate != selectedDay) {
@@ -54,6 +56,7 @@ class _DayCardState extends State<DayCard> {
       focusedDate: selectedDay,
       onDateChange: (date) {
         context.read<SexualEventsProvider>().selectDate(date);
+        context.read<ClinicalEventsProvider>().selectDate(date);
       },
       itemExtent: 80.0,
       selectionMode: const SelectionMode.autoCenter(),
@@ -70,10 +73,12 @@ class _DayCardState extends State<DayCard> {
     bool isToday,
     VoidCallback onTap,
   ) {
-    final provider = context.watch<SexualEventsProvider>();
+    final store = context.watch<EventStateStore>();
     // Normalize date to match the keys in dailyEventCount (removes time component)
     final normalizedDate = DateTime(date.year, date.month, date.day);
-    final count = provider.state.dailyEventCount?[normalizedDate] ?? 0;
+    final count = store.state.dailyEventCount?[normalizedDate] ?? 0;
+    final hasClinicalEvent =
+        store.state.dailyClinicalEventPresence?[normalizedDate] ?? false;
     final theme = Theme.of(context);
 
     return InkResponse(
@@ -134,6 +139,23 @@ class _DayCardState extends State<DayCard> {
                   ],
                 ),
               ),
+              if (hasClinicalEvent)
+                Positioned(
+                  top: 4,
+                  left: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.teal,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.medical_services,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               if (count > 0)
                 Positioned(
                   top: 4,
