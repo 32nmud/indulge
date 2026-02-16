@@ -73,6 +73,7 @@ class _EventViewPageState extends State<EventViewPage> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onHorizontalDragEnd: (details) {
         // Swipe left (next day) - negative velocity
         if (details.primaryVelocity! < -500) {
@@ -84,13 +85,12 @@ class _EventViewPageState extends State<EventViewPage> {
         }
       },
       child: SafeArea(
-        child: Center(
+        child: SizedBox.expand(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
               DayCard(),
               const SizedBox(height: 8.0),
-              AnimatedEventList(),
+              Expanded(child: AnimatedEventList()),
             ],
           ),
         ),

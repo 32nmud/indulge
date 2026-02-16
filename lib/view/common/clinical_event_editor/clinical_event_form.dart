@@ -243,14 +243,7 @@ class ClinicalEventFormState extends State<ClinicalEventForm> {
       _loading = false;
     });
 
-    if (success) {
-      // Don't pop here; caller (page) should handle navigation after calling submit().
-      if (widget.onSave != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Clinical event saved')));
-      }
-    } else {
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Failed to save clinical event. Please try again.'),

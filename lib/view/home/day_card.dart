@@ -77,6 +77,8 @@ class _DayCardState extends State<DayCard> {
     // Normalize date to match the keys in dailyEventCount (removes time component)
     final normalizedDate = DateTime(date.year, date.month, date.day);
     final count = store.state.dailyEventCount?[normalizedDate] ?? 0;
+    final hasClinicalEvent =
+        store.state.dailyClinicalEventPresence?[normalizedDate] ?? false;
     final theme = Theme.of(context);
 
     return InkResponse(
@@ -137,6 +139,23 @@ class _DayCardState extends State<DayCard> {
                   ],
                 ),
               ),
+              if (hasClinicalEvent)
+                Positioned(
+                  top: 4,
+                  left: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.teal,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.medical_services,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               if (count > 0)
                 Positioned(
                   top: 4,
