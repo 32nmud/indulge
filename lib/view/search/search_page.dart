@@ -7,6 +7,7 @@ import 'package:indulge/view/common/dialogs/activity_filter_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 
 class SearchPage extends StatefulWidget {
@@ -47,6 +48,7 @@ class SearchPageState extends State<SearchPage>
     String? eventType,
     String? partnerId,
     String? categoryId,
+    bool sinceLastStiTest = false,
   }) {
     setState(() {
       // Clear all existing filters
@@ -56,11 +58,13 @@ class SearchPageState extends State<SearchPage>
       _selectedActivityKeys.clear();
       _selectedEventType = null;
       _notesSearchController.clear();
+      _sinceLastStiTest = false;
 
       if (dateRange != null) _dateRange = dateRange;
       if (eventType != null) _selectedEventType = eventType;
       if (partnerId != null) _selectedPartnerIds = {partnerId};
       if (categoryId != null) _selectedCategoryIds = {categoryId};
+      if (sinceLastStiTest) _sinceLastStiTest = true;
       _performSearch();
     });
   }
@@ -84,6 +88,7 @@ class SearchPageState extends State<SearchPage>
   Set<String> _selectedActivityKeys = {};
   String? _selectedEventType;
   final TextEditingController _notesSearchController = TextEditingController();
+  bool _sinceLastStiTest = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -167,6 +172,7 @@ class SearchPageState extends State<SearchPage>
 
   bool _hasActiveFilters() {
     return _dateRange != null ||
+        _sinceLastStiTest ||
         _selectedPartnerIds.isNotEmpty ||
         _selectedCategoryIds.isNotEmpty ||
         _selectedActivityKeys.isNotEmpty ||
@@ -177,11 +183,25 @@ class SearchPageState extends State<SearchPage>
   void _clearAllFilters() {
     setState(() {
       _dateRange = null;
+      _sinceLastStiTest = false;
       _selectedPartnerIds.clear();
       _selectedCategoryIds.clear();
       _selectedActivityKeys.clear();
       _selectedEventType = null;
       _notesSearchController.clear();
+    });
+    _performSearch();
+  }
+
+  void _toggleSinceLastStiTest(DateTime? lastStiTestDate) {
+    setState(() {
+      _sinceLastStiTest = !_sinceLastStiTest;
+      if (_sinceLastStiTest && lastStiTestDate != null) {
+        // Set date range to start from last STI test date to now
+        _dateRange = DateTimeRange(start: lastStiTestDate, end: DateTime.now());
+      } else {
+        _dateRange = null;
+      }
     });
     _performSearch();
   }
@@ -351,17 +371,13 @@ class SearchPageState extends State<SearchPage>
     final store = context.read<EventStateStore>();
     // Prefer cached persons from the centralized store when available to avoid a DB call.
     final allPersons = store.state.allPersons ?? await provider.getAllPersons();
-    // Filter out anonymous and "me"
-    final filterablePersons = allPersons
-        .where((p) => p.id != 'anonymous' && !p.isSelf)
-        .toList();
 
     if (!mounted) return;
 
     final result = await showDialog<Set<String>>(
       context: context,
       builder: (context) => PartnerFilterDialog(
-        allPersons: filterablePersons,
+        allPersons: allPersons,
         selectedIds: _selectedPartnerIds,
       ),
     );
@@ -556,6 +572,31 @@ class SearchPageState extends State<SearchPage>
                             size: 16,
                             color: _dateRange != null ? Colors.blue : null,
                           ),
+                        ),
+                        // Since Last STI Test chip
+                        FutureBuilder<DateTime?>(
+                          future: context
+                              .read<ClinicalEventsProvider>()
+                              .getLastClinicalEventDate(),
+                          builder: (context, snapshot) {
+                            final hasStiDate =
+                                snapshot.hasData && snapshot.data != null;
+                            return FilterChip(
+                              label: Text(
+                                hasStiDate
+                                    ? 'Since Last STI Test'
+                                    : 'Since Last STI Test',
+                              ),
+                              selected: _sinceLastStiTest,
+                              onSelected: (selected) =>
+                                  _toggleSinceLastStiTest(snapshot.data),
+                              avatar: Icon(
+                                Icons.medical_services,
+                                size: 16,
+                                color: _sinceLastStiTest ? Colors.red : null,
+                              ),
+                            );
+                          },
                         ),
                         // Partners chip
                         FilterChip(

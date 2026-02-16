@@ -180,6 +180,11 @@ class ClinicalEventsProvider extends ChangeNotifier {
     return await _repository.getLastClinicalEventDate();
   }
 
+  /// Returns the dates of the most recent N clinical events, ordered by date descending.
+  Future<List<DateTime>> getRecentClinicalEventDates(int count) async {
+    return await _repository.getRecentClinicalEventDates(count);
+  }
+
   /// Returns the most recent result for each TestType.
   Future<Map<TestType, ClinicalTestResult>> getLatestTestResults() async {
     return await _repository.getLatestTestResults();

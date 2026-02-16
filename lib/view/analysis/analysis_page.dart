@@ -15,6 +15,9 @@ import 'widgets/activity_breakdown/activity_breakdown_page.dart';
 import 'widgets/partner_breakdown/partner_breakdown_page.dart';
 import 'widgets/period_comparison/period_comparison_page.dart';
 import 'widgets/period_comparison/period_comparison_section.dart';
+import 'widgets/sexual_health/sexual_health_page.dart';
+import 'models/since_last_test_data.dart';
+import 'utils/since_last_test_calculator.dart';
 import 'package:indulge/services/preferences_service.dart';
 
 enum TimeWindow { last12Months, allTime, specificYear }
@@ -42,6 +45,9 @@ class _AnalysisPageState extends State<AnalysisPage>
   PeriodPreset _periodPreset = PeriodPreset.lastMonthVsThisMonth;
   DateTimeRange? _customFirstPeriod;
   DateTimeRange? _customSecondPeriod;
+
+  // Since Last Test data
+  SinceLastTestData? _sinceLastTestData;
 
   /// Debounce timer to coalesce rapid-fire provider notifications.
   Timer? _debounceTimer;
@@ -244,19 +250,39 @@ class _AnalysisPageState extends State<AnalysisPage>
 
   void _refresh() {
     _isDirty = true;
-    _loadDataAsync();
+    _loadDataAsync(
+      selectedTestIndex: _sinceLastTestData?.selectedTestIndex ?? 0,
+    );
   }
 
-  Future<void> _loadDataAsync() async {
+  Future<void> _loadDataAsync({int selectedTestIndex = 0}) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       final data = await _loadData();
+
+      // Also load since-last-test data
+      final store = context.read<EventStateStore>();
+      final clinicalProvider = context.read<ClinicalEventsProvider>();
+      final sexualProvider = context.read<SexualEventsProvider>();
+      await clinicalProvider.ready;
+      await sexualProvider.ready;
+      final allEvents = await sexualProvider.getAllEvents();
+      final sinceLastTestData = await SinceLastTestCalculator.calculate(
+        allEvents: allEvents,
+        clinicalProvider: clinicalProvider,
+        stateSnapshot: store.state,
+        sexualActivities: store.state.sexualActivities ?? {},
+        activityCategories: store.state.sexualActivityCategories ?? {},
+        selectedTestIndex: selectedTestIndex,
+      );
+
       if (mounted) {
         setState(() {
           _currentData = data;
+          _sinceLastTestData = sinceLastTestData;
           _isLoading = false;
         });
       }
@@ -291,7 +317,8 @@ class _AnalysisPageState extends State<AnalysisPage>
         children: [
           _currentData == null
               ? const Center(child: CircularProgressIndicator())
-              : _currentData!.totalEvents == 0
+              : (_currentData!.totalEvents == 0 &&
+                    !(_sinceLastTestData?.hasValidData ?? false))
               ? _buildEmptyState()
               : Column(
                   children: [
@@ -306,7 +333,7 @@ class _AnalysisPageState extends State<AnalysisPage>
                     AnimatedSize(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
-                      child: _currentPage == 3
+                      child: _currentPage >= 3
                           ? const SizedBox.shrink()
                           : _buildTimeWindowSelector(),
                     ),
@@ -343,6 +370,7 @@ class _AnalysisPageState extends State<AnalysisPage>
                               _buildActivityBreakdownPage(_currentData!),
                               _buildPartnerBreakdownPage(_currentData!),
                               _buildPeriodComparisonPage(_currentData!),
+                              _buildSinceLastTestPage(),
                             ],
                           ),
                         ),
@@ -602,12 +630,49 @@ class _AnalysisPageState extends State<AnalysisPage>
     );
   }
 
+  Widget _buildSinceLastTestPage() {
+    if (_sinceLastTestData == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return SexualHealthPage(
+      data: _sinceLastTestData!,
+      onTestIndexChanged: (index) {
+        _loadSinceLastTestData(testIndex: index);
+      },
+    );
+  }
+
+  Future<void> _loadSinceLastTestData({int testIndex = 0}) async {
+    if (!mounted) return;
+
+    final store = context.read<EventStateStore>();
+    final clinicalProvider = context.read<ClinicalEventsProvider>();
+    final sexualProvider = context.read<SexualEventsProvider>();
+    await clinicalProvider.ready;
+    await sexualProvider.ready;
+    final allEvents = await sexualProvider.getAllEvents();
+    final sinceLastTestData = await SinceLastTestCalculator.calculate(
+      allEvents: allEvents,
+      clinicalProvider: clinicalProvider,
+      stateSnapshot: store.state,
+      sexualActivities: store.state.sexualActivities ?? {},
+      activityCategories: store.state.sexualActivityCategories ?? {},
+      selectedTestIndex: testIndex,
+    );
+
+    if (mounted) {
+      setState(() {
+        _sinceLastTestData = sinceLastTestData;
+      });
+    }
+  }
+
   Widget _buildPageIndicator() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(4, (index) {
+        children: List.generate(5, (index) {
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.symmetric(horizontal: 4),

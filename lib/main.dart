@@ -194,6 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
     String? eventType,
     String? partnerId,
     String? categoryId,
+    bool sinceLastStiTest = false,
   }) {
     setState(() {
       currentPageIndex = 1; // Search page index
@@ -204,6 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
         eventType: eventType,
         partnerId: partnerId,
         categoryId: categoryId,
+        sinceLastStiTest: sinceLastStiTest,
       );
     });
   }

@@ -11,6 +11,7 @@ class NavigationHelper extends InheritedWidget {
     String? eventType,
     String? partnerId,
     String? categoryId,
+    bool sinceLastStiTest,
   })
   navigateToSearch;
 

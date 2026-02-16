@@ -84,7 +84,7 @@ class BackupService {
       final metadata = {
         'version': '1.1.0',
         'exportDate': DateTime.now().toIso8601String(),
-        'appVersion': '0.1.1-beta', // TODO: Get from package info
+        'appVersion': '0.1.2-beta', // TODO: Get from package info
       };
       final metadataFile = File(p.join(backupDir.path, 'metadata.json'));
       await metadataFile.writeAsString(jsonEncode(metadata));

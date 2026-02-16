@@ -182,6 +182,27 @@ class ClinicalEventRepository {
     return DateTime.tryParse(dateStr);
   }
 
+  /// Returns the dates of the most recent N clinical events, ordered by date descending.
+  Future<List<DateTime>> getRecentClinicalEventDates(int count) async {
+    _logger.info('Getting last $count clinical event dates');
+    final rows = await _db.query(
+      'clinical_event',
+      orderBy: 'date DESC',
+      limit: count,
+    );
+    final dates = <DateTime>[];
+    for (final row in rows) {
+      final dateStr = row['date'] as String?;
+      if (dateStr != null) {
+        final parsed = DateTime.tryParse(dateStr);
+        if (parsed != null) {
+          dates.add(parsed);
+        }
+      }
+    }
+    return dates;
+  }
+
   /// Finds the most recent date when the given `testType` was performed.
 
   ///
