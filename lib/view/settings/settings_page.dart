@@ -83,7 +83,7 @@ class SettingsPage extends StatelessWidget {
                   context,
                   icon: Icons.info,
                   title: 'Version',
-                  subtitle: 'Beta 0.1.0',
+                  subtitle: 'Beta 0.1.1',
                   onTap: null,
                 ),
               ],

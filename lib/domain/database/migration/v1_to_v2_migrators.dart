@@ -24,10 +24,23 @@ import '../../../data/models/v2/activity_participant/activity_participant.dart';
 
 /// Helper function to convert v1.Reference to v2.Reference
 Reference _convertReference(v1.Reference oldRef) {
-  return Reference(
-    reference: oldRef.reference,
-    resourceType: oldRef.resourceType,
-  );
+  // Map v1 resource types to v2 resource types
+  final v2ResourceType = _mapResourceTypeToV2(oldRef.resourceType);
+  return Reference(reference: oldRef.reference, resourceType: v2ResourceType);
+}
+
+/// Maps v1 resource type names to v2 equivalents
+String _mapResourceTypeToV2(String v1ResourceType) {
+  switch (v1ResourceType) {
+    case 'SexualActivityType':
+      return 'SexualActivityCategory';
+    case 'SexualActivityTypeProperty':
+      return 'SexualActivity';
+    case 'Person':
+      return 'Person';
+    default:
+      return v1ResourceType;
+  }
 }
 
 /// Helper function to convert v1.Name to v2.Name

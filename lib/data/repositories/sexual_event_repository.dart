@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:indulge/data/models.dart';
+import 'package:indulge/data/models/versioned_model.dart';
 import '../../domain/database/database_engine.dart';
 import 'package:logging/logging.dart';
 
@@ -237,7 +238,12 @@ class SexualEventRepository {
       'id': event.id,
       'date': event.date.toIso8601String(),
       'last_modified': DateTime.now().toIso8601String(),
-      'json': jsonEncode(event.toJson()),
+      'json': jsonEncode(
+        ModelVersionMigration.addVersion(
+          event.toJson(),
+          ModelVersionMigration.currentVersion,
+        ),
+      ),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -369,10 +375,16 @@ class SexualEventRepository {
     await _db.insert('person', {
       'id': person.id,
       'last_modified': DateTime.now().toIso8601String(),
-      'json': jsonEncode(person.toJson()),
+      'json': jsonEncode(
+        ModelVersionMigration.addVersion(
+          person.toJson(),
+          ModelVersionMigration.currentVersion,
+        ),
+      ),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  /// Gets the "Me" person
   /// Gets the "Me" person (the user themselves)
   Future<Person?> getMyself() async {
     _logger.info('Getting myself person');
@@ -474,7 +486,12 @@ class SexualEventRepository {
     await _db.insert('sexual_activity_type', {
       'id': activityCategory.id,
       'last_modified': DateTime.now().toIso8601String(),
-      'json': jsonEncode(activityCategory.toJson()),
+      'json': jsonEncode(
+        ModelVersionMigration.addVersion(
+          activityCategory.toJson(),
+          ModelVersionMigration.currentVersion,
+        ),
+      ),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
@@ -553,7 +570,12 @@ class SexualEventRepository {
       {
         'id': activity.id,
         'last_modified': DateTime.now().toIso8601String(),
-        'json': jsonEncode(activity.toJson()),
+        'json': jsonEncode(
+          ModelVersionMigration.addVersion(
+            activity.toJson(),
+            ModelVersionMigration.currentVersion,
+          ),
+        ),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );

@@ -1,7 +1,7 @@
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'database_seed.dart';
 import 'migration/sqlite_migration_service.dart';
 
@@ -43,10 +43,98 @@ class DatabaseEngine {
         await migrationService.ensureMetadataTableExists();
         await migrationService.setMetadata('schema_version', '3');
       },
-      version: 1,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Handle database schema upgrades (e.g., v2 -> v3)
+        // Load the full SQL schema from the bundled asset
+        final schemaFile = await rootBundle.loadString('assets/sql/schema.sql');
+
+        // Only apply schema changes for new tables/columns that don't exist
+        // This is a simplified approach - in production you might want more granular migration
+        final statements = schemaFile
+            .split(';')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+
+        // Get list of existing tables
+        final existingTables = await db.query(
+          'sqlite_master',
+          where: 'type = ?',
+          whereArgs: ['table'],
+        );
+        final existingTableNames = existingTables
+            .map((t) => t['name'] as String)
+            .toSet();
+
+        // Execute only statements for new tables
+        final batch = db.batch();
+        for (var stmt in statements) {
+          // Check if this CREATE TABLE statement is for a new table
+          final tableNameMatch = RegExp(
+            r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)',
+            caseSensitive: false,
+          ).firstMatch(stmt);
+          if (tableNameMatch != null) {
+            final tableName = tableNameMatch.group(1);
+            if (tableName != null && !existingTableNames.contains(tableName)) {
+              batch.execute(stmt);
+            }
+          }
+        }
+        await batch.commit(noResult: true);
+
+        _logger.info('Database upgraded from v$oldVersion to v$newVersion');
+      },
+      version: 3,
     );
 
     return database;
+  }
+
+  /// Performs schema-only upgrade (creates new tables).
+  /// Called from onUpgrade callback to create missing tables.
+  static Future<void> upgradeSchema(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    await _performSchemaUpgrade(db);
+  }
+
+  /// Internal: performs the actual schema upgrade by creating missing tables
+  static Future<void> _performSchemaUpgrade(Database db) async {
+    final schemaFile = await rootBundle.loadString('assets/sql/schema.sql');
+    final statements = schemaFile
+        .split(';')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    // Get list of existing tables
+    final existingTables = await db.query(
+      'sqlite_master',
+      where: 'type = ?',
+      whereArgs: ['table'],
+    );
+    final existingTableNames = existingTables
+        .map((t) => t['name'] as String)
+        .toSet();
+
+    // Execute only statements for new tables
+    final batch = db.batch();
+    for (var stmt in statements) {
+      final tableNameMatch = RegExp(
+        r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)',
+        caseSensitive: false,
+      ).firstMatch(stmt);
+      if (tableNameMatch != null) {
+        final tableName = tableNameMatch.group(1);
+        if (tableName != null && !existingTableNames.contains(tableName)) {
+          batch.execute(stmt);
+        }
+      }
+    }
+    await batch.commit(noResult: true);
   }
 
   /// Checks if migration is needed for an existing database
@@ -67,6 +155,21 @@ class DatabaseEngine {
     );
 
     return await migrationService.getCurrentSchemaVersion();
+  }
+
+  /// Check if JSON document migration (v1 -> v2) is needed.
+  /// Returns true if there are legacy v1 JSON documents that need to be migrated.
+  /// This can be slow for large databases, so callers may want to show a progress UI.
+  static Future<bool> needsJsonMigration(
+    Database database,
+    String dbPath,
+  ) async {
+    final migrationService = SQLiteMigrationService(
+      database: database,
+      databasePath: dbPath,
+    );
+
+    return await migrationService.needsJsonMigration();
   }
 
   /// Performs migration if needed

@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:indulge/domain/database/database_engine.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../domain/database/database_engine.dart';
-import 'migration_screen.dart';
 
-/// Widget that checks if migration is needed and shows migration screen if so
+/// Widget that checks if JSON migration is needed and shows progress UI if so.
+/// Schema-only migration (creating new tables) happens silently before runApp.
 class MigrationCheck extends StatefulWidget {
   final Widget child;
 
@@ -16,18 +16,18 @@ class MigrationCheck extends StatefulWidget {
 }
 
 class _MigrationCheckState extends State<MigrationCheck> {
-  late Future<bool> _migrationCheckFuture;
+  late Future<_MigrationState> _checkFuture;
 
   @override
   void initState() {
     super.initState();
-    _migrationCheckFuture = _checkMigration();
+    _checkFuture = _checkJsonMigration();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _migrationCheckFuture,
+    return FutureBuilder<_MigrationState>(
+      future: _checkFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -37,7 +37,7 @@ class _MigrationCheckState extends State<MigrationCheck> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Checking database...'),
+                  Text('Preparing database...'),
                 ],
               ),
             ),
@@ -59,7 +59,7 @@ class _MigrationCheckState extends State<MigrationCheck> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'Error checking database',
+                      'Error preparing database',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -71,6 +71,15 @@ class _MigrationCheckState extends State<MigrationCheck> {
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.red),
                     ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _checkFuture = _checkJsonMigration();
+                        });
+                      },
+                      child: const Text('Retry'),
+                    ),
                   ],
                 ),
               ),
@@ -78,69 +87,154 @@ class _MigrationCheckState extends State<MigrationCheck> {
           );
         }
 
-        final needsMigration = snapshot.data ?? false;
+        final state = snapshot.data!;
 
-        if (needsMigration) {
-          return FutureBuilder<Map<String, dynamic>>(
-            future: _getDatabaseInfo(),
-            builder: (context, dbSnapshot) {
-              if (dbSnapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
+        // If JSON migration is needed, show progress UI
+        if (state.needsJsonMigration) {
+          return _JsonMigrationScreen(
+            database: state.database!,
+            onComplete: () {
+              setState(() {
+                _checkFuture = Future.value(
+                  _MigrationState(needsJsonMigration: false),
                 );
-              }
-
-              if (dbSnapshot.hasError || !dbSnapshot.hasData) {
-                return Scaffold(
-                  body: Center(child: Text('Error: ${dbSnapshot.error}')),
-                );
-              }
-
-              final dbInfo = dbSnapshot.data!;
-              return MigrationScreen(
-                database: dbInfo['database'] as Database,
-                databasePath: dbInfo['path'] as String,
-                onComplete: () async {
-                  await (dbInfo['database'] as Database).close();
-                  if (mounted) {
-                    setState(() {
-                      _migrationCheckFuture = _checkMigration();
-                    });
-                  }
-                },
-              );
+              });
             },
           );
         }
 
-        // No migration needed, show the child
+        // No JSON migration needed, show the app
         return widget.child;
       },
     );
   }
 
-  Future<bool> _checkMigration() async {
+  Future<_MigrationState> _checkJsonMigration() async {
+    final dbPath = join(await getDatabasesPath(), 'indulge.db');
+    final dbFile = File(dbPath);
+
+    if (!await dbFile.exists()) {
+      return _MigrationState(needsJsonMigration: false);
+    }
+
+    // Open database - schema migration happens via onUpgrade in main.dart
+    final db = await openDatabase(dbPath);
+
+    // Check if JSON migration is needed
+    final needsJsonMigration = await DatabaseEngine.needsJsonMigration(
+      db,
+      dbPath,
+    );
+
+    return _MigrationState(
+      needsJsonMigration: needsJsonMigration,
+      database: db,
+    );
+  }
+}
+
+class _MigrationState {
+  final bool needsJsonMigration;
+  final Database? database;
+
+  _MigrationState({required this.needsJsonMigration, this.database});
+}
+
+/// Progress screen shown during JSON migration (v1 -> v2)
+class _JsonMigrationScreen extends StatefulWidget {
+  final Database database;
+  final VoidCallback onComplete;
+
+  const _JsonMigrationScreen({
+    required this.database,
+    required this.onComplete,
+  });
+
+  @override
+  State<_JsonMigrationScreen> createState() => _JsonMigrationScreenState();
+}
+
+class _JsonMigrationScreenState extends State<_JsonMigrationScreen> {
+  String _statusMessage = 'Preparing migration...';
+  double _progress = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _runMigration();
+  }
+
+  Future<void> _runMigration() async {
     try {
       final dbPath = join(await getDatabasesPath(), 'indulge.db');
 
-      // If database file doesn't exist, it's a new install
-      // Let onCreate handle the initialization
-      if (!await File(dbPath).exists()) {
-        return false;
-      }
+      final result = await DatabaseEngine.migrateIfNeeded(
+        widget.database,
+        dbPath,
+        onProgress: (table, current, total, message) {
+          if (mounted) {
+            setState(() {
+              _progress = total > 0 ? current / total : 0.0;
+              _statusMessage = message ?? 'Migrating...';
+            });
+          }
+        },
+      );
 
-      final db = await openDatabase(dbPath);
-      final needsMigration = await DatabaseEngine.needsMigration(db, dbPath);
-      return needsMigration;
+      if (mounted) {
+        if (result != null && result.success) {
+          widget.onComplete();
+        } else {
+          setState(() {
+            _statusMessage = 'Migration failed: ${result?.error}';
+          });
+        }
+      }
     } catch (e) {
-      print('Error checking migration: $e');
-      rethrow;
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'Error: $e';
+        });
+      }
     }
   }
 
-  Future<Map<String, dynamic>> _getDatabaseInfo() async {
-    final dbPath = join(await getDatabasesPath(), 'indulge.db');
-    final db = await openDatabase(dbPath);
-    return {'database': db, 'path': dbPath};
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.upgrade, size: 64, color: Colors.blue),
+              const SizedBox(height: 24),
+              const Text(
+                'Upgrading Database',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _statusMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 24),
+              if (_progress > 0)
+                Column(
+                  children: [
+                    LinearProgressIndicator(value: _progress),
+                    const SizedBox(height: 8),
+                    Text('${(_progress * 100).toInt()}%'),
+                  ],
+                )
+              else
+                const CircularProgressIndicator(),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

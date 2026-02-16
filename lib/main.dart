@@ -14,6 +14,9 @@ import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
 import 'package:indulge/view/migration/migration_check.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
+import 'dart:io';
+import 'package:sqflite/sqflite.dart';
+import 'package:indulge/domain/database/database_engine.dart';
 import 'package:indulge/view/common/speed_dial_fab.dart';
 import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
 import 'package:logging/logging.dart';
@@ -33,6 +36,10 @@ Future<void> main() async {
   // Initialize preferences service before running the app so UI can read persisted prefs.
   final prefsService = await PreferencesService.build();
 
+  // Run schema migration (creating new tables) before launching the app
+  // This is fast - JSON migration will be handled later if needed
+  await _runSchemaMigration();
+
   // Provide the PreferencesService to the widget tree so screens can access persisted UI preferences.
   runApp(
     Provider<PreferencesService>.value(
@@ -40,6 +47,31 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
+}
+
+/// Runs schema-only migration (creating new tables) before app starts.
+/// This is fast - no UI needed.
+Future<void> _runSchemaMigration() async {
+  try {
+    // Open database with version 3 - this triggers onUpgrade to create
+    // missing tables like clinical_event (fast operation)
+    final dbPath = '${await getDatabasesPath()}/indulge.db';
+    final dbFile = File(dbPath);
+    if (!await dbFile.exists()) {
+      return; // New install, onCreate will handle it
+    }
+    await openDatabase(
+      dbPath,
+      version: 3,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Perform actual schema upgrade (create missing tables)
+        await DatabaseEngine.upgradeSchema(db, oldVersion, newVersion);
+      },
+    );
+  } catch (e) {
+    // Log but don't fail - let the app try to continue
+    print('Schema migration error: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -53,30 +85,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Central EventState store shared between providers
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => EventStateStore()),
-
-        // SexualEventsProvider receives the shared EventStateStore so it can
-        // bridge updates into the centralized store (step 1 of migration).
         ChangeNotifierProvider(
           create: (context) {
             final store = context.read<EventStateStore>();
             return SexualEventsProvider(stateStore: store);
           },
         ),
-
-        // ClinicalEventsProvider: construct and pass the same EventStateStore.
-        // The provider receives the shared EventStateStore so it can bridge
-        // clinical-state updates into the centralized store as well.
         ChangeNotifierProvider(
           create: (context) {
             final store = context.read<EventStateStore>();
             return ClinicalEventsProvider(stateStore: store);
           },
         ),
-
-        // UI theme provider
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
@@ -95,7 +117,7 @@ class MyApp extends StatelessWidget {
               useMaterial3: true,
             ),
             themeMode: themeProvider.themeMode,
-            home: const MigrationCheck(child: MyHomePage(title: 'Indulge')),
+            home: MigrationCheck(child: const MyHomePage(title: 'Indulge')),
           );
         },
       ),
