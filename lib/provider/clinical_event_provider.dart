@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/data/repositories/clinical_event_repository.dart';
-import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/event_state_store.dart';
+import 'package:logging/logging.dart';
 
 /// Provider responsible for clinical event state and persistence.
 ///
@@ -17,6 +17,7 @@ class ClinicalEventsProvider extends ChangeNotifier {
   late ClinicalEventRepository _repository;
   final EventStateStore _stateStore;
   late final Future<String> _ready;
+  final Logger _logger = Logger('ClinicalEventsProvider');
 
   ClinicalEventsProvider({
     ClinicalEventRepository? repository,
@@ -67,8 +68,10 @@ class ClinicalEventsProvider extends ChangeNotifier {
 
   /// Selects a date (day) and loads clinical events for that date.
   void selectDate(DateTime date) {
-    _stateStore.setSelectedDate(date);
-    _loadClinicalEventsForDate(date);
+    // Normalize to midnight to ensure consistent day queries
+    final normalized = DateTime(date.year, date.month, date.day);
+    _stateStore.setSelectedDate(normalized);
+    _loadClinicalEventsForDate(normalized);
   }
 
   /// Select a specific ClinicalEvent and update state.
@@ -79,21 +82,51 @@ class ClinicalEventsProvider extends ChangeNotifier {
   }
 
   /// Save (insert or update) a clinical event then refresh presence + day events.
+  /// Also update the centrally-stored `selectedDate` so daily views will show
+  /// the saved event's date immediately.
   Future<void> saveEvent(ClinicalEvent event) async {
+    _logger.info(
+      'saveEvent: starting save for event id=${event.id} date=${event.date}',
+    );
     await _repository.save(event);
+    _logger.fine('saveEvent: repository.save completed for id=${event.id}');
 
     // Refresh presence map for a sliding window that includes the event date
     final start = event.date.subtract(const Duration(days: 30));
     final end = event.date.add(const Duration(days: 31));
+    _logger.fine('saveEvent: fetching presence from $start to $end');
     final presence = await _repository.getDailyPresence(start, end);
+    _logger.fine(
+      'saveEvent: presence map retrieved (${presence.length} entries)',
+    );
 
     _stateStore.setDailyClinicalEventPresence(presence);
+    _logger.fine(
+      'saveEvent: dailyClinicalEventPresence updated in EventStateStore',
+    );
 
-    // Reload events for the event date so UI shows latest
-    await _loadClinicalEventsForDate(event.date);
+    // Normalize to local date-only (time removed) to avoid timezone mismatches.
+    final localDate = DateTime(
+      event.date.toLocal().year,
+      event.date.toLocal().month,
+      event.date.toLocal().day,
+    );
+    _stateStore.setSelectedDate(localDate);
+    _logger.fine(
+      'saveEvent: selectedDate set to $localDate in EventStateStore',
+    );
+
+    // Reload events for the normalized day so UI shows latest
+    _logger.fine('saveEvent: loading clinical events for date $localDate');
+    await _loadClinicalEventsForDate(localDate);
+    _logger.fine('saveEvent: clinical events reloaded for $localDate');
 
     // Select the saved event in the centralized store
     _stateStore.setSelectedClinicalEvent(event);
+    _logger.info('saveEvent: completed save flow for event id=${event.id}');
+
+    // Mark data as dirty to trigger refresh
+    _stateStore.markDataDirty();
   }
 
   /// Delete an event and refresh presence/map for the affected date range.
@@ -121,6 +154,9 @@ class ClinicalEventsProvider extends ChangeNotifier {
     if (_stateStore.state.selectedClinicalEvent?.id == id) {
       _stateStore.setSelectedClinicalEvent(null);
     }
+
+    // Mark data as dirty to trigger refresh
+    _stateStore.markDataDirty();
   }
 
   /// Returns clinical events for a specific date (day).
@@ -139,6 +175,11 @@ class ClinicalEventsProvider extends ChangeNotifier {
     return await _repository.getLastTestDateFor(testType);
   }
 
+  /// Returns the date of the most recent clinical event, or null if no events exist.
+  Future<DateTime?> getLastClinicalEventDate() async {
+    return await _repository.getLastClinicalEventDate();
+  }
+
   /// Returns the most recent result for each TestType.
   Future<Map<TestType, ClinicalTestResult>> getLatestTestResults() async {
     return await _repository.getLatestTestResults();
@@ -149,8 +190,38 @@ class ClinicalEventsProvider extends ChangeNotifier {
   ------------------------- */
 
   Future<void> _loadClinicalEventsForDate(DateTime date) async {
-    final events = await _repository.getByDate(date);
-    // Write day events directly into the store.
-    _stateStore.setCurrentClinicalEvents(events);
+    _logger.info('_loadClinicalEventsForDate: loading events for date=$date');
+    List<ClinicalEvent> events;
+    try {
+      events = await _repository.getByDate(date);
+      _logger.fine(
+        '_loadClinicalEventsForDate: repository returned ${events.length} event(s)',
+      );
+    } catch (e, st) {
+      _logger.warning(
+        '_loadClinicalEventsForDate: repository.getByDate failed: $e\n$st',
+      );
+      // On failure, ensure we clear current events to avoid stale UI state.
+      _stateStore.setCurrentClinicalEvents([]);
+      return;
+    }
+
+    // Normalize event dates to the local timezone so UI consumes local DateTimes.
+    final normalized = events.map((e) {
+      try {
+        return e.copyWith(date: e.date.toLocal());
+      } catch (err) {
+        _logger.warning(
+          '_loadClinicalEventsForDate: failed to normalize event ${e.id}: $err',
+        );
+        return e;
+      }
+    }).toList();
+
+    // Write normalized day events directly into the store.
+    _stateStore.setCurrentClinicalEvents(normalized);
+    _logger.fine(
+      '_loadClinicalEventsForDate: set ${normalized.length} events into EventStateStore',
+    );
   }
 }

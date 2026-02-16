@@ -14,6 +14,8 @@ import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
 import 'package:indulge/view/migration/migration_check.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
+import 'package:indulge/view/common/speed_dial_fab.dart';
+import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
 import 'package:logging/logging.dart';
 
 // Preferences service (SharedPreferences wrapper) - initialize at startup
@@ -257,24 +259,66 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget? _buildFloatingActionButton() {
     // Show different FAB based on current page
     switch (currentPageIndex) {
-      case 0: // Events page
-        return FloatingActionButton(
-          heroTag: 'events_add_fab',
-          onPressed: () {
-            final selectedDate = context
-                .read<EventStateStore>()
-                .state
-                .selectedDate;
-            Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) =>
-                    SexualEventEditorPage(initialDate: selectedDate),
-              ),
-            );
-          },
-          tooltip: 'Add a new encounter',
-          child: const Icon(Icons.add),
+      case 0: // Events page - show speed-dial FAB with Sexual + Clinical actions
+        return SpeedDialFab(
+          items: [
+            SpeedDialItem(
+              icon: const Icon(Icons.local_fire_department),
+              label: 'Sexual',
+              onPressed: () {
+                final selectedDate = context
+                    .read<EventStateStore>()
+                    .state
+                    .selectedDate;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) =>
+                        SexualEventEditorPage(initialDate: selectedDate),
+                  ),
+                );
+              },
+            ),
+            SpeedDialItem(
+              icon: const Icon(Icons.medical_services),
+              label: 'Clinical',
+              onPressed: () {
+                final selectedDate = context
+                    .read<EventStateStore>()
+                    .state
+                    .selectedDate;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => ClinicalEventEditorPage(
+                      initialDate: selectedDate,
+                      onSave: (clinicalEvent) async {
+                        try {
+                          await context
+                              .read<ClinicalEventsProvider>()
+                              .saveEvent(clinicalEvent);
+                          return true;
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Error saving clinical event: $e',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                          return false;
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+          closedIcon: Icons.add,
         );
       case 3: // Contacts page
         return FloatingActionButton(

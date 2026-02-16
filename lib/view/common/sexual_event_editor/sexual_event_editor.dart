@@ -12,6 +12,7 @@ import 'utils/event_validator.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
+import 'package:indulge/services/preferences_service.dart';
 
 class SexualEventEditorPage extends StatefulWidget {
   final SexualEvent? event;
@@ -124,12 +125,24 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
       _clearPendingLocation();
     }
 
+    // Check if auto-add location setting is enabled
+    final prefs = await PreferencesService.build();
+    final shouldAutoAddLocation =
+        widget.event == null && prefs.getAutoAddLocation();
+
     setState(() {
       _availablePersons = persons;
       _availableActivityCategories = activityCategories;
       _availableActivities = activities;
       _isLoading = false;
     });
+
+    // After UI loads, if auto-add is enabled, show map and fetch location
+    if (shouldAutoAddLocation) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openLocationMap();
+      });
+    }
   }
 
   void _updateNotes(String notes) {

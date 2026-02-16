@@ -30,18 +30,27 @@ class _ContactListPageState extends State<ContactListPage>
   void initState() {
     super.initState();
     _loadPersons();
-    // No manual listener attachment here. We rely on `context.watch<EventStateStore>()`
-    // in `build` to trigger rebuilds and then schedule any necessary refresh of
-    // the local cached list via a post-frame callback.
+    // Add listener to store to refresh when data changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<EventStateStore>().addListener(_onStoreChange);
+    });
+  }
+
+  void _onStoreChange() {
+    if (!mounted) return;
+    final store = context.read<EventStateStore>();
+    if (store.needsDataRefresh) {
+      _loadPersons(forceLoadEvents: true);
+    }
   }
 
   @override
   void dispose() {
-    // No manual listener was attached in initState anymore.
+    context.read<EventStateStore>().removeListener(_onStoreChange);
     super.dispose();
   }
 
-  Future<void> _loadPersons() async {
+  Future<void> _loadPersons({bool forceLoadEvents = false}) async {
     setState(() => _isLoading = true);
     final provider = context.read<SexualEventsProvider>();
     final store = context.read<EventStateStore>();
@@ -50,8 +59,16 @@ class _ContactListPageState extends State<ContactListPage>
     // to avoid an extra DB call; fall back to the provider otherwise.
     final persons = store.state.allPersons ?? await provider.getAllPersons();
 
-    // Calculate event counts for each person
-    final allEvents = await provider.getAllEvents();
+    // Fetch all events if data has changed, if force is specified, or on initial load
+    // (when we don't have cached event counts yet)
+    List<SexualEvent> allEvents = [];
+    final hasEventCounts = _personEventCounts.isNotEmpty;
+    if (forceLoadEvents || store.needsDataRefresh || !hasEventCounts) {
+      allEvents = await provider.getAllEvents();
+      if (store.needsDataRefresh) {
+        store.clearDataDirty();
+      }
+    }
     _logger.info(
       'Counting events for ${persons.length} persons across ${allEvents.length} events',
     );
@@ -94,8 +111,8 @@ class _ContactListPageState extends State<ContactListPage>
         builder: (context) => ContactEditorPage(person: person),
       ),
     );
-    // Refresh the list when returning from editor
-    _loadPersons();
+    // Refresh the list when returning from editor (force load events for accurate counts)
+    _loadPersons(forceLoadEvents: true);
   }
 
   Future<void> _deletePerson(Person person) async {
@@ -126,7 +143,8 @@ class _ContactListPageState extends State<ContactListPage>
       try {
         final provider = context.read<SexualEventsProvider>();
         await provider.deletePerson(person.id);
-        _loadPersons();
+        // Force reload events for accurate counts after deletion
+        _loadPersons(forceLoadEvents: true);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -155,20 +173,8 @@ class _ContactListPageState extends State<ContactListPage>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     // Watch EventStateStore so this widget rebuilds when the centralized store changes.
-    // Use the store's person map for an efficient membership comparison and refresh
-    // our local list only when the cached IDs differ from our local IDs.
-    final store = context.watch<EventStateStore>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cachedMap = store.allPersonsMap;
-      if (cachedMap != null) {
-        final localIds = _persons.map((p) => p.id).toSet();
-        final cachedIds = cachedMap.keys.toSet();
-        if (!setEquals(localIds, cachedIds)) {
-          // Defer to existing loader which prefers the store cache when available.
-          _loadPersons();
-        }
-      }
-    });
+    // The _onStoreChange listener handles data refresh on changes.
+    context.watch<EventStateStore>();
 
     return Scaffold(
       body: SafeArea(
@@ -185,7 +191,7 @@ class _ContactListPageState extends State<ContactListPage>
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  await _loadPersons();
+                  await _loadPersons(forceLoadEvents: true);
                 },
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())

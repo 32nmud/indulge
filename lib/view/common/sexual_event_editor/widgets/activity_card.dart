@@ -62,7 +62,7 @@ class ActivityCard extends StatelessWidget {
     final emoji = activityCategory?.displayCharacter ?? '❔';
     final name = activityCategory?.name ?? 'Unknown';
 
-    // Get available properties for this activity type
+    // Get available properties for this activity type and sort alphabetically
     final availableSexualActivities = <SexualActivity>[];
     if (activityCategory != null) {
       for (var activityRef in activityCategory.activities) {
@@ -71,6 +71,10 @@ class ActivityCard extends StatelessWidget {
           availableSexualActivities.add(sexualActivity);
         }
       }
+      // Sort alphabetically by name
+      availableSexualActivities.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
     }
 
     return Card(
@@ -237,15 +241,13 @@ class ActivityCard extends StatelessWidget {
           avatar: Icon(
             isSelf ? Icons.account_circle : Icons.person,
             size: 18,
-            color: isSelf ? Colors.blue : null,
+            color: Theme.of(context).colorScheme.primary,
           ),
           label: Text(
             personName,
-            style: TextStyle(
-              fontWeight: isSelf ? FontWeight.bold : FontWeight.normal,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          backgroundColor: isSelf ? Colors.blue.shade50 : null,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           onDeleted: () => onRemoveParticipant(activityIndex, participantIndex),
           deleteIcon: const Icon(Icons.close, size: 18),
         );
@@ -310,10 +312,14 @@ class ActivityCard extends StatelessWidget {
       }
     }
 
+    // Check if this activity has any participants with this property marked
+    final hasParticipantsWithProperty =
+        participantsWithProperty.isNotEmpty || meHasProperty;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: sexualActivity.isRisky
-          ? Theme.of(context).colorScheme.tertiaryContainer
+      color: hasParticipantsWithProperty
+          ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -336,6 +342,15 @@ class ActivityCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (sexualActivity.isRisky)
+                  Tooltip(
+                    message: 'Risky activity',
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      size: 20,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 8),

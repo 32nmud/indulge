@@ -204,12 +204,24 @@ class _SexualEventCardState extends State<SexualEventCard>
       return const Text('No activities');
     }
 
+    // Sort activities by category name alphabetically
+    final sortedActivities = List<EventActivity>.from(activities)
+      ..sort((a, b) {
+        final nameA =
+            eventState.sexualActivityCategories?[a.category.reference]?.name ??
+            '';
+        final nameB =
+            eventState.sexualActivityCategories?[b.category.reference]?.name ??
+            '';
+        return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+      });
+
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
       child: Wrap(
         spacing: 8,
         runSpacing: 4,
-        children: activities.map((activity) {
+        children: sortedActivities.map((activity) {
           final activityCategory =
               eventState.sexualActivityCategories?[activity.category.reference];
           final emoji = activityCategory?.displayCharacter ?? '❔';
@@ -231,9 +243,20 @@ class _SexualEventCardState extends State<SexualEventCard>
     List<Person> persons,
     EventState eventState,
   ) {
+    // Sort activities by category name alphabetically
+    final sortedActivities = List<EventActivity>.from(activities)
+      ..sort((a, b) {
+        final nameA =
+            eventState.sexualActivityCategories?[a.category.reference]?.name ??
+            '';
+        final nameB =
+            eventState.sexualActivityCategories?[b.category.reference]?.name ??
+            '';
+        return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+      });
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: activities.map((activity) {
+      children: sortedActivities.map((activity) {
         return _buildActivityCard(activity, persons, eventState);
       }).toList(),
     );

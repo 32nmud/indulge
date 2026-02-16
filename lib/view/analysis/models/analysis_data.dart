@@ -64,6 +64,9 @@ class AnalysisData {
   final int currentStreak;
   final int longestStreak;
 
+  // STI test date
+  final DateTime? lastStiTestDate;
+
   // Partner breakdown
   final Map<String, int> personCounts; // Total activities with each partner
   final Map<String, int> personEventCounts; // Total events with each partner
@@ -160,6 +163,7 @@ class AnalysisData {
     required this.activityCategories,
     required this.longestStreak,
     required this.currentStreak,
+    this.lastStiTestDate,
     required this.personCounts,
     required this.personEventCounts,
     required this.personEvents,

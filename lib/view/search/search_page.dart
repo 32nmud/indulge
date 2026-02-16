@@ -118,8 +118,12 @@ class SearchPageState extends State<SearchPage>
   }
 
   void _onStoreChange() {
-    if (mounted) {
-      // Schedule the search to ensure it doesn't conflict with current build/notify cycle
+    if (!mounted) return;
+
+    final store = context.read<EventStateStore>();
+    // Only refresh search results if data has actually changed (not on date changes)
+    // Note: don't clear dirty flag here - let _performSearch do it after loading
+    if (store.needsDataRefresh) {
       Future.microtask(() => _performSearch());
     }
   }
@@ -197,9 +201,16 @@ class SearchPageState extends State<SearchPage>
 
     try {
       final provider = context.read<SexualEventsProvider>();
+      final store = context.read<EventStateStore>();
+
+      // Clear dirty flag after loading
+      if (store.needsDataRefresh) {
+        store.clearDataDirty();
+      }
+
       final allEvents = await provider.getAllEvents();
       // Read 'myself' from the centralized store snapshot
-      final myId = context.read<EventStateStore>().state.myself?.id;
+      final myId = store.state.myself?.id;
 
       final filteredEvents = allEvents.where((event) {
         // Date range filter

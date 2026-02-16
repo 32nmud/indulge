@@ -42,6 +42,9 @@ class PreferencesService {
       'pref_partner_properties_category_selected_ids';
   static const String _kActivitySelectedIds = 'pref_activity_selected_ids';
 
+  // Auto-add location setting
+  static const String _kAutoAddLocation = 'pref_auto_add_location';
+
   // Current preferences version. Increment when stored keys/shape change.
   static const int _currentPreferencesVersion = 4;
 
@@ -78,6 +81,9 @@ class PreferencesService {
   partnerPropertiesCategorySelectedIdsNotifier;
   final ValueNotifier<List<String>> activitySelectedIdsNotifier;
 
+  // Auto-add location setting
+  final ValueNotifier<bool> autoAddLocationNotifier;
+
   PreferencesService._(
     this._prefs,
     this.periodPresetNotifier,
@@ -89,6 +95,7 @@ class PreferencesService {
     this.monthlyShowPatternNotifier,
     this.categoryShowPatternNotifier,
     this.activityShowPatternNotifier,
+    this.autoAddLocationNotifier,
     this.categorySelectedIdsNotifier,
     this.propertiesCategorySelectedIdsNotifier,
     this.partnerPropertiesCategorySelectedIdsNotifier,
@@ -168,6 +175,9 @@ class PreferencesService {
     final categoryPattern = prefs.getBool(_kCategoryShowPattern) ?? false;
     final activityPattern = prefs.getBool(_kActivityShowPattern) ?? false;
 
+    // Load auto-add location setting (default to false)
+    final autoAddLocation = prefs.getBool(_kAutoAddLocation) ?? false;
+
     // Load selected IDs (JSON-encoded lists). Use a safe parser that falls back
     // to an empty list on parse errors.
     List<String> _parseStringList(String? jsonStr) {
@@ -208,6 +218,7 @@ class PreferencesService {
       ValueNotifier<bool>(monthlyPattern),
       ValueNotifier<bool>(categoryPattern),
       ValueNotifier<bool>(activityPattern),
+      ValueNotifier<bool>(autoAddLocation),
       ValueNotifier<List<String>>(categorySelected),
       ValueNotifier<List<String>>(propertiesCategorySelected),
       ValueNotifier<List<String>>(partnerPropertiesCategorySelected),
@@ -373,6 +384,21 @@ class PreferencesService {
   }
 
   // -------------------------
+  // Auto-add location API
+  // -------------------------
+
+  bool getAutoAddLocation() => autoAddLocationNotifier.value;
+
+  Future<void> setAutoAddLocation(bool autoAdd) async {
+    final success = await _prefs.setBool(_kAutoAddLocation, autoAdd);
+    if (success) {
+      autoAddLocationNotifier.value = autoAdd;
+    } else {
+      autoAddLocationNotifier.value = autoAdd;
+    }
+  }
+
+  // -------------------------
   // Selected IDs APIs
   // -------------------------
   //
@@ -453,6 +479,7 @@ class PreferencesService {
     await _prefs.remove(_kMonthlyShowPattern);
     await _prefs.remove(_kCategoryShowPattern);
     await _prefs.remove(_kActivityShowPattern);
+    await _prefs.remove(_kAutoAddLocation);
     await _prefs.remove(_kCategorySelectedIds);
     await _prefs.remove(_kPropertiesCategorySelectedIds);
     await _prefs.remove(_kActivitySelectedIds);
@@ -467,6 +494,8 @@ class PreferencesService {
     monthlyShowPatternNotifier.value = false;
     categoryShowPatternNotifier.value = false;
     activityShowPatternNotifier.value = false;
+
+    autoAddLocationNotifier.value = false;
 
     categorySelectedIdsNotifier.value = <String>[];
     propertiesCategorySelectedIdsNotifier.value = <String>[];
@@ -531,10 +560,13 @@ class PreferencesService {
         await prefs.setString(propertiesCategoryKey, jsonEncode(<String>[]));
       }
 
-      // Update stored version to reflect this migration step.
+      // Also ensure the auto-add location setting exists with a default value
+      if (!prefs.containsKey(_kAutoAddLocation)) {
+        await prefs.setBool(_kAutoAddLocation, false);
+      }
+
+      // Update version
       await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
     }
-
-    return Future.value();
   }
 }

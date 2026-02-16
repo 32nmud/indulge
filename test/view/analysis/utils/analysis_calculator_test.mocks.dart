@@ -3,14 +3,13 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i5;
-import 'dart:ui' as _i7;
+import 'dart:async' as _i4;
+import 'dart:ui' as _i6;
 
-import 'package:indulge/data/models.dart' as _i3;
-import 'package:indulge/provider/event_state.dart' as _i2;
-import 'package:indulge/provider/sexual_event_provider.dart' as _i4;
+import 'package:indulge/data/models.dart' as _i2;
+import 'package:indulge/provider/sexual_event_provider.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i5;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -27,13 +26,8 @@ import 'package:mockito/src/dummies.dart' as _i6;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeEventState_0 extends _i1.SmartFake implements _i2.EventState {
-  _FakeEventState_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeLocation_1 extends _i1.SmartFake implements _i3.Location {
-  _FakeLocation_1(Object parent, Invocation parentInvocation)
+class _FakeLocation_0 extends _i1.SmartFake implements _i2.Location {
+  _FakeLocation_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -41,28 +35,20 @@ class _FakeLocation_1 extends _i1.SmartFake implements _i3.Location {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSexualEventsProvider extends _i1.Mock
-    implements _i4.SexualEventsProvider {
+    implements _i3.SexualEventsProvider {
   MockSexualEventsProvider() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i5.Future<String> get ready =>
+  _i4.Future<String> get ready =>
       (super.noSuchMethod(
             Invocation.getter(#ready),
-            returnValue: _i5.Future<String>.value(
-              _i6.dummyValue<String>(this, Invocation.getter(#ready)),
+            returnValue: _i4.Future<String>.value(
+              _i5.dummyValue<String>(this, Invocation.getter(#ready)),
             ),
           )
-          as _i5.Future<String>);
-
-  @override
-  _i2.EventState get state =>
-      (super.noSuchMethod(
-            Invocation.getter(#state),
-            returnValue: _FakeEventState_0(this, Invocation.getter(#state)),
-          )
-          as _i2.EventState);
+          as _i4.Future<String>);
 
   @override
   bool get hasListeners =>
@@ -70,13 +56,13 @@ class MockSexualEventsProvider extends _i1.Mock
           as bool);
 
   @override
-  _i5.Future<void> refreshAllData() =>
+  _i4.Future<void> refreshAllData() =>
       (super.noSuchMethod(
             Invocation.method(#refreshAllData, []),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
   void selectDate(DateTime? date) => super.noSuchMethod(
@@ -85,216 +71,216 @@ class MockSexualEventsProvider extends _i1.Mock
   );
 
   @override
-  _i5.Future<void> selectEvent(_i3.SexualEvent? event) =>
+  _i4.Future<void> selectEvent(_i2.SexualEvent? event) =>
       (super.noSuchMethod(
             Invocation.method(#selectEvent, [event]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> removeActivity(_i3.EventActivity? activity) =>
+  _i4.Future<void> removeActivity(_i2.EventActivity? activity) =>
       (super.noSuchMethod(
             Invocation.method(#removeActivity, [activity]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> removeParticipant(_i3.Person? participant) =>
+  _i4.Future<void> removeParticipant(_i2.Person? participant) =>
       (super.noSuchMethod(
             Invocation.method(#removeParticipant, [participant]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> removeActivityFromEdit(String? activityCategoryId) =>
+  _i4.Future<void> removeActivityFromEdit(String? activityCategoryId) =>
       (super.noSuchMethod(
             Invocation.method(#removeActivityFromEdit, [activityCategoryId]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> removeParticipantFromEdit(String? personId) =>
+  _i4.Future<void> removeParticipantFromEdit(String? personId) =>
       (super.noSuchMethod(
             Invocation.method(#removeParticipantFromEdit, [personId]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  List<_i3.SexualActivity> getSexualActivitiesForPersonAndActivity(
-    _i3.Person? person,
-    _i3.EventActivity? activity,
+  List<_i2.SexualActivity> getSexualActivitiesForPersonAndActivity(
+    _i2.Person? person,
+    _i2.EventActivity? activity,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#getSexualActivitiesForPersonAndActivity, [
               person,
               activity,
             ]),
-            returnValue: <_i3.SexualActivity>[],
+            returnValue: <_i2.SexualActivity>[],
           )
-          as List<_i3.SexualActivity>);
+          as List<_i2.SexualActivity>);
 
   @override
-  _i5.Future<List<_i3.Person>> getPersonsForEvent(String? eventId) =>
+  _i4.Future<List<_i2.Person>> getPersonsForEvent(String? eventId) =>
       (super.noSuchMethod(
             Invocation.method(#getPersonsForEvent, [eventId]),
-            returnValue: _i5.Future<List<_i3.Person>>.value(<_i3.Person>[]),
+            returnValue: _i4.Future<List<_i2.Person>>.value(<_i2.Person>[]),
           )
-          as _i5.Future<List<_i3.Person>>);
+          as _i4.Future<List<_i2.Person>>);
 
   @override
-  _i5.Future<List<_i3.Person>> getPersonsForActivity(
-    _i3.EventActivity? activity,
+  _i4.Future<List<_i2.Person>> getPersonsForActivity(
+    _i2.EventActivity? activity,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#getPersonsForActivity, [activity]),
-            returnValue: _i5.Future<List<_i3.Person>>.value(<_i3.Person>[]),
+            returnValue: _i4.Future<List<_i2.Person>>.value(<_i2.Person>[]),
           )
-          as _i5.Future<List<_i3.Person>>);
+          as _i4.Future<List<_i2.Person>>);
 
   @override
-  _i5.Future<List<_i3.Person>> getAllPersons() =>
+  _i4.Future<List<_i2.Person>> getAllPersons() =>
       (super.noSuchMethod(
             Invocation.method(#getAllPersons, []),
-            returnValue: _i5.Future<List<_i3.Person>>.value(<_i3.Person>[]),
+            returnValue: _i4.Future<List<_i2.Person>>.value(<_i2.Person>[]),
           )
-          as _i5.Future<List<_i3.Person>>);
+          as _i4.Future<List<_i2.Person>>);
 
   @override
-  _i5.Future<_i3.Person?> getPersonById(String? id) =>
+  _i4.Future<_i2.Person?> getPersonById(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#getPersonById, [id]),
-            returnValue: _i5.Future<_i3.Person?>.value(),
+            returnValue: _i4.Future<_i2.Person?>.value(),
           )
-          as _i5.Future<_i3.Person?>);
+          as _i4.Future<_i2.Person?>);
 
   @override
-  _i5.Future<void> savePerson(_i3.Person? person) =>
+  _i4.Future<void> savePerson(_i2.Person? person) =>
       (super.noSuchMethod(
             Invocation.method(#savePerson, [person]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> deletePerson(String? id) =>
+  _i4.Future<void> deletePerson(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#deletePerson, [id]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> saveEvent(_i3.SexualEvent? event) =>
+  _i4.Future<void> saveEvent(_i2.SexualEvent? event) =>
       (super.noSuchMethod(
             Invocation.method(#saveEvent, [event]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> deleteEvent(String? eventId) =>
+  _i4.Future<void> deleteEvent(String? eventId) =>
       (super.noSuchMethod(
             Invocation.method(#deleteEvent, [eventId]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<List<_i3.SexualEvent>> getAllEvents() =>
+  _i4.Future<List<_i2.SexualEvent>> getAllEvents() =>
       (super.noSuchMethod(
             Invocation.method(#getAllEvents, []),
-            returnValue: _i5.Future<List<_i3.SexualEvent>>.value(
-              <_i3.SexualEvent>[],
+            returnValue: _i4.Future<List<_i2.SexualEvent>>.value(
+              <_i2.SexualEvent>[],
             ),
           )
-          as _i5.Future<List<_i3.SexualEvent>>);
+          as _i4.Future<List<_i2.SexualEvent>>);
 
   @override
-  _i5.Future<void> saveActivityCategory(
-    _i3.SexualActivityCategory? activityCategory,
+  _i4.Future<void> saveActivityCategory(
+    _i2.SexualActivityCategory? activityCategory,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#saveActivityCategory, [activityCategory]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> deleteActivityCategory(String? id) =>
+  _i4.Future<void> deleteActivityCategory(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#deleteActivityCategory, [id]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<bool> isActivityCategoryUsed(String? activityCategoryId) =>
+  _i4.Future<bool> isActivityCategoryUsed(String? activityCategoryId) =>
       (super.noSuchMethod(
             Invocation.method(#isActivityCategoryUsed, [activityCategoryId]),
-            returnValue: _i5.Future<bool>.value(false),
+            returnValue: _i4.Future<bool>.value(false),
           )
-          as _i5.Future<bool>);
+          as _i4.Future<bool>);
 
   @override
-  _i5.Future<int> getUsageCountForCategory(String? id) =>
+  _i4.Future<int> getUsageCountForCategory(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#getUsageCountForCategory, [id]),
-            returnValue: _i5.Future<int>.value(0),
+            returnValue: _i4.Future<int>.value(0),
           )
-          as _i5.Future<int>);
+          as _i4.Future<int>);
 
   @override
-  _i5.Future<void> saveSexualActivity(_i3.SexualActivity? activity) =>
+  _i4.Future<void> saveSexualActivity(_i2.SexualActivity? activity) =>
       (super.noSuchMethod(
             Invocation.method(#saveSexualActivity, [activity]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> deleteSexualActivity(String? id) =>
+  _i4.Future<void> deleteSexualActivity(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#deleteSexualActivity, [id]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<bool> isSexualActivityUsed(String? activityId) =>
+  _i4.Future<bool> isSexualActivityUsed(String? activityId) =>
       (super.noSuchMethod(
             Invocation.method(#isSexualActivityUsed, [activityId]),
-            returnValue: _i5.Future<bool>.value(false),
+            returnValue: _i4.Future<bool>.value(false),
           )
-          as _i5.Future<bool>);
+          as _i4.Future<bool>);
 
   @override
-  _i5.Future<int> getUsageCountForActivity(String? id) =>
+  _i4.Future<int> getUsageCountForActivity(String? id) =>
       (super.noSuchMethod(
             Invocation.method(#getUsageCountForActivity, [id]),
-            returnValue: _i5.Future<int>.value(0),
+            returnValue: _i4.Future<int>.value(0),
           )
-          as _i5.Future<int>);
+          as _i4.Future<int>);
 
   @override
-  _i5.Future<_i3.Location> createLocationFromCoordinates(
+  _i4.Future<_i2.Location> createLocationFromCoordinates(
     double? latitude,
     double? longitude,
   ) =>
@@ -303,8 +289,8 @@ class MockSexualEventsProvider extends _i1.Mock
               latitude,
               longitude,
             ]),
-            returnValue: _i5.Future<_i3.Location>.value(
-              _FakeLocation_1(
+            returnValue: _i4.Future<_i2.Location>.value(
+              _FakeLocation_0(
                 this,
                 Invocation.method(#createLocationFromCoordinates, [
                   latitude,
@@ -313,42 +299,34 @@ class MockSexualEventsProvider extends _i1.Mock
               ),
             ),
           )
-          as _i5.Future<_i3.Location>);
+          as _i4.Future<_i2.Location>);
 
   @override
-  _i5.Future<List<_i3.Location>> getAllLocations() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllLocations, []),
-            returnValue: _i5.Future<List<_i3.Location>>.value(<_i3.Location>[]),
-          )
-          as _i5.Future<List<_i3.Location>>);
-
-  @override
-  _i5.Future<void> attachLocationToSelectedEvent(_i3.Location? location) =>
+  _i4.Future<void> attachLocationToSelectedEvent(_i2.Location? location) =>
       (super.noSuchMethod(
             Invocation.method(#attachLocationToSelectedEvent, [location]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  _i5.Future<void> removeLocationFromSelectedEvent() =>
+  _i4.Future<void> removeLocationFromSelectedEvent() =>
       (super.noSuchMethod(
             Invocation.method(#removeLocationFromSelectedEvent, []),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
           )
-          as _i5.Future<void>);
+          as _i4.Future<void>);
 
   @override
-  void addListener(_i7.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i6.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i7.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i6.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
     returnValueForMissingStub: null,
   );

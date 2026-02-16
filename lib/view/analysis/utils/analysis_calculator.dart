@@ -36,10 +36,17 @@ class AnalysisCalculator {
     DateTime? startDate,
     DateTime? endDate,
     List<Person>? preFetchedPersons,
+    DateTime? lastStiTestDate,
   }) async {
     // Prefer the supplied snapshot if available, otherwise fall back to the provider.
     if (events.isEmpty) {
-      return _emptyAnalysisData(events, stateSnapshot, startDate, endDate);
+      return _emptyAnalysisData(
+        events,
+        stateSnapshot,
+        startDate,
+        endDate,
+        lastStiTestDate,
+      );
     }
 
     // Sort events by date
@@ -178,6 +185,7 @@ class AnalysisCalculator {
       activityCategories: agg.activityCategories,
       longestStreak: streaks.longestStreak,
       currentStreak: streaks.currentStreak,
+      lastStiTestDate: lastStiTestDate,
       personCounts: agg.personCounts,
       personEventCounts: agg.personEventCounts,
       personEvents: agg.personEvents,
@@ -220,6 +228,7 @@ class AnalysisCalculator {
     EventState providerState,
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? lastStiTestDate,
   ) {
     return AnalysisData(
       totalEvents: 0,
@@ -260,6 +269,7 @@ class AnalysisCalculator {
       activityCategories: {},
       longestStreak: 0,
       currentStreak: 0,
+      lastStiTestDate: lastStiTestDate,
       personCounts: {},
       personEventCounts: {},
       personEvents: {},

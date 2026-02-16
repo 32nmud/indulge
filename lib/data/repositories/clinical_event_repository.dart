@@ -30,9 +30,15 @@ class ClinicalEventRepository {
   Future<void> save(ClinicalEvent event) async {
     _logger.info('Saving clinical event: ${event.id}');
     final jsonStr = jsonEncode(event.toJson());
+    // Normalize to midnight local time to ensure consistent day queries.
+    final normalizedDate = DateTime(
+      event.date.year,
+      event.date.month,
+      event.date.day,
+    );
     await _db.insert('clinical_event', {
       'id': event.id,
-      'date': event.date.toIso8601String(),
+      'date': normalizedDate.toIso8601String(),
       'last_modified': event.lastModifiedDate?.toIso8601String(),
       'json': jsonStr,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -89,6 +95,7 @@ class ClinicalEventRepository {
   /// This returns events where `date` is >= start of the provided day and < next day.
   Future<List<ClinicalEvent>> getByDate(DateTime date) async {
     _logger.info('Fetching clinical events for date: $date');
+    // Use local day boundaries to match sexual_event repository behavior.
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     final rows = await _db.query(
@@ -130,6 +137,7 @@ class ClinicalEventRepository {
       WHERE date >= ? AND date < ?
       GROUP BY DATE(date)
     ''';
+    // Use local timestamps to match getByDate and sexual_event repository behavior.
     final List<Map<String, Object?>> results = await _db.rawQuery(sql, [
       start.toIso8601String(),
       end.toIso8601String(),
@@ -150,7 +158,26 @@ class ClinicalEventRepository {
     return presence;
   }
 
+  /// Returns the date of the most recent clinical event, or null if no events exist.
+  Future<DateTime?> getLastClinicalEventDate() async {
+    _logger.info('Getting last clinical event date');
+    final rows = await _db.query(
+      'clinical_event',
+      orderBy: 'date DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    final dateStr = rows.first['date'] as String?;
+    if (dateStr == null) {
+      return null;
+    }
+    return DateTime.tryParse(dateStr);
+  }
+
   /// Finds the most recent date when the given `testType` was performed.
+
   ///
   /// Returns `null` if there are no tests of that type.
   Future<DateTime?> getLastTestDateFor(TestType testType) async {

@@ -57,6 +57,9 @@ enum SpecimenSite {
 
   @JsonValue('rectal')
   rectal,
+
+  @JsonValue('blood')
+  blood,
 }
 
 @Freezed(toJson: true, fromJson: true)

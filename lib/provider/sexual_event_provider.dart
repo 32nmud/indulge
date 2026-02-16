@@ -147,6 +147,7 @@ class SexualEventsProvider extends ChangeNotifier {
 
     await _repository.save(updatedEvent);
     await selectEvent(updatedEvent);
+    _stateStore.markDataDirty();
   }
 
   Future<void> removeParticipant(Person participant) async {
@@ -172,6 +173,7 @@ class SexualEventsProvider extends ChangeNotifier {
 
     await _repository.save(updatedEvent);
     await selectEvent(updatedEvent);
+    _stateStore.markDataDirty();
   }
 
   Future<void> removeActivityFromEdit(String activityCategoryId) async {
@@ -257,6 +259,7 @@ class SexualEventsProvider extends ChangeNotifier {
     // Refresh cached person list in store/local state so UI can react immediately.
     final persons = await _repository.getAllPersons();
     _setAllPersons(persons);
+    _stateStore.markDataDirty();
   }
 
   Future<void> deletePerson(String id) async {
@@ -287,6 +290,7 @@ class SexualEventsProvider extends ChangeNotifier {
     // Refresh cached person list in store/local state so UI can react immediately.
     final persons = await _repository.getAllPersons();
     _setAllPersons(persons);
+    _stateStore.markDataDirty();
   }
 
   Future<void> saveEvent(SexualEvent event) async {
@@ -301,6 +305,7 @@ class SexualEventsProvider extends ChangeNotifier {
 
     // Select the saved event
     _setSelectedEvent(event);
+    _stateStore.markDataDirty();
   }
 
   Future<void> deleteEvent(String eventId) async {
@@ -320,6 +325,9 @@ class SexualEventsProvider extends ChangeNotifier {
 
     // Reload events for current date
     await _loadEventsForDate(_stateStore.state.selectedDate);
+
+    // Mark data as dirty to trigger refresh in other pages
+    _stateStore.markDataDirty();
   }
 
   Future<List<SexualEvent>> getAllEvents() async {
@@ -334,6 +342,7 @@ class SexualEventsProvider extends ChangeNotifier {
     // Refresh activity categories in state
     final categories = await _loadSexualActivityCategories();
     _setSexualActivityCategories(categories);
+    _stateStore.markDataDirty();
   }
 
   Future<void> deleteActivityCategory(String id) async {
@@ -347,6 +356,7 @@ class SexualEventsProvider extends ChangeNotifier {
 
     // Reload current events to reflect changes
     await _loadEventsForDate(_stateStore.state.selectedDate);
+    _stateStore.markDataDirty();
   }
 
   Future<bool> isActivityCategoryUsed(String activityCategoryId) async {
@@ -363,6 +373,7 @@ class SexualEventsProvider extends ChangeNotifier {
     // Refresh sexual activities in state
     final activities = await _loadSexualActivities();
     _setSexualActivities(activities);
+    _stateStore.markDataDirty();
   }
 
   Future<void> deleteSexualActivity(String id) async {
@@ -373,6 +384,7 @@ class SexualEventsProvider extends ChangeNotifier {
     final categories = await _loadSexualActivityCategories();
     _setSexualActivities(activities);
     _setSexualActivityCategories(categories);
+    _stateStore.markDataDirty();
   }
 
   Future<bool> isSexualActivityUsed(String activityId) async {
@@ -399,6 +411,10 @@ class SexualEventsProvider extends ChangeNotifier {
 
   Future<Map<String, SexualActivity>> _loadSexualActivities() async {
     final activities = await _repository.getAllSexualActivities();
+    // Sort alphabetically by name
+    activities.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     Map<String, SexualActivity> activityMap = {};
     for (var activity in activities) {
       activityMap[activity.id] = activity;
@@ -409,6 +425,10 @@ class SexualEventsProvider extends ChangeNotifier {
   Future<Map<String, SexualActivityCategory>>
   _loadSexualActivityCategories() async {
     final categories = await _repository.getAllSexualActivityCategories();
+    // Sort alphabetically by name
+    categories.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     Map<String, SexualActivityCategory> categoryMap = {};
     for (var category in categories) {
       categoryMap[category.id] = category;
@@ -442,6 +462,7 @@ class SexualEventsProvider extends ChangeNotifier {
 
     await _repository.save(updatedEvent);
     await selectEvent(updatedEvent);
+    _stateStore.markDataDirty();
   }
 
   /// Remove any attached Location reference from the currently selected event.
@@ -466,6 +487,7 @@ class SexualEventsProvider extends ChangeNotifier {
     // Defensively clear the resolved location again after re-selection so that
     // any async resolution path cannot re-populate it unexpectedly.
     _setSelectedEventLocation(null);
+    _stateStore.markDataDirty();
   }
 
   /* -------------------------

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
+import 'package:indulge/services/preferences_service.dart';
 
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
 import 'package:indulge/data/repositories/clinical_event_repository.dart';
@@ -32,6 +33,9 @@ class SettingsPage extends StatelessWidget {
               children: [
                 _buildSectionHeader('Appearance'),
                 _buildThemeSwitchTile(context),
+                const Divider(),
+                _buildSectionHeader('Event Creation'),
+                _buildAutoAddLocationTile(context),
                 const Divider(),
                 _buildSectionHeader('Activity Configuration'),
                 _buildListTile(
@@ -101,6 +105,33 @@ class SettingsPage extends StatelessWidget {
           color: Colors.grey,
         ),
       ),
+    );
+  }
+
+  Widget _buildAutoAddLocationTile(BuildContext context) {
+    return FutureBuilder<PreferencesService>(
+      future: PreferencesService.build(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final prefs = snapshot.data!;
+        return ValueListenableBuilder<bool>(
+          valueListenable: prefs.autoAddLocationNotifier,
+          builder: (context, autoAdd, _) {
+            return SwitchListTile(
+              title: const Text('Auto-add Location'),
+              subtitle: const Text(
+                'Automatically add current location to new events',
+              ),
+              value: autoAdd,
+              onChanged: (value) {
+                prefs.setAutoAddLocation(value);
+              },
+            );
+          },
+        );
+      },
     );
   }
 

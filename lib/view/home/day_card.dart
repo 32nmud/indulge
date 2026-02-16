@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 
 class DayCard extends StatefulWidget {
@@ -55,6 +56,7 @@ class _DayCardState extends State<DayCard> {
       focusedDate: selectedDay,
       onDateChange: (date) {
         context.read<SexualEventsProvider>().selectDate(date);
+        context.read<ClinicalEventsProvider>().selectDate(date);
       },
       itemExtent: 80.0,
       selectionMode: const SelectionMode.autoCenter(),

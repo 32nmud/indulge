@@ -81,9 +81,34 @@ class DatabaseEngine {
       databasePath: dbPath,
     );
 
-    if (!await migrationService.needsMigration()) {
-      _logger.info('No migration needed');
-      return null;
+    // First check metadata-based migration requirement.
+    final migrationNeededByMeta = await migrationService.needsMigration();
+
+    if (!migrationNeededByMeta) {
+      // Defensive check: even if metadata says up-to-date, ensure critical v2 tables exist.
+      // If a required table is missing (e.g. clinical_event), force migration to run.
+      try {
+        final tables = await database.query(
+          'sqlite_master',
+          where: 'type = ? AND name = ?',
+          whereArgs: ['table', 'clinical_event'],
+        );
+
+        if (tables.isEmpty) {
+          _logger.warning(
+            'Schema metadata indicates no migration needed, but `clinical_event` table is missing. Forcing migration.',
+          );
+          // fall through to perform migration
+        } else {
+          _logger.info('No migration needed');
+          return null;
+        }
+      } catch (e) {
+        _logger.warning(
+          'Error checking for clinical_event table presence: $e. Forcing migration as a defensive measure.',
+        );
+        // fall through to perform migration
+      }
     }
 
     _logger.info('Migration needed, starting migration...');

@@ -12,6 +12,22 @@ class EventStateStore extends ChangeNotifier {
 
   EventState get state => _state;
 
+  /// Flag indicating data has changed and consumers should refresh.
+  /// Set to true when events are saved/deleted, false after consumers refresh.
+  bool get needsDataRefresh => _state.needsDataRefresh;
+
+  /// Call this after saving or deleting events to mark data as changed.
+  void markDataDirty() {
+    _state = _state.copyWith(needsDataRefresh: true);
+    notifyListeners();
+  }
+
+  /// Call this after consumers have refreshed to clear the dirty flag.
+  void clearDataDirty() {
+    _state = _state.copyWith(needsDataRefresh: false);
+    notifyListeners();
+  }
+
   void _update(EventState Function(EventState) updater) {
     _state = updater(_state);
     notifyListeners();
@@ -118,6 +134,7 @@ class EventStateStore extends ChangeNotifier {
       dailyClinicalEventPresence: presence,
       currentClinicalEvents: eventsForDate,
       selectedClinicalEvent: selected,
+      needsDataRefresh: true,
     );
     notifyListeners();
   }
@@ -133,6 +150,7 @@ class EventStateStore extends ChangeNotifier {
       dailyEventCount: dailyCounts,
       currentEvents: eventsForDate,
       selectedEvent: selected,
+      needsDataRefresh: true,
     );
     notifyListeners();
   }

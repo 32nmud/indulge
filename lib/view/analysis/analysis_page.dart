@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import 'package:logging/logging.dart';
@@ -130,30 +131,34 @@ class _AnalysisPageState extends State<AnalysisPage>
   }
 
   void _onStoreChange() {
-    // Mark data as stale so the next load actually recalculates.
-    _isDirty = true;
-
-    // Debounce: if multiple notifications arrive in quick succession
-    // (e.g. bulk edits), only trigger one recalculation after they settle.
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(_debounceDuration, _refresh);
+    final store = context.read<EventStateStore>();
+    // Only recalculate if analysis is marked as dirty (events were saved/deleted)
+    // Date changes don't trigger recalculation since they don't affect historical data
+    // Note: don't clear dirty flag here - let _loadData do it after loading
+    if (store.needsDataRefresh) {
+      _isDirty = true;
+      // Debounce: if multiple notifications arrive in quick succession
+      // (e.g. bulk edits), only trigger one recalculation after they settle.
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(_debounceDuration, _refresh);
+    } else {
+      // Not dirty - skip recalculation
+      _isDirty = false;
+    }
   }
 
   Future<AnalysisData> _loadData({bool force = false}) async {
     // Skip recalculation if data hasn't changed and we already have results.
+    // Use _isDirty which was set by _onStoreChange when dirty flag was triggered.
     if (!force && !_isDirty && _currentData != null) {
       _logger.info('Skipping recalculation — data is not dirty');
       return _currentData!;
     }
-
+    final store = context.read<EventStateStore>();
     final provider = context.read<SexualEventsProvider>();
-
-    // Wait for provider to be ready
     await provider.ready;
-
     final allEvents = await provider.getAllEvents();
     _logger.info('Loaded ${allEvents.length} events');
-    final store = context.read<EventStateStore>();
     // Prefer cached persons from the centralized store when available to avoid an extra DB call.
     final allPersons = store.state.allPersons ?? await provider.getAllPersons();
 
@@ -212,6 +217,11 @@ class _AnalysisPageState extends State<AnalysisPage>
         break;
     }
 
+    // Get last STI test date from clinical events
+    final clinicalProvider = context.read<ClinicalEventsProvider>();
+    await clinicalProvider.ready;
+    final lastStiTestDate = await clinicalProvider.getLastClinicalEventDate();
+
     // Calculate all statistics
     final analysisData = await AnalysisCalculator.calculate(
       events,
@@ -220,12 +230,14 @@ class _AnalysisPageState extends State<AnalysisPage>
       startDate: startDate,
       endDate: endDate,
       preFetchedPersons: allPersons,
+      lastStiTestDate: lastStiTestDate,
     );
 
     _logger.info('Calculated data - ${analysisData.totalEvents} total events');
 
     // Calculation succeeded — data is no longer dirty.
     _isDirty = false;
+    store.clearDataDirty();
 
     return analysisData;
   }

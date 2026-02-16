@@ -37,19 +37,29 @@ class _ActivityFilterDialogState extends State<ActivityFilterDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Sort categories alphabetically by name
+    final sortedCategories = List<SexualActivityCategory>.from(
+      widget.categories,
+    )..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
     return AlertDialog(
       title: const Text('Filter by Specific Activities'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
           shrinkWrap: true,
-          children: widget.categories.map((category) {
+          children: sortedCategories.map((category) {
             final categoryId = category.id;
-            // Get activities for this category
-            final activities = category.activities
-                .map((ref) => widget.activitiesMap[ref.reference])
-                .whereType<SexualActivity>()
-                .toList();
+            // Get activities for this category and sort alphabetically
+            final activities =
+                category.activities
+                    .map((ref) => widget.activitiesMap[ref.reference])
+                    .whereType<SexualActivity>()
+                    .toList()
+                  ..sort(
+                    (a, b) =>
+                        a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                  );
 
             if (activities.isEmpty) return const SizedBox.shrink();
 

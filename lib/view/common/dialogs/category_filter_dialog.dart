@@ -28,13 +28,18 @@ class _CategoryFilterDialogState extends State<CategoryFilterDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Sort categories alphabetically by name
+    final sortedCategories = List<SexualActivityCategory>.from(
+      widget.categories,
+    )..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
     return AlertDialog(
       title: const Text('Filter by Categories'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
           shrinkWrap: true,
-          children: widget.categories.map((category) {
+          children: sortedCategories.map((category) {
             final isSelected = _selectedIds.contains(category.id);
 
             if (widget.singleSelect) {

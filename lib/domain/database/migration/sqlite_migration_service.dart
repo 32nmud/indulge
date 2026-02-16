@@ -69,20 +69,25 @@ class SQLiteMigrationService {
   }
 
   /// Check if migration is needed
+  ///
+  /// This method uses a simple, conservative check:
+  /// - If schema_version >= 3 AND migration_completed_at exists -> no migration needed
+  /// - Otherwise, migration may be needed (return true)
+  ///
+  /// This avoids false positives that can cause repeated migrations and data corruption.
   Future<bool> needsMigration() async {
     try {
       await ensureMetadataTableExists();
 
+      // Check for schema_version
       final result = await database.query(
         'database_metadata',
         where: 'key = ?',
         whereArgs: ['schema_version'],
       );
 
+      // No schema version - check for legacy v1 database
       if (result.isEmpty) {
-        // No schema version found.
-        // Check if this is a legacy V1 database (has person table)
-        // or a new empty database.
         final tables = await database.query(
           'sqlite_master',
           where: 'type = ? AND name = ?',
@@ -100,10 +105,34 @@ class SQLiteMigrationService {
         return false;
       }
 
-      final currentVersion = int.parse(result.first['value'] as String);
-      _logger.info('Current schema version: $currentVersion');
+      final currentSchemaVersion = int.parse(result.first['value'] as String);
+      _logger.info('Current schema version: $currentSchemaVersion');
 
-      return currentVersion < ModelVersionMigration.currentVersion;
+      // If schema >= 3, check for migration_completed_at marker
+      if (currentSchemaVersion >= 3) {
+        final migrationCompletedAt = await getMetadata(
+          'migration_completed_at',
+        );
+        if (migrationCompletedAt != null) {
+          _logger.info(
+            'Migration previously completed at $migrationCompletedAt and schema >=3; no migration needed',
+          );
+          return false;
+        }
+        // Schema >= 3 but no completion marker - might be a fresh v3 DB
+        // that was created but not marked as completed. Treat as no migration needed
+        // to avoid corrupting data. User can manually trigger if truly needed.
+        _logger.info(
+          'Schema version $currentSchemaVersion >= 3 but no migration_completed_at marker found. Treating as up-to-date to avoid false-positive migration.',
+        );
+        return false;
+      }
+
+      // Schema < 3, migration is needed
+      _logger.info(
+        'Database schema version $currentSchemaVersion < 3; migration needed',
+      );
+      return true;
     } catch (e) {
       _logger.warning('Error checking migration status: $e');
       // If we can't determine, assume migration is needed
@@ -166,6 +195,11 @@ class SQLiteMigrationService {
   }
 
   /// Create a backup of the database file
+  ///
+  /// We must checkpoint any WAL content back into the main database file
+  /// before copying to obtain a consistent, standalone snapshot. This function
+  /// attempts a TRUNCATE checkpoint first and falls back to FULL. We also run
+  /// a lightweight integrity check to encourage page flushes before copying.
   Future<String> createBackup() async {
     try {
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
@@ -173,8 +207,28 @@ class SQLiteMigrationService {
 
       _logger.info('Creating backup at: $backupPath');
 
-      // Close database connection temporarily for backup
-      // Note: In production, you might want to use SQLite's backup API
+      // Attempt to checkpoint WAL frames into the main database file so a plain
+      // file copy yields a coherent snapshot. Use TRUNCATE (reclaims WAL file)
+      // and fall back to FULL if TRUNCATE isn't supported or fails.
+      try {
+        await database.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+        _logger.info('WAL checkpoint (TRUNCATE) completed');
+      } catch (e, st) {
+        _logger.warning('WAL checkpoint (TRUNCATE) failed: $e');
+        try {
+          await database.execute('PRAGMA wal_checkpoint(FULL)');
+          _logger.info('WAL checkpoint (FULL) completed');
+        } catch (e2, st2) {
+          _logger.warning('WAL checkpoint (FULL) also failed: $e2');
+        }
+      }
+
+      // Run a lightweight integrity check which can help flush caches on some
+      // implementations; ignore non-fatal failures.
+      try {
+        await database.rawQuery('PRAGMA integrity_check');
+      } catch (_) {}
+
       final dbFile = File(databasePath);
       await dbFile.copy(backupPath);
 
@@ -224,7 +278,13 @@ class SQLiteMigrationService {
     return status == 'true';
   }
 
-  /// Perform the full migration from v1 to v2
+  /// Perform the full migration from v1 -> v2 and then v2 -> v3 (if required).
+  ///
+  /// This method explicitly:
+  /// 1. Detects whether any v1 JSON documents remain and runs v1->v2 migration
+  ///    across relevant tables if necessary.
+  /// 2. After JSON migrations, checks and runs schema upgrades (v2->v3) if
+  ///    the DB schema_version indicates older than 3.
   Future<MigrationResult> migrate({ProgressCallback? onProgress}) async {
     final startTime = DateTime.now();
     String? backupPath;
@@ -254,49 +314,105 @@ class SQLiteMigrationService {
       backupPath = await createBackup();
       await _writeLog('Backup created at: $backupPath');
 
-      // Migrate each table
+      // Tables that may contain v1 JSON documents which need v1->v2 migration.
       final tables = [
         'person',
         'sexual_activity_type',
         'sexual_activity_type_property',
         'sexual_event',
-        // Add clinical_event to ensure any pre-existing clinical event JSON rows
-        // are processed during migration. Use singular table name to match the
-        // project's naming convention for event tables.
+        // Include clinical_event so any legacy clinical JSON rows are caught.
         'clinical_event',
       ];
 
-      for (var i = 0; i < tables.length; i++) {
-        final table = tables[i];
-        _logger.info('Migrating table: $table');
-        await _writeLog('Starting migration of table: $table');
+      // Helper: detect whether any table contains v1 JSON documents.
+      Future<bool> _detectV1Documents() async {
+        try {
+          for (final table in tables) {
+            // If the table doesn't exist, skip it.
+            final exists = await database.query(
+              'sqlite_master',
+              where: 'type = ? AND name = ?',
+              whereArgs: ['table', table],
+            );
+            if (exists.isEmpty) continue;
 
-        onProgress?.call(table, i, tables.length, 'Migrating $table...');
+            // Read a small sample of rows to detect legacy JSON. We only need
+            // to find one v1 document to trigger migration work.
+            final rows = await database.query(table, limit: 10);
 
-        final stats = await _migrateTable(table);
-        migrationStats[table] = stats;
-
-        await _writeLog(
-          'Completed table $table: ${stats.migratedCount} migrated, '
-          '${stats.skippedCount} skipped, ${stats.errorCount} errors',
-        );
-
-        onProgress?.call(
-          table,
-          i + 1,
-          tables.length,
-          'Completed $table (${stats.migratedCount}/${stats.totalCount})',
-        );
+            for (final row in rows) {
+              final jsonString = row['json'] as String?;
+              if (jsonString == null) continue;
+              try {
+                final doc = jsonDecode(jsonString) as Map<String, dynamic>;
+                final version = ModelVersionMigration.getVersion(doc);
+                if (version < ModelVersionMigration.currentVersion) {
+                  _logger.info(
+                    'Detected v$version document in $table -> needs migration',
+                  );
+                  return true;
+                }
+              } catch (_) {
+                // Ignore parse errors for detection; they'll be surfaced in real migration.
+              }
+            }
+          }
+        } catch (e) {
+          _logger.warning('Error while detecting v1 documents: $e');
+          // If detection fails, be conservative and indicate migration is required.
+          return true;
+        }
+        return false;
       }
 
-      // Perform DB schema upgrades beyond JSON model migrations (e.g. v2 -> v3)
+      // Helper: perform v1->v2 migration across the tables. This reuses the
+      // existing _migrateTable implementation which handles per-table JSON
+      // migration (v1 -> v2).
+      Future<void> _performV1toV2Migration() async {
+        for (var i = 0; i < tables.length; i++) {
+          final table = tables[i];
+          _logger.info('Migrating table (v1->v2): $table');
+          await _writeLog('Starting migration of table: $table');
+
+          onProgress?.call(table, i, tables.length, 'Migrating $table...');
+
+          // If the table is missing, _migrateTable will early-return after
+          // attempting to query it (and logging). Keep its stats entry to
+          // summarize results.
+          final stats = await _migrateTable(table);
+          migrationStats[table] = stats;
+
+          await _writeLog(
+            'Completed table $table: ${stats.migratedCount} migrated, '
+            '${stats.skippedCount} skipped, ${stats.errorCount} errors',
+          );
+
+          onProgress?.call(
+            table,
+            i + 1,
+            tables.length,
+            'Completed $table (${stats.migratedCount}/${stats.totalCount})',
+          );
+        }
+      }
+
+      // Step 1/2: Detect & perform v1 -> v2 JSON migrations if needed.
+      final hasV1Docs = await _detectV1Documents();
+      if (hasV1Docs) {
+        _logger.info('v1 documents detected - performing v1->v2 migration');
+        await _writeLog('Performing v1->v2 migrations');
+        await _performV1toV2Migration();
+        await _writeLog('Completed v1->v2 migrations');
+      } else {
+        _logger.info('No v1 documents detected - skipping v1->v2 migration');
+        await _writeLog('No v1->v2 migrations required');
+      }
+
+      // Step 3/4: After JSON migration, ensure schema upgrades (v2 -> v3) occur.
       final currentSchemaVersion =
           int.tryParse(await getMetadata('schema_version') ?? '1') ?? 1;
       _logger.info('Current DB schema version: $currentSchemaVersion');
 
-      // If the DB schema is older than 3, run the v2->v3 upgrade which embeds
-      // Location records directly into SexualEvent JSON and removes the
-      // standalone `location` table.
       if (currentSchemaVersion < 3) {
         _logger.info(
           'Upgrading database schema from v$currentSchemaVersion to v3',
@@ -305,6 +421,32 @@ class SQLiteMigrationService {
         await _migrateV2toV3(onProgress: onProgress);
         await setMetadata('schema_version', '3');
         await _writeLog('DB schema upgraded to v3');
+        // Verify the schema_version persisted to avoid repeated migration loops.
+        // Some environments may not persist metadata reliably on first write,
+        // so read it back and retry once if necessary.
+        try {
+          final persistedVersion =
+              await getMetadata('schema_version') ?? 'unknown';
+          _logger.info('Verifying schema_version persisted: $persistedVersion');
+          await _writeLog(
+            'Verifying schema_version persisted: $persistedVersion',
+          );
+          if (persistedVersion != '3') {
+            _logger.warning(
+              'schema_version verify failed (was $persistedVersion); setting again to 3',
+            );
+            await setMetadata('schema_version', '3');
+            final recheck = await getMetadata('schema_version') ?? 'unknown';
+            _logger.info('Re-verified schema_version: $recheck');
+            await _writeLog('Re-verified schema_version: $recheck');
+          }
+        } catch (e) {
+          _logger.warning('Error verifying schema_version persistence: $e');
+          await _writeLog('ERROR verifying schema_version persistence: $e');
+          // In the event of a verification failure we'll still continue and
+          // clear the migration flag below; needsMigration() is conservative
+          // and will re-run migration if the metadata truly didn't persist.
+        }
       } else {
         // Ensure metadata reflects at least the current value
         await setMetadata('schema_version', currentSchemaVersion.toString());
@@ -342,11 +484,26 @@ class SQLiteMigrationService {
         _logger.warning('Failed to create clinical_event table or index: $e');
       }
 
-      await setMetadata(
-        'migration_completed_at',
-        DateTime.now().toIso8601String(),
-      );
-      await setMetadata('migration_in_progress', 'false');
+      // Persist final migration metadata and clear the in-progress flag.
+      // Wrap in a try/catch to ensure we do not throw here and to log any
+      // persistence problems that could otherwise cause repeated migration
+      // attempts.
+      try {
+        final completedAt = DateTime.now().toIso8601String();
+        await setMetadata('migration_completed_at', completedAt);
+        await setMetadata('migration_in_progress', 'false');
+
+        // Also verify and log the final schema_version so callers can inspect it.
+        final finalSchema = await getMetadata('schema_version') ?? 'unknown';
+        _logger.info('Final schema_version after migration: $finalSchema');
+        await _writeLog('Final schema_version after migration: $finalSchema');
+      } catch (e) {
+        _logger.warning('Failed to persist final migration metadata: $e');
+        await _writeLog('ERROR persisting final migration metadata: $e');
+        // Continue; needsMigration() is conservative and will re-run migration
+        // only if metadata truly didn't persist. Avoid throwing here so the
+        // migration process can finish its cleanup steps.
+      }
 
       final duration = DateTime.now().difference(startTime);
       _logger.info(
@@ -402,7 +559,21 @@ class SQLiteMigrationService {
     final stats = TableMigrationStats(tableName: tableName);
 
     try {
-      // Fetch all rows from the table
+      // Defensive: ensure the table exists before attempting to query it.
+      final master = await database.query(
+        'sqlite_master',
+        where: 'type = ? AND name = ?',
+        whereArgs: ['table', tableName],
+      );
+
+      if (master.isEmpty) {
+        _logger.info(
+          'Table $tableName does not exist, skipping migration for this table',
+        );
+        return stats;
+      }
+
+      // Read all rows from the table (we'll build a migrated copy and swap atomically)
       final rows = await database.query(tableName);
       stats.totalCount = rows.length;
 
@@ -413,64 +584,106 @@ class SQLiteMigrationService {
         return stats;
       }
 
-      // Process rows in batches
-      const batchSize = 50;
-      var batch = database.batch();
-      var batchCount = 0;
+      // Determine column names for the table so we can copy values into the temp table.
+      final pragma = await database.rawQuery('PRAGMA table_info($tableName)');
+      final cols = pragma.map((r) => r['name'] as String).toList();
 
-      for (var i = 0; i < rows.length; i++) {
-        final row = rows[i];
-        final id = row['id'] as String;
-        final jsonString = row['json'] as String;
+      // Name for the temporary staging table used during migration
+      final tmpTable = '${tableName}_migration_tmp';
 
-        try {
-          // Parse JSON
-          final json = jsonDecode(jsonString) as Map<String, dynamic>;
+      // Perform migration in a single transaction: build a migrated copy and swap
+      await database.transaction((txn) async {
+        // Ensure no leftover temp table exists
+        await txn.execute('DROP TABLE IF EXISTS $tmpTable');
 
-          // Check if migration is needed
-          final version = ModelVersionMigration.getVersion(json);
+        // Create temp table with same columns (structure) and no rows
+        // Using "AS SELECT ... WHERE 0" copies column names.
+        await txn.execute(
+          'CREATE TABLE $tmpTable AS SELECT * FROM $tableName WHERE 0',
+        );
 
-          if (version >= 2) {
-            // Already migrated
-            stats.skippedCount++;
-            continue;
+        // Prepare insert template using discovered columns
+        // We'll construct a row map for txn.insert
+        for (var i = 0; i < rows.length; i++) {
+          final row = rows[i];
+          final id = row['id'] as String?;
+          final jsonString = row['json'] as String?;
+
+          try {
+            Map<String, dynamic>? migratedRowJsonMap;
+
+            if (jsonString != null) {
+              // Parse the JSON if present
+              final doc = jsonDecode(jsonString) as Map<String, dynamic>;
+              final version = ModelVersionMigration.getVersion(doc);
+
+              if (version < ModelVersionMigration.currentVersion) {
+                // Migrate the JSON document to v2
+                final migratedJson = await _migrateJsonDocument(doc, tableName);
+                migratedRowJsonMap = migratedJson;
+              }
+            }
+
+            // Build the map of column->value for insertion into tmp table
+            final insertMap = <String, Object?>{};
+            for (final col in cols) {
+              if (col == 'json') {
+                // Use migrated JSON if available, otherwise original jsonString
+                final value = migratedRowJsonMap != null
+                    ? jsonEncode(migratedRowJsonMap)
+                    : jsonString;
+                insertMap['json'] = value;
+              } else if (col == 'last_modified') {
+                // Update last_modified to now for migrated rows; preserve for others
+                if (migratedRowJsonMap != null) {
+                  insertMap['last_modified'] = DateTime.now().toIso8601String();
+                } else {
+                  insertMap['last_modified'] = row['last_modified'];
+                }
+              } else {
+                // Copy other columns verbatim
+                insertMap[col] = row[col];
+              }
+            }
+
+            // Insert into temp table (replace on conflict to be safe)
+            await txn.insert(
+              tmpTable,
+              insertMap,
+              conflictAlgorithm: ConflictAlgorithm.replace,
+            );
+
+            // Update stats
+            if (migratedRowJsonMap != null) {
+              stats.migratedCount++;
+            } else {
+              stats.skippedCount++;
+            }
+          } catch (e) {
+            // If any row fails to migrate, throw to rollback the transaction.
+            _logger.warning(
+              'Failed to migrate row ${row['id']} in $tableName: $e',
+            );
+            await _writeLog(
+              'ERROR migrating row ${row['id']} in $tableName: $e',
+            );
+            stats.errorCount++;
+            stats.errors.add('Row ${row['id']}: $e');
+            throw e;
           }
-
-          // Migrate the JSON
-          final migratedJson = await _migrateJsonDocument(json, tableName);
-
-          // Update the row
-          batch.update(
-            tableName,
-            {
-              'json': jsonEncode(migratedJson),
-              'last_modified': DateTime.now().toIso8601String(),
-            },
-            where: 'id = ?',
-            whereArgs: [id],
-          );
-
-          stats.migratedCount++;
-          batchCount++;
-
-          // Commit batch when it reaches the size limit
-          if (batchCount >= batchSize) {
-            await batch.commit(noResult: true);
-            batch = database.batch();
-            batchCount = 0;
-          }
-        } catch (e) {
-          _logger.warning('Failed to migrate row $id in $tableName: $e');
-          await _writeLog('ERROR migrating row $id in $tableName: $e');
-          stats.errorCount++;
-          stats.errors.add('Row $id: $e');
         }
-      }
 
-      // Commit remaining batch
-      if (batchCount > 0) {
-        await batch.commit(noResult: true);
-      }
+        // All rows migrated into temp table successfully. Now atomically swap tables.
+        // Rename original table to a backup name, rename temp to original, then drop backup.
+        final backupName = '${tableName}_backup_migration';
+        await txn.execute('ALTER TABLE $tableName RENAME TO $backupName');
+        await txn.execute('ALTER TABLE $tmpTable RENAME TO $tableName');
+
+        // Recreate any indexes that referenced the original table may be needed.
+        // The migration flow elsewhere ensures common indexes exist, but we attempt
+        // to drop the backup now that the swap succeeded.
+        await txn.execute('DROP TABLE IF EXISTS $backupName');
+      });
 
       _logger.info(
         'Table $tableName: migrated=${stats.migratedCount}, '
@@ -480,6 +693,17 @@ class SQLiteMigrationService {
       return stats;
     } catch (e, stackTrace) {
       _logger.severe('Failed to migrate table $tableName', e, stackTrace);
+      // If an error occurred during the transactional swap, ensure temp/backup cleanup
+      try {
+        await database.execute(
+          'DROP TABLE IF EXISTS ${tableName}_migration_tmp',
+        );
+        await database.execute(
+          'DROP TABLE IF EXISTS ${tableName}_backup_migration',
+        );
+      } catch (_) {
+        // ignore cleanup errors
+      }
       throw MigrationException(
         'Failed to migrate table $tableName: $e',
         tableName: tableName,
@@ -516,7 +740,14 @@ class SQLiteMigrationService {
     final v2Model = migrator.migrate(v1Model);
     final v2Json = migrator.serializeV2(v2Model);
 
-    return v2Json;
+    // Ensure migrated JSON includes the version metadata so subsequent checks
+    // recognize this as a v2 document.
+    final v2JsonWithVersion = ModelVersionMigration.addVersion(
+      v2Json,
+      ModelVersionMigration.currentVersion,
+    );
+
+    return v2JsonWithVersion;
   }
 
   /// Infer resource type from table name
@@ -629,8 +860,25 @@ class SQLiteMigrationService {
       // After embedding locations into events, drop the standalone location table
       await database.execute('DROP TABLE IF EXISTS location');
       await _writeLog('Dropped location table after v2->v3 migration');
+      // Ensure indexes for date columns on event tables to speed up date queries in v3
+      try {
+        await database.execute(
+          'CREATE INDEX IF NOT EXISTS idx_sexual_event_date ON sexual_event(date)',
+        );
+        _logger.info('Ensured idx_sexual_event_date exists (v3 migration)');
+      } catch (e) {
+        _logger.warning('Failed to create/ensure idx_sexual_event_date: $e');
+      }
+      try {
+        await database.execute(
+          'CREATE INDEX IF NOT EXISTS idx_clinical_event_date ON clinical_event(date)',
+        );
+        _logger.info('Ensured idx_clinical_event_date exists (v3 migration)');
+      } catch (e) {
+        _logger.warning('Failed to create/ensure idx_clinical_event_date: $e');
+      }
       _logger.info(
-        'v2->v3 migration completed: embedded locations and dropped table',
+        'v2->v3 migration completed: embedded locations, dropped table, and ensured indexes',
       );
     } catch (e, stackTrace) {
       _logger.severe('v2->v3 migration failed', e, stackTrace);

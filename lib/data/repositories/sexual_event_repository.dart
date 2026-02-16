@@ -91,53 +91,6 @@ class SexualEventRepository {
     return events;
   }
 
-  Future<List<Location>> getAllLocations() async {
-    _logger.info(
-      'Locations are embedded in sexual_event; getAllLocations is not supported.',
-    );
-    throw UnsupportedError(
-      'Locations are embedded in sexual_event; standalone Location table no longer used.',
-    );
-  }
-
-  /// Gets a single Location by ID.
-  ///
-  /// Note: Locations are now embedded directly in the `sexual_event.json`.
-  /// Standalone location lookups by ID are not supported anymore.
-  Future<Location?> getLocationById(String id) async {
-    _logger.info(
-      'Locations are embedded in sexual_event; getLocationById is not supported.',
-    );
-    throw UnsupportedError(
-      'Locations are embedded in sexual_event; standalone Location table no longer used.',
-    );
-  }
-
-  /// Resolves a Reference to a Location.
-  ///
-  /// Note: In the new model locations are embedded inside `sexual_event` JSON.
-  /// References to standalone Location records cannot be resolved anymore.
-  Future<Location?> getLocationForReference(Reference? ref) async {
-    _logger.info(
-      'Location references cannot be resolved; locations are embedded in sexual_event.',
-    );
-    throw UnsupportedError(
-      'Location references cannot be resolved; locations are embedded in sexual_event.',
-    );
-  }
-
-  /// Saving locations to a standalone table is no longer supported.
-  /// Locations should be embedded within `SexualEvent` objects and those events
-  /// persisted via `save(SexualEvent)`.
-  Future<void> saveLocation(Location location) async {
-    _logger.info(
-      'Attempted to save standalone Location; operation not supported.',
-    );
-    throw UnsupportedError(
-      'Standalone location persistence is not supported. Embed locations in SexualEvent instead.',
-    );
-  }
-
   Future<List<Person>> getPersonsFromActivity(EventActivity activity) async {
     _logger.info('Getting persons from activity: $activity');
 
@@ -220,6 +173,10 @@ class SexualEventRepository {
       );
     }
 
+    // Sort alphabetically by name
+    categories.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return categories;
   }
 
@@ -235,6 +192,10 @@ class SexualEventRepository {
       );
     }
 
+    // Sort alphabetically by name
+    activities.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return activities;
   }
 
@@ -262,6 +223,10 @@ class SexualEventRepository {
       );
     }
 
+    // Sort alphabetically by name
+    categories.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return categories;
   }
 

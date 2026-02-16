@@ -17,6 +17,9 @@ class EventState {
   final Person? myself;
   final List<Person>? allPersons;
 
+  /// Flag indicating data has changed and consumers should refresh (set to true when events are saved/deleted)
+  final bool needsDataRefresh;
+
   EventState({
     this.selectedEvent,
     this.selectedEventSexualActivityParticipants,
@@ -33,6 +36,7 @@ class EventState {
     this.dailyEventCount,
     this.myself,
     this.allPersons,
+    this.needsDataRefresh = false,
   });
 
   EventState copyWith({
@@ -51,6 +55,7 @@ class EventState {
     Map<DateTime, int>? dailyEventCount,
     Person? myself,
     List<Person>? allPersons,
+    bool? needsDataRefresh,
   }) {
     return EventState(
       selectedEvent: selectedEvent ?? this.selectedEvent,
@@ -78,6 +83,7 @@ class EventState {
       dailyEventCount: dailyEventCount ?? this.dailyEventCount,
       myself: myself ?? this.myself,
       allPersons: allPersons ?? this.allPersons,
+      needsDataRefresh: needsDataRefresh ?? this.needsDataRefresh,
     );
   }
 }

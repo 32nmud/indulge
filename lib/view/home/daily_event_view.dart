@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'day_card.dart';
 import 'event_list.dart';
@@ -19,30 +20,54 @@ class _EventViewPageState extends State<EventViewPage> {
   void initState() {
     super.initState();
     // Trigger the initial load for the current day once the widget tree is built.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Use the provider to perform the repository-backed select (ensures events are loaded)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Ensure ClinicalEventsProvider has finished initialization before asking it
+      // to load day events. This avoids races where the provider's repository
+      // hasn't been created yet.
+      await context.read<ClinicalEventsProvider>().ready;
+      // Use the sexual events provider to load sexual events for the day.
       context.read<SexualEventsProvider>().selectDate(_selectedDay);
+      // Now ask the clinical events provider to load clinical events for the same day.
+      context.read<ClinicalEventsProvider>().selectDate(_selectedDay);
     });
   }
 
-  void _navigateToNextDay() {
-    final provider = context.read<SexualEventsProvider>();
+  Future<void> _navigateToNextDay() async {
+    final sexualProvider = context.read<SexualEventsProvider>();
+    final clinicalProvider = context.read<ClinicalEventsProvider>();
     final store = context.read<EventStateStore>();
+    // Normalize to midnight for consistent day queries
     final currentDate = store.state.selectedDate ?? DateTime.now();
-    final nextDate = currentDate.add(const Duration(days: 1));
-    // Use the provider to trigger the load/update flow while reading the current
-    // date from the centralized EventStateStore.
-    provider.selectDate(nextDate);
+    final normalizedCurrent = DateTime(
+      currentDate.year,
+      currentDate.month,
+      currentDate.day,
+    );
+    final nextDate = normalizedCurrent.add(const Duration(days: 1));
+    // Trigger sexual events load immediately.
+    sexualProvider.selectDate(nextDate);
+    // Ensure clinical provider is ready then request clinical events for the same date.
+    await clinicalProvider.ready;
+    clinicalProvider.selectDate(nextDate);
   }
 
-  void _navigateToPreviousDay() {
-    final provider = context.read<SexualEventsProvider>();
+  Future<void> _navigateToPreviousDay() async {
+    final sexualProvider = context.read<SexualEventsProvider>();
+    final clinicalProvider = context.read<ClinicalEventsProvider>();
     final store = context.read<EventStateStore>();
+    // Normalize to midnight for consistent day queries
     final currentDate = store.state.selectedDate ?? DateTime.now();
-    final previousDate = currentDate.subtract(const Duration(days: 1));
-    // Use the provider to trigger the load/update flow while reading the current
-    // date from the centralized EventStateStore.
-    provider.selectDate(previousDate);
+    final normalizedCurrent = DateTime(
+      currentDate.year,
+      currentDate.month,
+      currentDate.day,
+    );
+    final previousDate = normalizedCurrent.subtract(const Duration(days: 1));
+    // Trigger sexual events load immediately.
+    sexualProvider.selectDate(previousDate);
+    // Ensure clinical provider is initialized and then request clinical events.
+    await clinicalProvider.ready;
+    clinicalProvider.selectDate(previousDate);
   }
 
   @override

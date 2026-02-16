@@ -41,4 +41,5 @@ const _$SpecimenSiteEnumMap = {
   SpecimenSite.throat: 'throat',
   SpecimenSite.urine: 'urine',
   SpecimenSite.rectal: 'rectal',
+  SpecimenSite.blood: 'blood',
 };
