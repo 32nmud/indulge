@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/services/preferences_service.dart';
+import 'package:indulge/data/models.dart';
 import '../../models/analysis_data.dart';
 
 class CategoryTrendsChart extends StatefulWidget {
@@ -202,8 +204,8 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       const SizedBox(height: 4),
                       Text(
                         _showPattern
-                            ? 'Average events per day of week'
-                            : 'Total events per month',
+                            ? 'Average events which contain the selected categories per day of week'
+                            : 'Total events which contain the selected categories per month',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -380,11 +382,15 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     }
 
     final typeToUse = widget.showTypeFilter ? _selectedType : widget.filterType;
-    final events = typeToUse == null
+    // Numerators come from the filtered events (total / per-type). We sort the
+    // filtered list for stable rendering of the chart numerators.
+    final filteredEvents = typeToUse == null
         ? widget.data.events
         : (widget.data.eventsByType[typeToUse] ?? []);
+    final filteredSortedEvents = List<SexualEvent>.from(filteredEvents)
+      ..sort((a, b) => a.date.compareTo(b.date));
 
-    for (final event in events) {
+    for (final event in filteredSortedEvents) {
       // Check which selected categories this event has
       final eventCategories = <String>{};
       for (final activity in event.activities) {
@@ -402,28 +408,78 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
       }
     }
 
-    // Calculate total weeks span for averaging - prefer the global analysis window
-    // (widget.data.startDate / widget.data.endDate) if available; otherwise
-    // fallback to first/last event dates.
-    double totalWeeksSpan = 1.0;
+    // Determine the effective analysis window and weekday-occurrence denominators.
+    // This mirrors the AveragesCalculator logic exactly:
+    // - start with the requested window start (widget.data.startDate or last 12 months)
+    // - if the first available event is after that requested start, use the first event date
+    // - find the last event on/after the requested start and use it as the window end;
+    //   if none, fall back to the overall last event date.
     DateTime? windowStart = widget.data.startDate;
     DateTime? windowEnd = widget.data.endDate;
-    if (windowStart == null || windowEnd == null) {
-      if (widget.data.events.isNotEmpty) {
-        windowStart ??= widget.data.events.first.date;
-        windowEnd ??= widget.data.events.last.date;
+
+    // Use sortedEvents (computed above) for deterministic first/last access.
+    if (filteredSortedEvents.isNotEmpty) {
+      final firstEventDate = filteredSortedEvents.first.date;
+      final lastEventDate = filteredSortedEvents.last.date;
+
+      // Requested start (thisYear-like) default:
+      final now = DateTime.now();
+      final thisYearStart =
+          widget.data.startDate ?? DateTime(now.year, now.month - 11, 1);
+
+      // Prefer requested start, but if the user's first event is after that, start at their first event.
+      windowStart = windowStart ?? thisYearStart;
+      if (firstEventDate.isAfter(windowStart)) {
+        windowStart = firstEventDate;
+      }
+
+      // Find last event >= requested start (thisYearStart)
+      DateTime lastInWindow = windowStart;
+      for (final ev in filteredSortedEvents) {
+        if (!ev.date.isBefore(thisYearStart)) {
+          if (ev.date.isAfter(lastInWindow)) lastInWindow = ev.date;
+        }
+      }
+
+      // If there were no events at/after thisYearStart, fall back to last event overall.
+      if (lastInWindow.isBefore(windowStart)) {
+        windowEnd = lastEventDate;
+      } else {
+        windowEnd = lastInWindow;
+      }
+
+      // Safety: clamp windowEnd so it is not before windowStart
+      if (windowEnd == null || windowEnd.isBefore(windowStart)) {
+        windowEnd = windowStart;
       }
     }
-    if (windowStart != null && windowEnd != null) {
-      final daysDiff = windowEnd.difference(windowStart).inDays + 1;
-      totalWeeksSpan = (daysDiff / 7.0).clamp(1.0, double.infinity);
+
+    // Count calendar occurrences of each weekday inside the effective window.
+    // These counts are used as per-weekday denominators when computing averages.
+    final weekdayOccurrences = <int, int>{for (var i = 1; i <= 7; i++) i: 0};
+    if (windowStart != null &&
+        windowEnd != null &&
+        !windowEnd.isBefore(windowStart)) {
+      DateTime cursor = DateTime(
+        windowStart.year,
+        windowStart.month,
+        windowStart.day,
+      );
+      final endDate = DateTime(windowEnd.year, windowEnd.month, windowEnd.day);
+      while (!cursor.isAfter(endDate)) {
+        weekdayOccurrences[cursor.weekday] =
+            (weekdayOccurrences[cursor.weekday] ?? 0) + 1;
+        cursor = cursor.add(const Duration(days: 1));
+      }
     }
 
-    // Calculate max overlapping height
+    // Calculate max overlapping height using weekday-specific denominators.
     double maxValue = 0.0;
     for (int i = 1; i <= 7; i++) {
+      final occ = (weekdayOccurrences[i] ?? 0);
+      final denom = (occ < 1 ? 1 : occ).toDouble();
       for (final count in dayCounts[i]!.values) {
-        final average = count / totalWeeksSpan;
+        final average = count / denom;
         if (average > maxValue) maxValue = average;
       }
     }
@@ -455,7 +511,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                   final label = char != null && char.isNotEmpty
                       ? '$char $name'
                       : name;
-                  final val = entry.value / totalWeeksSpan;
+                  final occ = (weekdayOccurrences[group.x.toInt() + 1] ?? 0);
+                  final denom = (occ < 1 ? 1 : occ).toDouble();
+                  final val = entry.value / denom;
                   tooltipText.writeln('$label: ${val.toStringAsFixed(1)}');
                 }
               }
@@ -553,7 +611,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
             if (!_selectedCategoryIds.contains(id)) continue;
 
             final rawCount = categories[id] ?? 0;
-            final count = rawCount / totalWeeksSpan;
+            final occ = (weekdayOccurrences[dayOfWeek] ?? 0);
+            final denom = (occ < 1 ? 1 : occ).toDouble();
+            final count = rawCount / denom;
             if (count > 0) {
               final color = _colors[i % _colors.length];
               barValues.add(MapEntry(color, count));
