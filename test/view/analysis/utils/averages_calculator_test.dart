@@ -188,7 +188,7 @@ void main() {
           eventsThisYear: 2,
           dayOfWeekCounts: {1: 1, 2: 1},
           dayOfWeekCountsByType: {},
-          eventPartnerCounts: {1, 1},
+          eventPartnerCounts: {1},
           eventPropertyCounts: {2, 3},
           eventActivityCounts: {2, 3},
           thisYearStart: DateTime(2024, 1, 1),

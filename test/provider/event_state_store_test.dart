@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/event_state_store.dart';
 
 void main() {

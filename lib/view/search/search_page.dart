@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/view/common/sexual_event_card.dart';
 import 'package:indulge/view/common/dialogs/partner_filter_dialog.dart';
 import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 import 'package:indulge/view/common/dialogs/activity_filter_dialog.dart';
+import 'package:indulge/view/common/dialogs/event_type_filter_dialog.dart';
+import 'package:indulge/view/search/widgets/search_header.dart';
+import 'package:indulge/view/search/widgets/search_results_list.dart';
+import 'package:indulge/view/common/util/pagination_controller.dart';
+import 'package:indulge/view/search/utils/search_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
@@ -19,6 +23,9 @@ class SearchPage extends StatefulWidget {
   State<SearchPage> createState() => SearchPageState();
 }
 
+/// The main search page state. Business logic (filters, searching,
+/// pagination) remains here; the visual pieces are delegated to
+/// `SearchHeader` and `SearchResultsList` to keep this file organized.
 class SearchPageState extends State<SearchPage>
     with AutomaticKeepAliveClientMixin {
   // Public method to set filters from outside (e.g. navigation)
@@ -70,21 +77,19 @@ class SearchPageState extends State<SearchPage>
   }
 
   List<SexualEvent> _searchResults = [];
-  List<SexualEvent> _displayedResults = [];
   bool _isSearching = false;
   bool _hasSearched = false;
-  bool _isLoadingMore = false;
 
-  // Pagination
-  static const int _pageSize = 20;
-  int _currentPage = 0;
+  // Pagination (migrated to PaginationController)
   final ScrollController _scrollController = ScrollController();
+  final PaginationController<SexualEvent> _pager =
+      PaginationController<SexualEvent>(pageSize: 20);
 
   // Filters
   DateTimeRange? _dateRange;
   Set<String> _selectedPartnerIds = {};
   Set<String> _selectedCategoryIds = {};
-  // Selected activities are now composite keys: "categoryId:activityId"
+  // Selected activities are composite keys: "categoryId:activityId"
   Set<String> _selectedActivityKeys = {};
   String? _selectedEventType;
   final TextEditingController _notesSearchController = TextEditingController();
@@ -108,7 +113,6 @@ class SearchPageState extends State<SearchPage>
     _scrollController.addListener(_onScroll);
 
     // Listen to centralized EventStateStore changes to refresh search results
-    // (e.g. event edited/deleted)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<EventStateStore>().addListener(_onStoreChange);
     });
@@ -126,8 +130,6 @@ class SearchPageState extends State<SearchPage>
     if (!mounted) return;
 
     final store = context.read<EventStateStore>();
-    // Only refresh search results if data has actually changed (not on date changes)
-    // Note: don't clear dirty flag here - let _performSearch do it after loading
     if (store.needsDataRefresh) {
       Future.microtask(() => _performSearch());
     }
@@ -141,31 +143,25 @@ class SearchPageState extends State<SearchPage>
   }
 
   void _loadMoreResults() {
-    if (_isLoadingMore ||
-        _displayedResults.length >= _searchResults.length ||
-        _isSearching) {
+    // Use PaginationController to determine if more data can be loaded.
+    if (!_pager.canLoadMore(_searchResults) || _isSearching) {
       return;
     }
 
     setState(() {
-      _isLoadingMore = true;
+      _pager.isLoadingMore = true;
     });
 
+    // Simulate async loading for smoother UI (same UX as before)
     // Simulate async loading for smoother UI
     Future.delayed(const Duration(milliseconds: 50), () {
       if (!mounted) return;
 
-      final nextEnd = (_currentPage + 1) * _pageSize;
-      final end = nextEnd < _searchResults.length
-          ? nextEnd
-          : _searchResults.length;
+      // Load next page into the pager; we don't need the returned slice here.
+      _pager.loadMore(_searchResults);
 
       setState(() {
-        _displayedResults.addAll(
-          _searchResults.sublist(_displayedResults.length, end),
-        );
-        _currentPage++;
-        _isLoadingMore = false;
+        _pager.isLoadingMore = false;
       });
     });
   }
@@ -197,18 +193,12 @@ class SearchPageState extends State<SearchPage>
     setState(() {
       _sinceLastStiTest = !_sinceLastStiTest;
       if (_sinceLastStiTest && lastStiTestDate != null) {
-        // Set date range to start from last STI test date to now
         _dateRange = DateTimeRange(start: lastStiTestDate, end: DateTime.now());
       } else {
         _dateRange = null;
       }
     });
     _performSearch();
-  }
-
-  void _resetPagination() {
-    _currentPage = 0;
-    _displayedResults.clear();
   }
 
   Future<void> _performSearch() async {
@@ -229,111 +219,27 @@ class SearchPageState extends State<SearchPage>
       }
 
       final allEvents = await provider.getAllEvents();
-      // Read 'myself' from the centralized store snapshot
       final myId = store.state.myself?.id;
 
-      final filteredEvents = allEvents.where((event) {
-        // Date range filter
-        if (_dateRange != null) {
-          if (event.date.isBefore(_dateRange!.start) ||
-              event.date.isAfter(
-                _dateRange!.end.add(const Duration(days: 1)),
-              )) {
-            return false;
-          }
-        }
-
-        // Notes filter
-        if (_notesSearchController.text.isNotEmpty) {
-          final query = _notesSearchController.text.toLowerCase();
-          final notes = event.notes?.toLowerCase() ?? '';
-          if (!notes.contains(query)) {
-            return false;
-          }
-        }
-
-        // Event Type filter
-        if (_selectedEventType != null) {
-          final partnerIds = event.activities
-              .expand((a) => a.participants)
-              .map((p) => p.participant.reference)
-              .where((id) => id != myId)
-              .toSet();
-
-          if (_selectedEventType == 'Solo' && partnerIds.isNotEmpty) {
-            return false;
-          }
-          if (_selectedEventType == 'Couple' && partnerIds.length != 1) {
-            return false;
-          }
-          if (_selectedEventType == 'Group' && partnerIds.length < 2) {
-            return false;
-          }
-        }
-
-        // Partner filter
-        if (_selectedPartnerIds.isNotEmpty) {
-          final eventPartnerIds = event.activities
-              .expand((a) => a.participants)
-              .map((p) => p.participant.reference)
-              .toSet();
-          if (!_selectedPartnerIds.any((id) => eventPartnerIds.contains(id))) {
-            return false;
-          }
-        }
-
-        // Activity category filter
-        if (_selectedCategoryIds.isNotEmpty) {
-          final eventCategoryIds = event.activities
-              .map((a) => a.category.reference)
-              .toSet();
-          if (!_selectedCategoryIds.any(
-            (id) => eventCategoryIds.contains(id),
-          )) {
-            return false;
-          }
-        }
-
-        // Activity filter (Composite key: categoryId:activityId)
-        if (_selectedActivityKeys.isNotEmpty) {
-          bool hasMatchingActivity = false;
-          for (var eventActivity in event.activities) {
-            final categoryId = eventActivity.category.reference;
-            for (var participant in eventActivity.participants) {
-              for (var activityCount in participant.activityCounts) {
-                final activityId = activityCount.activityReference.reference;
-                final compositeKey = "$categoryId:$activityId";
-                if (_selectedActivityKeys.contains(compositeKey)) {
-                  hasMatchingActivity = true;
-                  break;
-                }
-              }
-              if (hasMatchingActivity) break;
-            }
-            if (hasMatchingActivity) break;
-          }
-          if (!hasMatchingActivity) return false;
-        }
-
-        return true;
-      }).toList();
-
-      // Sort by date (most recent first)
-      filteredEvents.sort((a, b) => b.date.compareTo(a.date));
+      // Use the pure filter function from search_utils to get filtered & sorted events
+      final filteredEvents = filterSexualEvents(
+        allEvents,
+        dateRange: _dateRange,
+        notesQuery: _notesSearchController.text,
+        eventType: _selectedEventType,
+        partnerIds: _selectedPartnerIds,
+        categoryIds: _selectedCategoryIds,
+        activityKeys: _selectedActivityKeys,
+        myselfId: myId,
+      );
 
       setState(() {
         _searchResults = filteredEvents;
         _isSearching = false;
 
-        // Reset pagination and load first page
-        _resetPagination();
-        final firstPageEnd = _pageSize < filteredEvents.length
-            ? _pageSize
-            : filteredEvents.length;
-        if (firstPageEnd > 0) {
-          _displayedResults = filteredEvents.sublist(0, firstPageEnd);
-          _currentPage = 1;
-        }
+        // Reset pagination controller and load first page
+        _pager.reset();
+        _pager.loadInitial(_searchResults);
       });
     } catch (e) {
       setState(() {
@@ -369,7 +275,6 @@ class SearchPageState extends State<SearchPage>
   Future<void> _showPartnerFilter() async {
     final provider = context.read<SexualEventsProvider>();
     final store = context.read<EventStateStore>();
-    // Prefer cached persons from the centralized store when available to avoid a DB call.
     final allPersons = store.state.allPersons ?? await provider.getAllPersons();
 
     if (!mounted) return;
@@ -391,7 +296,6 @@ class SearchPageState extends State<SearchPage>
   }
 
   Future<void> _showCategoryFilter() async {
-    // Read categories from centralized store snapshot
     final categories =
         context
             .read<EventStateStore>()
@@ -453,22 +357,18 @@ class SearchPageState extends State<SearchPage>
   Future<void> _showEventTypeFilter() async {
     if (!mounted) return;
 
-    final result = await showDialog<List<String?>>(
+    final result = await showDialog<String?>(
       context: context,
       builder: (context) =>
-          _EventTypeFilterDialog(selectedType: _selectedEventType),
+          EventTypeFilterDialog(selectedType: _selectedEventType),
     );
 
     if (result != null) {
       setState(() {
-        _selectedEventType = result.first;
+        _selectedEventType = result;
         _performSearch();
       });
     }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
   }
 
   String _formatDateHeader(DateTime date) {
@@ -482,387 +382,54 @@ class SearchPageState extends State<SearchPage>
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'Search',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ),
-            // Search header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Text Search Bar
-                  TextField(
-                    controller: _notesSearchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search notes...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _notesSearchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _notesSearchController.clear();
-                                _performSearch();
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                      ),
-                    ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _performSearch(),
-                  ),
-                  const SizedBox(height: 12),
-                  // Results count
-                  if (_hasSearched && !_isSearching)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        _hasActiveFilters()
-                            ? '${_searchResults.length} ${_searchResults.length == 1 ? 'result' : 'results'} found'
-                            : '${_searchResults.length} total ${_searchResults.length == 1 ? 'event' : 'events'}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ),
-                  // Filter chips
-                  SizedBox(
-                    width: double.infinity,
-                    child: Wrap(
-                      spacing: 8.0,
-                      runSpacing: 8.0,
-                      children: [
-                        // Date range chip
-                        FilterChip(
-                          label: Text(
-                            _dateRange == null
-                                ? 'Date Range'
-                                : '${_formatDate(_dateRange!.start)} - ${_formatDate(_dateRange!.end)}',
-                          ),
-                          selected: _dateRange != null,
-                          onSelected: (selected) => _showDateRangePicker(),
-                          avatar: Icon(
-                            Icons.calendar_today,
-                            size: 16,
-                            color: _dateRange != null ? Colors.blue : null,
-                          ),
-                        ),
-                        // Since Last STI Test chip
-                        FutureBuilder<DateTime?>(
-                          future: context
-                              .read<ClinicalEventsProvider>()
-                              .getLastClinicalEventDate(),
-                          builder: (context, snapshot) {
-                            final hasStiDate =
-                                snapshot.hasData && snapshot.data != null;
-                            return FilterChip(
-                              label: Text(
-                                hasStiDate
-                                    ? 'Since Last STI Test'
-                                    : 'Since Last STI Test',
-                              ),
-                              selected: _sinceLastStiTest,
-                              onSelected: (selected) =>
-                                  _toggleSinceLastStiTest(snapshot.data),
-                              avatar: Icon(
-                                Icons.medical_services,
-                                size: 16,
-                                color: _sinceLastStiTest ? Colors.red : null,
-                              ),
-                            );
-                          },
-                        ),
-                        // Partners chip
-                        FilterChip(
-                          label: Text(
-                            _selectedPartnerIds.isEmpty
-                                ? 'Partners'
-                                : 'Partners (${_selectedPartnerIds.length})',
-                          ),
-                          selected: _selectedPartnerIds.isNotEmpty,
-                          onSelected: (selected) => _showPartnerFilter(),
-                          avatar: Icon(
-                            Icons.people,
-                            size: 16,
-                            color: _selectedPartnerIds.isNotEmpty
-                                ? Colors.blue
-                                : null,
-                          ),
-                        ),
-                        // Event Type chip
-                        FilterChip(
-                          label: Text(_selectedEventType ?? 'Type'),
-                          selected: _selectedEventType != null,
-                          onSelected: (selected) => _showEventTypeFilter(),
-                          avatar: Icon(
-                            Icons.group_work,
-                            size: 16,
-                            color: _selectedEventType != null
-                                ? Colors.blue
-                                : null,
-                          ),
-                        ),
-                        // Activity categories chip
-                        FilterChip(
-                          label: Text(
-                            _selectedCategoryIds.isEmpty
-                                ? 'Categories'
-                                : 'Categories (${_selectedCategoryIds.length})',
-                          ),
-                          selected: _selectedCategoryIds.isNotEmpty,
-                          onSelected: (selected) => _showCategoryFilter(),
-                          avatar: Icon(
-                            Icons.category,
-                            size: 16,
-                            color: _selectedCategoryIds.isNotEmpty
-                                ? Colors.blue
-                                : null,
-                          ),
-                        ),
-                        // Activities chip (grouped)
-                        FilterChip(
-                          label: Text(
-                            _selectedActivityKeys.isEmpty
-                                ? 'Activities'
-                                : 'Activities (${_selectedActivityKeys.length})',
-                          ),
-                          selected: _selectedActivityKeys.isNotEmpty,
-                          onSelected: (selected) => _showActivityFilter(),
-                          avatar: Icon(
-                            Icons.label,
-                            size: 16,
-                            color: _selectedActivityKeys.isNotEmpty
-                                ? Colors.blue
-                                : null,
-                          ),
-                        ),
-                        // Clear filters button
-                        if (_hasActiveFilters())
-                          ActionChip(
-                            label: const Text('Clear All'),
-                            onPressed: _clearAllFilters,
-                            avatar: const Icon(Icons.clear_all, size: 16),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Results
-            Expanded(child: _buildResultsView()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResultsView() {
-    if (_isSearching && _searchResults.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (!_hasSearched) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search,
-              size: 64,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurfaceVariant.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Search your history',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Use filters to find specific events',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_searchResults.isEmpty) {
-      return _buildNoResultsState();
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.only(bottom: 80), // Space for FAB
-      itemCount: _displayedResults.length + (_isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= _displayedResults.length) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        final event = _displayedResults[index];
-        final showDateHeader =
-            index == 0 ||
-            !DateUtils.isSameDay(event.date, _displayedResults[index - 1].date);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showDateHeader)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Text(
-                  _formatDateHeader(event.date),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            SexualEventCard(event: event),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildNoResultsState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurfaceVariant.withOpacity(0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No results found',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Try adjusting your filters',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurfaceVariant.withOpacity(0.7),
-            ),
-          ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: _clearAllFilters,
-            icon: const Icon(Icons.clear_all),
-            label: const Text('Clear All Filters'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EventTypeFilterDialog extends StatefulWidget {
-  final String? selectedType;
-
-  const _EventTypeFilterDialog({this.selectedType});
-
-  @override
-  State<_EventTypeFilterDialog> createState() => _EventTypeFilterDialogState();
-}
-
-class _EventTypeFilterDialogState extends State<_EventTypeFilterDialog> {
-  String? _selectedType;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedType = widget.selectedType;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final types = ['Solo', 'Couple', 'Group'];
-    return AlertDialog(
-      title: const Text('Select Event Type'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: types.map((type) {
-            return RadioListTile<String>(
-              title: Text(type),
-              value: type,
-              groupValue: _selectedType,
-              onChanged: (value) {
-                setState(() {
-                  _selectedType = value;
-                });
+            // Top title + search bar + chips moved into SearchHeader widget.
+            SearchHeader(
+              notesController: _notesSearchController,
+              isSearching: _isSearching,
+              hasSearched: _hasSearched,
+              searchResultsCount: _searchResults.length,
+              hasActiveFilters: _hasActiveFilters(),
+              dateRange: _dateRange,
+              sinceLastStiTest: _sinceLastStiTest,
+              selectedPartnerIds: _selectedPartnerIds,
+              selectedCategoryIds: _selectedCategoryIds,
+              selectedActivityKeys: _selectedActivityKeys,
+              selectedEventType: _selectedEventType,
+              onSubmitSearch: _performSearch,
+              onClearSearch: () {
+                _notesSearchController.clear();
+                _performSearch();
               },
-            );
-          }).toList(),
+              onDateRangeTap: _showDateRangePicker,
+              onToggleSinceLastStiTest: () async {
+                final last = await context
+                    .read<ClinicalEventsProvider>()
+                    .getLastClinicalEventDate();
+                _toggleSinceLastStiTest(last);
+              },
+              onPartnerTap: _showPartnerFilter,
+              onEventTypeTap: _showEventTypeFilter,
+              onCategoryTap: _showCategoryFilter,
+              onActivityTap: _showActivityFilter,
+              onClearAll: _clearAllFilters,
+            ),
+
+            // Results list is delegated to SearchResultsList
+            Expanded(
+              child: SearchResultsList(
+                isSearching: _isSearching,
+                hasSearched: _hasSearched,
+                searchResults: _searchResults,
+                displayedResults: _pager.displayed,
+                isLoadingMore: _pager.isLoadingMore,
+                scrollController: _scrollController,
+                formatDateHeader: _formatDateHeader,
+                onClearAll: _clearAllFilters,
+              ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            setState(() {
-              _selectedType = null;
-            });
-          },
-          child: const Text('Clear'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop([_selectedType]),
-          child: const Text('Apply'),
-        ),
-      ],
     );
   }
 }

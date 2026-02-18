@@ -7,6 +7,7 @@ import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:logging/logging.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
+import 'package:indulge/view/common/util/pagination_controller.dart';
 
 class ContactListPage extends StatefulWidget {
   const ContactListPage({super.key});
@@ -22,6 +23,14 @@ class _ContactListPageState extends State<ContactListPage>
   Map<String, int> _personEventCounts = {};
   bool _isLoading = true;
 
+  // Pager for contacts list pagination (keeps the UI small for long lists)
+  final PaginationController<Person> _pager = PaginationController<Person>(
+    pageSize: 20,
+  );
+
+  // Scroll controller used to detect when we should load more contacts.
+  final ScrollController _scrollController = ScrollController();
+
   @override
   bool get wantKeepAlive => true;
 
@@ -33,6 +42,9 @@ class _ContactListPageState extends State<ContactListPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<EventStateStore>().addListener(_onStoreChange);
     });
+
+    // Listen for scrolls to implement load-more for the contacts list.
+    _scrollController.addListener(_onScroll);
   }
 
   void _onStoreChange() {
@@ -43,9 +55,35 @@ class _ContactListPageState extends State<ContactListPage>
     }
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final threshold = _scrollController.position.maxScrollExtent * 0.8;
+    if (_scrollController.position.pixels >= threshold) {
+      // Request next page if available.
+      if (_pager.canLoadMore(_persons) &&
+          !_pager.isLoadingMore &&
+          !_isLoading) {
+        // Simulate the same UX as other lists: slight delay before adding items.
+        setState(() {
+          _pager.isLoadingMore = true;
+        });
+
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (!mounted) return;
+          _pager.loadMore(_persons);
+          setState(() {
+            _pager.isLoadingMore = false;
+          });
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     context.read<EventStateStore>().removeListener(_onStoreChange);
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -58,6 +96,10 @@ class _ContactListPageState extends State<ContactListPage>
     // to avoid an extra DB call; fall back to the provider otherwise.
     final persons = store.state.allPersons ?? await provider.getAllPersons();
 
+    // Filter out the anonymous person early so event counting and pagination
+    // operate only on visible contacts.
+    final visiblePersons = persons.where((p) => p.id != 'anonymous').toList();
+
     // Fetch all events if data has changed, if force is specified, or on initial load
     // (when we don't have cached event counts yet)
     List<SexualEvent> allEvents = [];
@@ -69,11 +111,11 @@ class _ContactListPageState extends State<ContactListPage>
       }
     }
     _logger.info(
-      'Counting events for ${persons.length} persons across ${allEvents.length} events',
+      'Counting events for ${visiblePersons.length} persons across ${allEvents.length} events',
     );
     final eventCounts = <String, int>{};
 
-    for (final person in persons) {
+    for (final person in visiblePersons) {
       int count = 0;
       for (final event in allEvents) {
         // Check if this person participated in this event
@@ -96,8 +138,12 @@ class _ContactListPageState extends State<ContactListPage>
       );
     }
 
+    // Initialize pager with visible persons so the UI can show a paginated list.
+    _pager.reset();
+    _pager.loadInitial(visiblePersons);
+
     setState(() {
-      _persons = persons;
+      _persons = visiblePersons;
       _personEventCounts = eventCounts;
       _isLoading = false;
     });

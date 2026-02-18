@@ -279,7 +279,10 @@ void main() {
 
       // Verify 'type' was renamed to 'category'
       expect(v2Event.activities[0].category.reference, 'type-oral');
-      expect(v2Event.activities[0].category.resourceType, 'SexualActivityType');
+      expect(
+        v2Event.activities[0].category.resourceType,
+        'SexualActivityCategory',
+      );
     });
 
     test('migrates SexualEvent with participants', () {

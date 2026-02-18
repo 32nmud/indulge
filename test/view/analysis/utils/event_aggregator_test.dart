@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/view/analysis/utils/calculator_utils/event_aggregator.dart';
 import 'package:indulge/view/analysis/utils/person_cache.dart';
-import 'package:indulge/view/analysis/models/analysis_event_type.dart';
 
 void main() {
   group('EventAggregator', () {
@@ -387,7 +386,10 @@ void main() {
           startDate: thisYearStart,
         );
 
-        expect(result.uniquePartnersThisYear, greaterThan(0)); // partner-1 and partner-2
+        expect(
+          result.uniquePartnersThisYear,
+          greaterThan(0),
+        ); // partner-1 and partner-2
       });
     });
   });
