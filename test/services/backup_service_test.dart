@@ -83,16 +83,6 @@ class MockSexualEventRepository implements SexualEventRepository {
   @override
   Future<SexualEvent?> getById(String id) async => null;
   @override
-  Future<List<SexualEvent>> getByDateRange(
-    DateTime start,
-    DateTime end,
-  ) async => [];
-  @override
-  Future<Map<DateTime, int>> getDailyCounts(
-    DateTime start,
-    DateTime end,
-  ) async => {};
-  @override
   Future<List<SexualEvent>> getByDate(DateTime date) async => [];
   @override
   Future<Map<DateTime, int>> getDailyEventCount() async => {};
@@ -101,17 +91,10 @@ class MockSexualEventRepository implements SexualEventRepository {
   @override
   Future<void> deletePerson(String id) async {}
   @override
-  Future<SexualActivityCategory?> getCategoryById(String id) async => null;
-  @override
   Future<void> deleteActivityCategory(String id) async {}
-  @override
-  Future<SexualActivity?> getSexualActivityById(String id) async => null;
   @override
   Future<void> deleteSexualActivity(String id) async {}
   @override
-  Future<int> getUsageCountForCategory(String id) async => 0;
-  @override
-  Future<int> getUsageCountForActivity(String id) async => 0;
   @override
   Future<int> getEventCountForActivityCategory(String id) async => 0;
   @override
