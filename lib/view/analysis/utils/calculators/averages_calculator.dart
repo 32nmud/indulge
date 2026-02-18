@@ -28,14 +28,16 @@ class AveragesResult {
 }
 
 /// Computes various averages from the raw aggregated event data.
+///
+/// NOTE: [sortedEvents] must be sorted by date ascending.
 class AveragesCalculator {
   /// Calculates per-week, per-month, per-event, and per-day-of-week averages.
   ///
   /// [sortedEvents] must be sorted by date ascending.
   /// [totalActivities] is the total number of activity instances across all events.
   /// [eventsThisYear] is the number of events within the selected time window.
-  /// [dayOfWeekCounts] maps weekday (1=Mon..7=Sun) → total event count.
-  /// [dayOfWeekCountsByType] maps event type → weekday → count.
+  /// [dayOfWeekCounts] maps weekday (1=Mon..7=Sun) → total event count (all-time).
+  /// [dayOfWeekCountsByType] maps event type → weekday → count (all-time).
   /// [eventPartnerCounts] is the set of partner counts per event.
   /// [eventPropertyCounts] is the set of sexual activity instance counts per event.
   /// [eventActivityCounts] is the set of activity category counts per event.
@@ -51,45 +53,126 @@ class AveragesCalculator {
     required Set<int> eventActivityCounts,
     required DateTime thisYearStart,
   }) {
-    // Calculate calendar-span weeks for averaging.
-    // This answers: "Over the period I've been tracking, what is my weekly average?"
-    double totalWeeksSpan = 1.0;
+    // --- Determine windowStart/windowEnd BEFORE iterating events ---
+    // windowStart defaults to the requested start (thisYearStart). If the first
+    // available event is after that, we prefer starting at the first event date
+    // so denominators reflect the period for which the user actually has data.
+    DateTime windowStart = thisYearStart;
+    DateTime windowEnd = thisYearStart; // will be adjusted below
+
     if (sortedEvents.isNotEmpty) {
-      final firstDate = sortedEvents.first.date;
-      final lastDate = sortedEvents.last.date;
-      final daysDiff = lastDate.difference(firstDate).inDays + 1;
-      totalWeeksSpan = (daysDiff / 7.0).clamp(1.0, double.infinity);
+      final firstEventDate = sortedEvents.first.date;
+      final lastEventDate = sortedEvents.last.date;
+
+      if (firstEventDate.isAfter(windowStart)) {
+        windowStart = firstEventDate;
+      }
+
+      // windowEnd should be the latest event that lies within the requested
+      // window (thisYearStart..∞). Iterate to find the last event >= thisYearStart.
+      DateTime lastInWindow = windowStart;
+      for (final ev in sortedEvents) {
+        if (!ev.date.isBefore(thisYearStart)) {
+          if (ev.date.isAfter(lastInWindow)) lastInWindow = ev.date;
+        }
+      }
+
+      // If there were no events at/after thisYearStart, fall back to last event
+      // that is before thisYearStart (so window still covers something).
+      if (lastInWindow.isBefore(windowStart)) {
+        // pick last available event overall
+        windowEnd = lastEventDate;
+      } else {
+        windowEnd = lastInWindow;
+      }
+
+      // Safety: clamp windowEnd so it is not before windowStart
+      if (windowEnd.isBefore(windowStart)) windowEnd = windowStart;
     }
 
-    // Average day-of-week counts by type
-    final averageDayOfWeekCountsByType =
-        <AnalysisEventType, Map<int, double>>{};
+    // --- Compute day-of-week counts scoped to the selected (possibly-shrunken) window ---
+    final dayOfWeekCountsThisWindow = <int, int>{
+      for (var i = 1; i <= 7; i++) i: 0,
+    };
+    final dayOfWeekCountsByTypeThisWindow = <AnalysisEventType, Map<int, int>>{
+      for (var t in AnalysisEventType.values)
+        t: {for (var i = 1; i <= 7; i++) i: 0},
+    };
 
-    for (final type in AnalysisEventType.values) {
-      averageDayOfWeekCountsByType[type] = {};
-      for (int day = 1; day <= 7; day++) {
-        int count;
-        if (type == AnalysisEventType.total) {
-          count = dayOfWeekCounts[day] ?? 0;
-        } else {
-          count = dayOfWeekCountsByType[type]?[day] ?? 0;
+    for (final event in sortedEvents) {
+      // include event if within [windowStart .. windowEnd]
+      if (event.date.isBefore(windowStart) || event.date.isAfter(windowEnd)) {
+        continue;
+      }
+
+      final dow = event.date.weekday;
+      dayOfWeekCountsThisWindow[dow] =
+          (dayOfWeekCountsThisWindow[dow] ?? 0) + 1;
+
+      // Determine event type (approximation: we don't have PersonCache here).
+      // Approximation is: if any participant id != 'me' then it's non-solo.
+      final eventPartners = <String>{};
+      for (final activity in event.activities) {
+        for (final participant in activity.participants) {
+          final pid = participant.participant.reference;
+          if (pid != 'me') eventPartners.add(pid);
         }
-        averageDayOfWeekCountsByType[type]![day] = count / totalWeeksSpan;
+      }
+
+      final type = eventPartners.isEmpty
+          ? AnalysisEventType.solo
+          : (eventPartners.length == 1
+                ? AnalysisEventType.couple
+                : AnalysisEventType.group);
+
+      dayOfWeekCountsByTypeThisWindow[type]![dow] =
+          (dayOfWeekCountsByTypeThisWindow[type]![dow] ?? 0) + 1;
+    }
+
+    // --- Count calendar occurrences of each weekday inside the window ---
+    final weekdayOccurrences = <int, int>{for (var i = 1; i <= 7; i++) i: 0};
+    if (!windowEnd.isBefore(windowStart)) {
+      DateTime cursor = DateTime(
+        windowStart.year,
+        windowStart.month,
+        windowStart.day,
+      );
+      final endDate = DateTime(windowEnd.year, windowEnd.month, windowEnd.day);
+      while (!cursor.isAfter(endDate)) {
+        weekdayOccurrences[cursor.weekday] =
+            (weekdayOccurrences[cursor.weekday] ?? 0) + 1;
+        cursor = cursor.add(const Duration(days: 1));
       }
     }
 
-    // Calculate weekly/monthly counts scoped to this year
+    // --- Compute per-type averages using weekday occurrence denominators ---
+    final averageDayOfWeekCountsByType =
+        <AnalysisEventType, Map<int, double>>{};
+    for (final t in AnalysisEventType.values) {
+      averageDayOfWeekCountsByType[t] = {};
+      for (int d = 1; d <= 7; d++) {
+        final count = dayOfWeekCountsByTypeThisWindow[t]?[d] ?? 0;
+        // Safe null-aware conversion: default to 1 occurrence when map value is absent.
+        final denomDouble = (weekdayOccurrences[d] ?? 1).toDouble();
+        averageDayOfWeekCountsByType[t]![d] = count / denomDouble;
+      }
+    }
+
+    // --- Weekly / monthly counts scoped to the requested window (thisYearStart) ---
     final weeklyCountsThisYear = <String, int>{};
     final monthlyCountsThisYear = <String, int>{};
 
     for (final event in sortedEvents) {
-      if (event.date.isAfter(thisYearStart.subtract(const Duration(days: 1)))) {
-        final wKey = getWeekKey(event.date);
-        weeklyCountsThisYear[wKey] = (weeklyCountsThisYear[wKey] ?? 0) + 1;
-
-        final mKey = monthKey(event.date);
-        monthlyCountsThisYear[mKey] = (monthlyCountsThisYear[mKey] ?? 0) + 1;
+      if (!event.date.isAfter(
+        thisYearStart.subtract(const Duration(days: 1)),
+      )) {
+        continue;
       }
+      final wKey = getWeekKey(event.date);
+      weeklyCountsThisYear[wKey] = (weeklyCountsThisYear[wKey] ?? 0) + 1;
+
+      final mKey = monthKey(event.date);
+      monthlyCountsThisYear[mKey] = (monthlyCountsThisYear[mKey] ?? 0) + 1;
     }
 
     final distinctWeeksThisYear = weeklyCountsThisYear.length.clamp(
@@ -121,11 +204,13 @@ class AveragesCalculator {
               eventPropertyCounts.length
         : 0.0;
 
-    // Average events per day of week (based on this year)
+    // --- Average events per weekday (total) using calendar weekday occurrences ---
     final averageEventsPerDayOfWeekMap = <int, double>{};
-    for (int day = 1; day <= 7; day++) {
-      final count = dayOfWeekCounts[day] ?? 0;
-      averageEventsPerDayOfWeekMap[day] = count / distinctWeeksThisYear;
+    for (int d = 1; d <= 7; d++) {
+      final count = dayOfWeekCountsThisWindow[d] ?? 0;
+      // Use null-aware lookup and convert to double; fallback to 1 to avoid divide-by-zero.
+      final denomDouble = (weekdayOccurrences[d] ?? 1).toDouble();
+      averageEventsPerDayOfWeekMap[d] = count / denomDouble;
     }
 
     return AveragesResult(

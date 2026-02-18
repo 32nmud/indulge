@@ -231,37 +231,28 @@ class _MonthlyActivityChartState extends State<MonthlyActivityChart>
       barColor = AnalysisColors.getColor(_selectedType!);
     }
 
-    // Filter events based on selection
-    final events = _selectedType == null
-        ? widget.data.events
-        : (widget.data.eventsByType[_selectedType] ?? []);
-
-    // Calculate total weeks span
-    double totalWeeksSpan = 1.0;
-    if (widget.data.events.isNotEmpty) {
-      final firstDate = widget.data.events.first.date;
-      final lastDate = widget.data.events.last.date;
-      final daysDiff = lastDate.difference(firstDate).inDays + 1;
-      totalWeeksSpan = (daysDiff / 7.0).clamp(1.0, double.infinity);
-    }
-
-    // Count by day of week
-    final dayCounts = <int, int>{};
-    for (int i = 1; i <= 7; i++) {
-      dayCounts[i] = 0;
-    }
-
-    for (final event in events) {
-      dayCounts[event.date.weekday] = (dayCounts[event.date.weekday] ?? 0) + 1;
-    }
-
-    // Calculate averages
+    // Use precomputed averages from AnalysisData (scoped to the selected window).
+    // Fall back to zeros if the maps are missing.
     final averages = <int, double>{};
     double maxValue = 0.0;
-    for (int i = 1; i <= 7; i++) {
-      final avg = (dayCounts[i] ?? 0) / totalWeeksSpan;
-      averages[i] = avg;
-      if (avg > maxValue) maxValue = avg;
+
+    if (_selectedType == null) {
+      // Total averages (AnalysisData provides a map 1..7 -> double)
+      for (int i = 1; i <= 7; i++) {
+        final v = widget.data.averageEventsPerDayOfWeek[i] ?? 0.0;
+        averages[i] = v;
+        if (v > maxValue) maxValue = v;
+      }
+    } else {
+      // Per-type averages: AnalysisData.averageDayOfWeekCountsByType holds
+      // a map per AnalysisEventType -> (1..7 -> double)
+      final map =
+          widget.data.averageDayOfWeekCountsByType[_selectedType!] ?? {};
+      for (int i = 1; i <= 7; i++) {
+        final v = map[i] ?? 0.0;
+        averages[i] = v;
+        if (v > maxValue) maxValue = v;
+      }
     }
 
     final maxY = _calculateNiceMaxY(maxValue);

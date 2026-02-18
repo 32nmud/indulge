@@ -68,13 +68,8 @@ class LocationMap extends StatelessWidget {
                   fm.TileLayer(
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    tileProvider: fm.NetworkTileProvider(
-                      headers: {
-                        // Replace with a production UA per OSM tile usage policy.
-                        'User-Agent':
-                            'indulge/0.1.2-beta (dalton.craig1234@gmail.com)',
-                      },
-                    ),
+                    userAgentPackageName:
+                        'com.exampleindulge (dalton.craig1234@gmail.com)',
                   ),
                   fm.RichAttributionWidget(
                     attributions: [

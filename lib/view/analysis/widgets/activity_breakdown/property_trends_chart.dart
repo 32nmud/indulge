@@ -454,12 +454,20 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
       }
     }
 
-    // Calculate total weeks span for averaging
+    // Calculate total weeks span for averaging - prefer the global analysis window
+    // (widget.data.startDate / widget.data.endDate) if available; otherwise
+    // fallback to first/last event dates.
     double totalWeeksSpan = 1.0;
-    if (widget.data.events.isNotEmpty) {
-      final firstDate = widget.data.events.first.date;
-      final lastDate = widget.data.events.last.date;
-      final daysDiff = lastDate.difference(firstDate).inDays + 1;
+    DateTime? windowStart = widget.data.startDate;
+    DateTime? windowEnd = widget.data.endDate;
+    if (windowStart == null || windowEnd == null) {
+      if (widget.data.events.isNotEmpty) {
+        windowStart ??= widget.data.events.first.date;
+        windowEnd ??= widget.data.events.last.date;
+      }
+    }
+    if (windowStart != null && windowEnd != null) {
+      final daysDiff = windowEnd.difference(windowStart).inDays + 1;
       totalWeeksSpan = (daysDiff / 7.0).clamp(1.0, double.infinity);
     }
 
