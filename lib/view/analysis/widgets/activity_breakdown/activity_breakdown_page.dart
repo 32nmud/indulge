@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/analysis_data.dart';
 import '../common/page_title.dart';
 import 'event_averages_section.dart';
 import 'co_occurrence_section.dart';
@@ -7,9 +6,11 @@ import 'activity_type_distribution.dart';
 import 'properties_by_activity_section.dart';
 import 'category_trends_chart.dart';
 import 'property_trends_chart.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/activity_breakdown_data.dart';
 
 class ActivityBreakdownPage extends StatelessWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final AnalysisEventType? selectedType;
   final ValueChanged<AnalysisEventType?> onTypeChanged;
 

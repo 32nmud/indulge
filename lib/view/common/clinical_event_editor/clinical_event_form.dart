@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:indulge/data/models/v2/clinical_event/clinical_event.dart';
 import 'package:indulge/data/models/v2/clinical_test_result/clinical_test_result.dart';
@@ -23,8 +22,8 @@ class ClinicalEventForm extends StatefulWidget {
   final DateTime? initialDate;
   final Future<bool> Function(ClinicalEvent event)? onSave;
 
-  const ClinicalEventForm({
-    Key? key,
+  const ClinicalEventForm(
+    Key? key, {
     this.initialEvent,
     this.initialDate,
     this.onSave,
@@ -130,32 +129,6 @@ class ClinicalEventFormState extends State<ClinicalEventForm> {
     });
   }
 
-  bool get _isDirty => _touched;
-
-  Future<void> _onCancel() async {
-    if (_isDirty) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Discard changes?'),
-          content: const Text('You have unsaved changes. Discard them?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Keep editing'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Discard'),
-            ),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-    }
-    Navigator.of(context).pop();
-  }
-
   Future<bool> _onSavePressed() async {
     final form = _formKey.currentState;
     if (form == null) return false;
@@ -258,8 +231,6 @@ class ClinicalEventFormState extends State<ClinicalEventForm> {
   /// to trigger the form submission programmatically (for example from an
   /// AppBar save button). Returns `true` when save succeeded.
   Future<bool> submit() async => await _onSavePressed();
-
-  String _formatDate(DateTime d) => DateFormat.yMMMMd().format(d);
 
   @override
   Widget build(BuildContext context) {
@@ -516,12 +487,7 @@ class _TestRowModel {
   /// Optional free-text label shown when `testType == TestType.other`.
   String otherLabel = '';
 
-  _TestRowModel({
-    this.testType,
-    this.result,
-    this.specimenSite,
-    this.otherLabel = '',
-  });
+  _TestRowModel({this.testType, this.result, this.specimenSite});
 }
 
 /// Small helper to describe enum values in places where `describeEnum` from

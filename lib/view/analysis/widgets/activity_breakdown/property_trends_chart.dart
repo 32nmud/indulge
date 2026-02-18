@@ -4,10 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/services/preferences_service.dart';
 import 'package:indulge/data/models.dart';
-import '../../models/analysis_data.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/activity_breakdown_data.dart';
 
 class PropertyTrendsChart extends StatefulWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
   final bool showTypeFilter;
 
@@ -1004,7 +1005,7 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
 }
 
 class _ActivityPickerDialog extends StatefulWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final Map<String, Set<String>> categoryActivities;
   final Set<String> selectedIds;
   final ValueChanged<Set<String>> onSelectionChanged;

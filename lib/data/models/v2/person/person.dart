@@ -55,7 +55,6 @@ abstract class Person with _$Person {
   // -----------------------------------------------------------------
   // Fixed getters
   // -----------------------------------------------------------------
-  @override
   @JsonKey(name: 'resourceType')
   String get resourceType => "Person";
 

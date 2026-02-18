@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../models/since_last_test_data.dart';
+import '../../models/sexual_health_analysis_data.dart';
 
 /// Widget showing period information and next test recommendation.
 class PeriodInfoCard extends StatelessWidget {
-  final SinceLastTestData data;
+  final SexualHealthAnalysisData data;
 
   const PeriodInfoCard({super.key, required this.data});
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/since_last_test_data.dart';
+import '../../models/sexual_health_analysis_data.dart';
 import '../common/page_title.dart';
 import 'risk_assessment_card.dart';
 import 'period_selector_card.dart';
@@ -12,7 +12,7 @@ import 'no_data_state.dart';
 
 /// Page widget displaying sexual health statistics between STI tests.
 class SexualHealthPage extends StatefulWidget {
-  final SinceLastTestData data;
+  final SexualHealthAnalysisData data;
   final void Function(int testIndex)? onTestIndexChanged;
 
   const SexualHealthPage({
@@ -26,7 +26,7 @@ class SexualHealthPage extends StatefulWidget {
 }
 
 class _SexualHealthPageState extends State<SexualHealthPage> {
-  SinceLastTestData get data => widget.data;
+  SexualHealthAnalysisData get data => widget.data;
 
   @override
   Widget build(BuildContext context) {

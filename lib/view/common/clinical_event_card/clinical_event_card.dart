@@ -14,7 +14,7 @@ import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.
 class ClinicalEventCard extends StatefulWidget {
   final ClinicalEvent event;
 
-  const ClinicalEventCard({Key? key, required this.event}) : super(key: key);
+  const ClinicalEventCard(Key? key, {required this.event}) : super(key: key);
 
   @override
   State<ClinicalEventCard> createState() => _ClinicalEventCardState();
@@ -229,7 +229,6 @@ class _ClinicalEventCardState extends State<ClinicalEventCard>
 
   @override
   Widget build(BuildContext context) {
-    final facility = (widget.event.facility ?? '').trim();
     final hasNotes =
         widget.event.notes != null && widget.event.notes!.trim().isNotEmpty;
 

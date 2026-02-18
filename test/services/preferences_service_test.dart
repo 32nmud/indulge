@@ -1,485 +1,349 @@
-import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indulge/services/preferences_service.dart';
-import 'package:indulge/view/analysis/models/analysis_data.dart';
+import 'package:indulge/view/analysis/widgets/period_comparison/period_comparison_section.dart';
+import 'package:indulge/view/analysis/models/analysis_event_type.dart';
 
 void main() {
-  group('PreferencesService - analysis time window persistence', () {
+  group('PreferencesService', () {
+    late PreferencesService preferencesService;
+
     setUp(() async {
-      // Reset mock SharedPreferences before each test.
+      // Set up mock SharedPreferences before each test
       SharedPreferences.setMockInitialValues({});
+      preferencesService = await PreferencesService.build();
     });
 
-    test(
-      'build with no initial values returns null analysis window and year',
-      () async {
-        final svc = await PreferencesService.build();
+    group('initialization', () {
+      test('creates service with default values', () async {
+        SharedPreferences.setMockInitialValues({});
+        final service = await PreferencesService.build();
 
-        expect(svc.getAnalysisTimeWindowIndex(), isNull);
-        expect(svc.getAnalysisSpecificYear(), isNull);
-      },
-    );
-
-    test(
-      'setAnalysisTimeWindowIndex persists value and notifies listeners',
-      () async {
-        final svc = await PreferencesService.build();
-
-        var notified = false;
-        svc.analysisTimeWindowNotifier.addListener(() {
-          notified = true;
-        });
-
-        await svc.setAnalysisTimeWindowIndex(1);
-
-        expect(svc.getAnalysisTimeWindowIndex(), equals(1));
-        expect(notified, isTrue);
-
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getInt('pref_analysis_time_window'), equals(1));
-      },
-    );
-
-    test(
-      'setAnalysisSpecificYear persists value and notifies listeners',
-      () async {
-        final svc = await PreferencesService.build();
-
-        var notified = false;
-        svc.analysisSpecificYearNotifier.addListener(() {
-          notified = true;
-        });
-
-        await svc.setAnalysisSpecificYear(2022);
-
-        expect(svc.getAnalysisSpecificYear(), equals(2022));
-        expect(notified, isTrue);
-
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getInt('pref_analysis_specific_year'), equals(2022));
-      },
-    );
-
-    test('build loads persisted analysis window and specific year', () async {
-      // Pre-populate mock prefs before building the service
-      SharedPreferences.setMockInitialValues({
-        'pref_analysis_time_window': 2,
-        'pref_analysis_specific_year': 2019,
-      });
-
-      final svc = await PreferencesService.build();
-
-      expect(svc.getAnalysisTimeWindowIndex(), equals(2));
-      expect(svc.getAnalysisSpecificYear(), equals(2019));
-    });
-
-    test('clearing specific year removes stored value', () async {
-      final svc = await PreferencesService.build();
-
-      await svc.setAnalysisSpecificYear(2018);
-      expect(svc.getAnalysisSpecificYear(), equals(2018));
-
-      await svc.setAnalysisSpecificYear(null);
-      expect(svc.getAnalysisSpecificYear(), isNull);
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.containsKey('pref_analysis_specific_year'), isFalse);
-    });
-
-    // ------------------------
-    // New tests: view-mode persistence (booleans)
-    // ------------------------
-    test('default show-pattern getters are false', () async {
-      final svc = await PreferencesService.build();
-
-      expect(svc.getMonthlyShowPattern(), isFalse);
-      expect(svc.getCategoryShowPattern(), isFalse);
-      expect(svc.getActivityShowPattern(), isFalse);
-
-      // Underlying SharedPreferences should also contain the default keys after build (migration)
-      final prefs = await SharedPreferences.getInstance();
-      // Migration might have run and injected defaults; if not present, treat as false
-      expect(prefs.getBool('pref_monthly_show_pattern') ?? false, isFalse);
-      expect(prefs.getBool('pref_category_show_pattern') ?? false, isFalse);
-      expect(prefs.getBool('pref_activity_show_pattern') ?? false, isFalse);
-    });
-
-    test('setMonthlyShowPattern persists value and notifies', () async {
-      final svc = await PreferencesService.build();
-
-      var notified = false;
-      svc.monthlyShowPatternNotifier.addListener(() {
-        notified = true;
-      });
-
-      await svc.setMonthlyShowPattern(true);
-
-      expect(svc.getMonthlyShowPattern(), isTrue);
-      expect(notified, isTrue);
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool('pref_monthly_show_pattern'), isTrue);
-    });
-
-    test('setCategoryShowPattern persists value and notifies', () async {
-      final svc = await PreferencesService.build();
-
-      var notified = false;
-      svc.categoryShowPatternNotifier.addListener(() {
-        notified = true;
-      });
-
-      await svc.setCategoryShowPattern(true);
-
-      expect(svc.getCategoryShowPattern(), isTrue);
-      expect(notified, isTrue);
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool('pref_category_show_pattern'), isTrue);
-    });
-
-    test('setActivityShowPattern persists value and notifies', () async {
-      final svc = await PreferencesService.build();
-
-      var notified = false;
-      svc.activityShowPatternNotifier.addListener(() {
-        notified = true;
-      });
-
-      await svc.setActivityShowPattern(true);
-
-      expect(svc.getActivityShowPattern(), isTrue);
-      expect(notified, isTrue);
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool('pref_activity_show_pattern'), isTrue);
-    });
-
-    test(
-      'build loads persisted show-pattern values from SharedPreferences',
-      () async {
-        // Pre-populate mock prefs before building the service
-        SharedPreferences.setMockInitialValues({
-          'pref_monthly_show_pattern': true,
-          'pref_category_show_pattern': false,
-          'pref_activity_show_pattern': true,
-        });
-
-        final svc = await PreferencesService.build();
-
-        expect(svc.getMonthlyShowPattern(), isTrue);
-        expect(svc.getCategoryShowPattern(), isFalse);
-        expect(svc.getActivityShowPattern(), isTrue);
-      },
-    );
-
-    test(
-      'migration from older version injects default show-pattern keys',
-      () async {
-        // Simulate an older install by setting pref_version to 1 only.
-        SharedPreferences.setMockInitialValues({'pref_version': 1});
-
-        final svc = await PreferencesService.build();
-
-        final prefs = await SharedPreferences.getInstance();
-        // Migration should have set the new keys to false and updated the version to current (4).
-        expect(prefs.getBool('pref_monthly_show_pattern'), isFalse);
-        expect(prefs.getBool('pref_category_show_pattern'), isFalse);
-        expect(prefs.getBool('pref_activity_show_pattern'), isFalse);
-        // The properties key should have been created as an empty JSON array.
+        expect(service, isNotNull);
         expect(
-          prefs.getString('pref_properties_category_selected_ids'),
-          equals(jsonEncode(<String>[])),
+          service.periodPresetNotifier.value,
+          equals(PeriodPreset.lastMonthVsThisMonth),
         );
-        expect(prefs.getInt('pref_version'), equals(4));
-
-        // Service getters should reflect defaults
-        expect(svc.getMonthlyShowPattern(), isFalse);
-        expect(svc.getCategoryShowPattern(), isFalse);
-        expect(svc.getActivityShowPattern(), isFalse);
-      },
-    );
-
-    test('clearAll removes show-pattern keys and resets notifiers', () async {
-      final svc = await PreferencesService.build();
-
-      // Set values first
-      await svc.setMonthlyShowPattern(true);
-      await svc.setCategoryShowPattern(true);
-      await svc.setActivityShowPattern(true);
-
-      // Verify set
-      expect(svc.getMonthlyShowPattern(), isTrue);
-      expect(svc.getCategoryShowPattern(), isTrue);
-      expect(svc.getActivityShowPattern(), isTrue);
-
-      // Clear all
-      await svc.clearAll();
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.containsKey('pref_monthly_show_pattern'), isFalse);
-      expect(prefs.containsKey('pref_category_show_pattern'), isFalse);
-      expect(prefs.containsKey('pref_activity_show_pattern'), isFalse);
-
-      // Notifiers should be reset to defaults (false)
-      expect(svc.getMonthlyShowPattern(), isFalse);
-      expect(svc.getCategoryShowPattern(), isFalse);
-      expect(svc.getActivityShowPattern(), isFalse);
-    });
-
-    // ------------------------
-    // New tests: selected IDs persistence (categories / activities)
-    // ------------------------
-    test('default selected ids are empty', () async {
-      final svc = await PreferencesService.build();
-
-      expect(svc.getCategorySelectedIds(), isEmpty);
-      expect(svc.getActivitySelectedIds(), isEmpty);
-
-      final prefs = await SharedPreferences.getInstance();
-      // Migration may have written empty JSON arrays; decode safely and assert we get lists.
-      final catDecoded = jsonDecode(
-        prefs.getString('pref_category_selected_ids') ?? '[]',
-      );
-      final actDecoded = jsonDecode(
-        prefs.getString('pref_activity_selected_ids') ?? '[]',
-      );
-
-      expect(catDecoded, isA<List>());
-      expect(actDecoded, isA<List>());
-      expect((catDecoded as List).isEmpty, isTrue);
-      expect((actDecoded as List).isEmpty, isTrue);
-    });
-
-    test('setCategorySelectedIds persists value and notifies', () async {
-      final svc = await PreferencesService.build();
-
-      var notified = false;
-      svc.categorySelectedIdsNotifier.addListener(() {
-        notified = true;
       });
 
-      final sample = ['cat1', 'cat2'];
-      await svc.setCategorySelectedIds(sample);
-
-      expect(svc.getCategorySelectedIds(), equals(sample));
-      expect(notified, isTrue);
-
-      final prefs = await SharedPreferences.getInstance();
-      final stored =
-          jsonDecode(prefs.getString('pref_category_selected_ids') ?? '[]')
-              as List<dynamic>;
-      expect(stored.map((e) => e.toString()).toList(), equals(sample));
-    });
-
-    test('setActivitySelectedIds persists value and notifies', () async {
-      final svc = await PreferencesService.build();
-
-      var notified = false;
-      svc.activitySelectedIdsNotifier.addListener(() {
-        notified = true;
-      });
-
-      final sample = ['actA', 'actB', 'actC'];
-      await svc.setActivitySelectedIds(sample);
-
-      expect(svc.getActivitySelectedIds(), equals(sample));
-      expect(notified, isTrue);
-
-      final prefs = await SharedPreferences.getInstance();
-      final stored =
-          jsonDecode(prefs.getString('pref_activity_selected_ids') ?? '[]')
-              as List<dynamic>;
-      expect(stored.map((e) => e.toString()).toList(), equals(sample));
-    });
-
-    test('build loads persisted selected ids from SharedPreferences', () async {
-      // Pre-populate mock prefs before building the service
-      SharedPreferences.setMockInitialValues({
-        'pref_category_selected_ids': jsonEncode(['c1']),
-        'pref_activity_selected_ids': jsonEncode(['a1', 'a2']),
-        'pref_properties_category_selected_ids': jsonEncode(['pc1', 'pc2']),
-      });
-
-      final svc = await PreferencesService.build();
-
-      expect(svc.getCategorySelectedIds(), equals(['c1']));
-      expect(svc.getActivitySelectedIds(), equals(['a1', 'a2']));
-      expect(svc.getPropertiesCategorySelectedIds(), equals(['pc1', 'pc2']));
-    });
-
-    test(
-      'setPropertiesCategorySelectedIds persists value and notifies',
-      () async {
-        final svc = await PreferencesService.build();
-
-        var notified = false;
-        svc.propertiesCategorySelectedIdsNotifier.addListener(() {
-          notified = true;
+      test('loads saved period preset', () async {
+        SharedPreferences.setMockInitialValues({
+          'pref_period_preset': 0,
         });
+        final service = await PreferencesService.build();
 
-        final sample = ['pcatA', 'pcatB'];
-        await svc.setPropertiesCategorySelectedIds(sample);
+        expect(
+          service.periodPresetNotifier.value,
+          equals(PeriodPreset.lastYearVsThisYear),
+        );
+      });
+    });
 
-        expect(svc.getPropertiesCategorySelectedIds(), equals(sample));
+    group('period preset', () {
+      test('getPeriodPreset returns default value', () {
+        expect(
+          preferencesService.getPeriodPreset(),
+          equals(PeriodPreset.lastMonthVsThisMonth),
+        );
+      });
+
+      test('setPeriodPreset updates value and notifies', () async {
+        var notified = false;
+        preferencesService.periodPresetNotifier.addListener(
+          () => notified = true,
+        );
+
+        await preferencesService.setPeriodPreset(
+          PeriodPreset.lastWeekVsThisWeek,
+        );
+
+        expect(
+          preferencesService.getPeriodPreset(),
+          equals(PeriodPreset.lastWeekVsThisWeek),
+        );
         expect(notified, isTrue);
+      });
+    });
 
-        final prefs = await SharedPreferences.getInstance();
-        final stored =
-            jsonDecode(
-                  prefs.getString('pref_properties_category_selected_ids') ??
-                      '[]',
-                )
-                as List<dynamic>;
-        expect(stored.map((e) => e.toString()).toList(), equals(sample));
-      },
-    );
+    group('custom date range', () {
+      test('getCustomFirst returns null by default', () {
+        expect(preferencesService.getCustomFirst(), isNull);
+      });
 
-    test(
-      'clearAll removes properties selected-ids key and resets notifier',
-      () async {
-        final svc = await PreferencesService.build();
+      test('setCustomFirst updates value', () async {
+        final testDate = DateTime(2024, 1, 15);
 
-        // Set values first
-        await svc.setPropertiesCategorySelectedIds(['px', 'py']);
+        await preferencesService.setCustomFirst(testDate);
 
-        // Verify set
-        expect(svc.getPropertiesCategorySelectedIds(), equals(['px', 'py']));
+        expect(preferencesService.getCustomFirst(), equals(testDate));
+      });
+
+      test('getCustomSecond returns null by default', () {
+        expect(preferencesService.getCustomSecond(), isNull);
+      });
+
+      test('setCustomSecond updates value', () async {
+        final testDate = DateTime(2024, 12, 31);
+
+        await preferencesService.setCustomSecond(testDate);
+
+        expect(preferencesService.getCustomSecond(), equals(testDate));
+      });
+    });
+
+    group('activity filter', () {
+      test('getActivityFilter returns null by default', () {
+        expect(preferencesService.getActivityFilter(), isNull);
+      });
+
+      test('setActivityFilter updates value and notifies', () async {
+        var notified = false;
+        preferencesService.activityFilterNotifier.addListener(
+          () => notified = true,
+        );
+
+        await preferencesService.setActivityFilter(AnalysisEventType.total);
+
+        expect(
+          preferencesService.getActivityFilter(),
+          equals(AnalysisEventType.total),
+        );
+        expect(notified, isTrue);
+      });
+    });
+
+    group('analysis time window', () {
+      test('getAnalysisTimeWindowIndex returns null by default', () {
+        expect(preferencesService.getAnalysisTimeWindowIndex(), isNull);
+      });
+
+      test('setAnalysisTimeWindowIndex updates value', () async {
+        await preferencesService.setAnalysisTimeWindowIndex(2);
+
+        expect(preferencesService.getAnalysisTimeWindowIndex(), equals(2));
+      });
+    });
+
+    group('analysis specific year', () {
+      test('getAnalysisSpecificYear returns null by default', () {
+        expect(preferencesService.getAnalysisSpecificYear(), isNull);
+      });
+
+      test('setAnalysisSpecificYear updates value', () async {
+        await preferencesService.setAnalysisSpecificYear(2024);
+
+        expect(preferencesService.getAnalysisSpecificYear(), equals(2024));
+      });
+    });
+
+    group('show pattern settings', () {
+      test('getMonthlyShowPattern returns false by default', () {
+        expect(preferencesService.getMonthlyShowPattern(), isFalse);
+      });
+
+      test('setMonthlyShowPattern updates value and notifies', () async {
+        var notified = false;
+        preferencesService.monthlyShowPatternNotifier.addListener(
+          () => notified = true,
+        );
+
+        await preferencesService.setMonthlyShowPattern(true);
+
+        expect(preferencesService.getMonthlyShowPattern(), isTrue);
+        expect(notified, isTrue);
+      });
+
+      test('getCategoryShowPattern returns false by default', () {
+        expect(preferencesService.getCategoryShowPattern(), isFalse);
+      });
+
+      test('setCategoryShowPattern updates value', () async {
+        await preferencesService.setCategoryShowPattern(true);
+
+        expect(preferencesService.getCategoryShowPattern(), isTrue);
+      });
+
+      test('getActivityShowPattern returns false by default', () {
+        expect(preferencesService.getActivityShowPattern(), isFalse);
+      });
+
+      test('setActivityShowPattern updates value', () async {
+        await preferencesService.setActivityShowPattern(true);
+
+        expect(preferencesService.getActivityShowPattern(), isTrue);
+      });
+    });
+
+    group('auto-add location', () {
+      test('getAutoAddLocation returns false by default', () {
+        expect(preferencesService.getAutoAddLocation(), isFalse);
+      });
+
+      test('setAutoAddLocation updates value and notifies', () async {
+        var notified = false;
+        preferencesService.autoAddLocationNotifier.addListener(
+          () => notified = true,
+        );
+
+        await preferencesService.setAutoAddLocation(true);
+
+        expect(preferencesService.getAutoAddLocation(), isTrue);
+        expect(notified, isTrue);
+      });
+    });
+
+    group('category selected IDs', () {
+      test('getCategorySelectedIds returns empty list by default', () {
+        expect(preferencesService.getCategorySelectedIds(), isEmpty);
+      });
+
+      test('setCategorySelectedIds updates value and notifies', () async {
+        var notified = false;
+        preferencesService.categorySelectedIdsNotifier.addListener(
+          () => notified = true,
+        );
+
+        await preferencesService.setCategorySelectedIds(['cat1', 'cat2']);
+
+        expect(
+          preferencesService.getCategorySelectedIds(),
+          equals(['cat1', 'cat2']),
+        );
+        expect(notified, isTrue);
+      });
+    });
+
+    group('activity selected IDs', () {
+      test('getActivitySelectedIds returns empty list by default', () {
+        expect(preferencesService.getActivitySelectedIds(), isEmpty);
+      });
+
+      test('setActivitySelectedIds updates value', () async {
+        await preferencesService.setActivitySelectedIds(['act1', 'act2']);
+
+        expect(
+          preferencesService.getActivitySelectedIds(),
+          equals(['act1', 'act2']),
+        );
+      });
+    });
+
+    group('properties category selected IDs', () {
+      test(
+        'getPropertiesCategorySelectedIds returns empty list by default',
+        () {
+          expect(
+            preferencesService.getPropertiesCategorySelectedIds(),
+            isEmpty,
+          );
+        },
+      );
+
+      test('setPropertiesCategorySelectedIds updates value', () async {
+        await preferencesService.setPropertiesCategorySelectedIds(['prop1']);
+
+        expect(
+          preferencesService.getPropertiesCategorySelectedIds(),
+          equals(['prop1']),
+        );
+      });
+    });
+
+    group('partner properties category selected IDs', () {
+      test(
+        'getPartnerPropertiesCategorySelectedIds returns empty list by default',
+        () {
+          expect(
+            preferencesService.getPartnerPropertiesCategorySelectedIds(),
+            isEmpty,
+          );
+        },
+      );
+
+      test('setPartnerPropertiesCategorySelectedIds updates value', () async {
+        await preferencesService.setPartnerPropertiesCategorySelectedIds([
+          'partner1',
+        ]);
+
+        expect(
+          preferencesService.getPartnerPropertiesCategorySelectedIds(),
+          equals(['partner1']),
+        );
+      });
+    });
+
+    group('clearAll', () {
+      test('clears all preferences and resets to defaults', () async {
+        // Set some values first
+        await preferencesService.setPeriodPreset(
+          PeriodPreset.lastWeekVsThisWeek,
+        );
+        await preferencesService.setCustomFirst(DateTime(2024, 1, 1));
+        await preferencesService.setAutoAddLocation(true);
 
         // Clear all
-        await svc.clearAll();
+        await preferencesService.clearAll();
 
-        final prefs = await SharedPreferences.getInstance();
+        // Verify defaults are restored
         expect(
-          prefs.containsKey('pref_properties_category_selected_ids'),
-          isFalse,
+          preferencesService.getPeriodPreset(),
+          equals(PeriodPreset.lastMonthVsThisMonth),
         );
-
-        // Notifier should be reset to default (empty list)
-        expect(svc.getPropertiesCategorySelectedIds(), isEmpty);
-      },
-    );
-
-    test('clearAll removes selected-ids keys and resets notifiers', () async {
-      final svc = await PreferencesService.build();
-
-      // Set values first
-      await svc.setCategorySelectedIds(['x', 'y']);
-      await svc.setActivitySelectedIds(['p']);
-
-      // Verify set
-      expect(svc.getCategorySelectedIds(), equals(['x', 'y']));
-      expect(svc.getActivitySelectedIds(), equals(['p']));
-
-      // Clear all
-      await svc.clearAll();
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.containsKey('pref_category_selected_ids'), isFalse);
-      expect(prefs.containsKey('pref_activity_selected_ids'), isFalse);
-
-      // Notifiers should be reset to defaults (empty lists)
-      expect(svc.getCategorySelectedIds(), isEmpty);
-      expect(svc.getActivitySelectedIds(), isEmpty);
+        expect(preferencesService.getCustomFirst(), isNull);
+        expect(preferencesService.getAutoAddLocation(), isFalse);
+      });
     });
 
-    // ------------------------
-    // Legacy tests left intact (view-mode integer keys tests)
-    // ------------------------
-    test('view-mode keys are absent by default', () async {
-      // Ensure service builds cleanly even if new keys are not present
-      final svc = await PreferencesService.build();
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt('pref_monthly_view_mode'), isNull);
-      expect(prefs.getInt('pref_category_trends_view_mode'), isNull);
-      expect(prefs.getInt('pref_activity_trends_view_mode'), isNull);
-    });
-
-    test(
-      'persist monthly/category/activity view modes via SharedPreferences',
-      () async {
-        final svc = await PreferencesService.build();
-
-        final prefs = await SharedPreferences.getInstance();
-
-        // Simulate persisting view-mode selections for three widgets.
-        // Convention (for these tests):
-        // 0 = History, 1 = Pattern, 2 = Other (widget-specific)
-        await prefs.setInt('pref_monthly_view_mode', 0);
-        await prefs.setInt('pref_category_trends_view_mode', 1);
-        await prefs.setInt('pref_activity_trends_view_mode', 2);
-
-        expect(prefs.getInt('pref_monthly_view_mode'), equals(0));
-        expect(prefs.getInt('pref_category_trends_view_mode'), equals(1));
-        expect(prefs.getInt('pref_activity_trends_view_mode'), equals(2));
-      },
-    );
-
-    test('build loads persisted view modes from SharedPreferences', () async {
-      // Pre-populate mock prefs before building the service
-      SharedPreferences.setMockInitialValues({
-        'pref_monthly_view_mode': 1,
-        'pref_category_trends_view_mode': 0,
-        'pref_activity_trends_view_mode': 2,
+    group('value notifiers', () {
+      test('periodPresetNotifier is a ValueNotifier', () {
+        expect(
+          preferencesService.periodPresetNotifier,
+          isA<ValueNotifier<PeriodPreset>>(),
+        );
       });
 
-      final svc = await PreferencesService.build();
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt('pref_monthly_view_mode'), equals(1));
-      expect(prefs.getInt('pref_category_trends_view_mode'), equals(0));
-      expect(prefs.getInt('pref_activity_trends_view_mode'), equals(2));
-    });
-
-    // ------------------------
-    // Activity filter persistence tests
-    // ------------------------
-    test('setActivityFilter persists value and notifies', () async {
-      final svc = await PreferencesService.build();
-
-      var notified = false;
-      svc.activityFilterNotifier.addListener(() {
-        notified = true;
+      test('customFirstNotifier is a ValueNotifier', () {
+        expect(
+          preferencesService.customFirstNotifier,
+          isA<ValueNotifier<DateTime?>>(),
+        );
       });
 
-      await svc.setActivityFilter(AnalysisEventType.solo);
-
-      expect(svc.getActivityFilter(), equals(AnalysisEventType.solo));
-      expect(notified, isTrue);
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(
-        prefs.getInt('pref_activity_filter'),
-        equals(AnalysisEventType.solo.index),
-      );
-    });
-
-    test('build loads persisted activity filter', () async {
-      // Pre-populate mock prefs before building the service
-      SharedPreferences.setMockInitialValues({
-        'pref_activity_filter': AnalysisEventType.couple.index,
+      test('customSecondNotifier is a ValueNotifier', () {
+        expect(
+          preferencesService.customSecondNotifier,
+          isA<ValueNotifier<DateTime?>>(),
+        );
       });
 
-      final svc = await PreferencesService.build();
+      test('activityFilterNotifier is a ValueNotifier', () {
+        expect(
+          preferencesService.activityFilterNotifier,
+          isA<ValueNotifier<AnalysisEventType?>>(),
+        );
+      });
 
-      expect(svc.getActivityFilter(), equals(AnalysisEventType.couple));
-    });
+      test('analysisTimeWindowNotifier is a ValueNotifier', () {
+        expect(
+          preferencesService.analysisTimeWindowNotifier,
+          isA<ValueNotifier<int?>>(),
+        );
+      });
 
-    test('clearAll removes activity filter and resets notifier', () async {
-      final svc = await PreferencesService.build();
+      test('monthlyShowPatternNotifier is a ValueNotifier', () {
+        expect(
+          preferencesService.monthlyShowPatternNotifier,
+          isA<ValueNotifier<bool>>(),
+        );
+      });
 
-      await svc.setActivityFilter(AnalysisEventType.group);
-      expect(svc.getActivityFilter(), equals(AnalysisEventType.group));
-
-      await svc.clearAll();
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.containsKey('pref_activity_filter'), isFalse);
-
-      // Service getter should now reflect cleared state
-      expect(svc.getActivityFilter(), isNull);
+      test('autoAddLocationNotifier is a ValueNotifier', () {
+        expect(
+          preferencesService.autoAddLocationNotifier,
+          isA<ValueNotifier<bool>>(),
+        );
+      });
     });
   });
 }

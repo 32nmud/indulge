@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../models/analysis_data.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/activity_breakdown_data.dart';
 
 class ActivityTypeDistribution extends StatefulWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
 
   const ActivityTypeDistribution({

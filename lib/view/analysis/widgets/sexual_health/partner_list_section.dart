@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../models/since_last_test_data.dart';
+import '../../models/sexual_health_analysis_data.dart';
 import '../../../common/person_avatar.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 
 /// Widget showing partner list for the sexual health period.
 class PartnerListSection extends StatelessWidget {
-  final SinceLastTestData data;
+  final SexualHealthAnalysisData data;
 
   const PartnerListSection({super.key, required this.data});
 

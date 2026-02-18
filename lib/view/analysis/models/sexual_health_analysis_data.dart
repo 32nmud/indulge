@@ -15,7 +15,7 @@ typedef SexualActivityMap = Map<String, SexualActivity>;
 /// 3. How many partners have I had since my last test?
 ///
 /// CDC recommends testing every 3 months for sexually active individuals.
-class SinceLastTestData {
+class SexualHealthAnalysisData {
   /// List of all test dates available (most recent first).
   final List<DateTime> testDates;
 
@@ -107,7 +107,7 @@ class SinceLastTestData {
   /// Only set when viewing the most recent test period.
   final DateTime? nextRecommendedTestDate;
 
-  const SinceLastTestData({
+  const SexualHealthAnalysisData({
     required this.testDates,
     this.selectedTestIndex = 0,
     required this.periodStartDate,
@@ -141,8 +141,8 @@ class SinceLastTestData {
   });
 
   /// Creates empty data when no tests are available.
-  factory SinceLastTestData.empty() {
-    return SinceLastTestData(
+  factory SexualHealthAnalysisData.empty() {
+    return SexualHealthAnalysisData(
       testDates: [],
       periodStartDate: DateTime.now(),
       periodEndDate: DateTime.now(),

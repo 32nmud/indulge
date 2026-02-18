@@ -94,7 +94,6 @@ abstract class ClinicalTestResult with _$ClinicalTestResult {
   }
 
   // Fixed resourceType getter for strong typing in persisted JSON documents.
-  @override
   @JsonKey(name: 'resourceType')
   String get resourceType => 'ClinicalTestResult';
 }

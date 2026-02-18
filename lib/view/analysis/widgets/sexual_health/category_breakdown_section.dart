@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../models/since_last_test_data.dart';
+import '../../models/sexual_health_analysis_data.dart';
 import '../common/expandable_activity_card.dart';
 
 /// Widget showing risky activity breakdown by category for the sexual health period.
 class CategoryBreakdownSection extends StatefulWidget {
-  final SinceLastTestData data;
+  final SexualHealthAnalysisData data;
 
   const CategoryBreakdownSection({super.key, required this.data});
 

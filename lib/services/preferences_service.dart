@@ -15,7 +15,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:indulge/view/analysis/widgets/period_comparison/period_comparison_section.dart';
-import 'package:indulge/view/analysis/models/analysis_data.dart';
+import 'package:indulge/view/analysis/models/analysis_event_type.dart';
 
 class PreferencesService {
   // Keys used in SharedPreferences

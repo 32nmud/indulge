@@ -4,13 +4,13 @@ import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import 'package:intl/intl.dart';
-import '../../models/analysis_data.dart';
 import '../common/expandable_activity_card.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 import 'package:indulge/view/common/person_avatar.dart';
+import '../../models/partner_breakdown_data.dart';
 
 class TopPartnersSection extends StatefulWidget {
-  final AnalysisData data;
+  final PartnerBreakdownData data;
 
   const TopPartnersSection({super.key, required this.data});
 
@@ -50,7 +50,7 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
               final partnerId = entry.key;
               final eventCount = entry.value;
               final activityCount = widget.data.personCounts[partnerId] ?? 0;
-              final percentage = (eventCount / widget.data.totalEvents * 100)
+              final percentage = (eventCount / widget.data.events.length * 100)
                   .round();
               final maxCount = sortedPartners.first.value;
               final isExpanded = _expandedPartners.contains(partnerId);

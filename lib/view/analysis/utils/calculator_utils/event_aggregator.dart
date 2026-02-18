@@ -1,8 +1,8 @@
 import 'package:indulge/data/models.dart';
 import 'package:logging/logging.dart';
-import '../../models/analysis_data.dart';
 import 'analysis_date_utils.dart';
-import 'person_cache.dart';
+import '../person_cache.dart';
+import '../../models/analysis_event_type.dart';
 
 /// Result of the single pass through events, containing all raw counts
 /// and accumulated data needed by downstream calculators, including

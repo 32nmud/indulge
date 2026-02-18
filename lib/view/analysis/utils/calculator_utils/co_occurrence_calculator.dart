@@ -1,5 +1,5 @@
 import 'package:indulge/data/models.dart';
-import '../../models/analysis_data.dart';
+import '../../models/co_occurance_pair.dart';
 
 /// Calculates co-occurrence pairs for activity categories and sexual activities.
 ///

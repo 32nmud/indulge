@@ -32,7 +32,6 @@ abstract class SexualActivityTypeProperty with _$SexualActivityTypeProperty {
   }
 
   // Fixed getters
-  @override
   @JsonKey(name: 'resourceType')
   String get resourceType => "SexualActivityTypeProperty";
 

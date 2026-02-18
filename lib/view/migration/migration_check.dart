@@ -175,7 +175,7 @@ class _JsonMigrationScreenState extends State<_JsonMigrationScreen> {
           if (mounted) {
             setState(() {
               _progress = total > 0 ? current / total : 0.0;
-              _statusMessage = message ?? 'Migrating...';
+              _statusMessage = message;
             });
           }
         },

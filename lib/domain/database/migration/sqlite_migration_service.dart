@@ -338,12 +338,12 @@ class SQLiteMigrationService {
       try {
         await database.execute('PRAGMA wal_checkpoint(TRUNCATE)');
         _logger.info('WAL checkpoint (TRUNCATE) completed');
-      } catch (e, st) {
+      } catch (e) {
         _logger.warning('WAL checkpoint (TRUNCATE) failed: $e');
         try {
           await database.execute('PRAGMA wal_checkpoint(FULL)');
           _logger.info('WAL checkpoint (FULL) completed');
-        } catch (e2, st2) {
+        } catch (e2) {
           _logger.warning('WAL checkpoint (FULL) also failed: $e2');
         }
       }
@@ -580,7 +580,7 @@ class SQLiteMigrationService {
           'CREATE INDEX IF NOT EXISTS idx_sexual_event_date ON sexual_event(date)',
         );
         _logger.info('Ensured index idx_sexual_event_date exists');
-      } catch (e, stackTrace) {
+      } catch (e) {
         _logger.warning('Failed to create/ensure idx_sexual_event_date: $e');
       }
 
@@ -601,7 +601,7 @@ class SQLiteMigrationService {
           'CREATE INDEX IF NOT EXISTS idx_clinical_event_date ON clinical_event(date)',
         );
         _logger.info('Ensured clinical_event table and index exist');
-      } catch (e, stackTrace) {
+      } catch (e) {
         _logger.warning('Failed to create clinical_event table or index: $e');
       }
 
@@ -727,7 +727,6 @@ class SQLiteMigrationService {
         // We'll construct a row map for txn.insert
         for (var i = 0; i < rows.length; i++) {
           final row = rows[i];
-          final id = row['id'] as String?;
           final jsonString = row['json'] as String?;
 
           try {

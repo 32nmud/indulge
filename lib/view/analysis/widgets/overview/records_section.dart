@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:indulge/view/common/sexual_event_card.dart';
-import '../../models/analysis_data.dart';
+import '../../models/overview_data.dart';
 
 class RecordsSection extends StatelessWidget {
-  final AnalysisData data;
+  final OverviewData data;
 
   const RecordsSection({super.key, required this.data});
 

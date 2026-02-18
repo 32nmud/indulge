@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 
-import '../../models/analysis_data.dart';
+import '../../models/overview_data.dart';
+import '../../models/analysis_event_type.dart';
 import '../../utils/analysis_colors.dart';
 import '../common/marquee_text.dart';
 
 class OverviewStatsSection extends StatelessWidget {
-  final AnalysisData data;
+  final OverviewData data;
   final bool showCurrentMonthStats;
 
   const OverviewStatsSection({
@@ -274,20 +274,6 @@ class OverviewStatsSection extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Color _getNextTestColor(BuildContext context, DateTime? lastTestDate) {
-    if (lastTestDate == null) {
-      return Theme.of(context).colorScheme.onSurface;
-    }
-    final nextTestDate = lastTestDate.add(const Duration(days: 90));
-    final now = DateTime.now();
-    if (nextTestDate.isBefore(now)) {
-      return Colors.red;
-    } else if (nextTestDate.difference(now).inDays < 14) {
-      return Colors.orange;
-    }
-    return Theme.of(context).colorScheme.primary;
   }
 
   Widget _buildEventTypeLegendItem(

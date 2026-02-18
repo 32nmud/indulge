@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/analysis_data.dart';
 import '../common/expandable_activity_card.dart';
 import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 import 'package:indulge/services/preferences_service.dart';
+import '../../models/partner_breakdown_data.dart';
 
 class PropertyPartnerSection extends StatefulWidget {
-  final AnalysisData data;
+  final PartnerBreakdownData data;
 
   const PropertyPartnerSection({super.key, required this.data});
 

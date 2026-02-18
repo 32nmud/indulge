@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../models/analysis_data.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/activity_breakdown_data.dart';
 
 class EventAveragesSection extends StatelessWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
 
   const EventAveragesSection({super.key, required this.data, this.filterType});

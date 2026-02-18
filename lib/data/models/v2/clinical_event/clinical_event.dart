@@ -46,7 +46,6 @@ abstract class ClinicalEvent with _$ClinicalEvent {
   // -----------------------------------------------------------------
   // Fixed getters
   // -----------------------------------------------------------------
-  @override
   @JsonKey(name: 'resourceType')
   String get resourceType => 'ClinicalEvent';
 

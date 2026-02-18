@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../models/analysis_data.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/activity_breakdown_data.dart';
+import '../../models/co_occurance_pair.dart';
 
 class CoOccurrenceSection extends StatefulWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
 
   const CoOccurrenceSection({super.key, required this.data, this.filterType});

@@ -1,7 +1,7 @@
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
 import 'package:logging/logging.dart';
-import '../../../analysis/models/analysis_data.dart';
+import '../../models/period_comparison.dart';
 
 /// Calculates period-over-period comparisons (week-over-week, month-over-month)
 /// and days since the last risky activity.

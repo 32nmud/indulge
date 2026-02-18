@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../models/analysis_data.dart';
 import '../common/page_title.dart';
 import 'period_comparison_section.dart';
+import '../../models/period_comparison_data.dart';
 
 class PeriodComparisonPage extends StatelessWidget {
-  final AnalysisData data;
+  final PeriodComparisonData data;
   final PeriodPreset selectedPreset;
   final DateTimeRange? customFirstPeriod;
   final DateTimeRange? customSecondPeriod;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:indulge/data/models.dart';
-import '../../models/analysis_data.dart';
+import '../../models/overview_data.dart';
 import 'overview_stats_section.dart';
 import 'monthly_activity_chart.dart';
 import 'records_section.dart';
@@ -9,7 +9,7 @@ import '../common/page_title.dart';
 import 'analysis_location_heatmap.dart';
 
 class OverviewPage extends StatelessWidget {
-  final AnalysisData data;
+  final OverviewData data;
   final bool showCurrentMonthStats;
 
   const OverviewPage({

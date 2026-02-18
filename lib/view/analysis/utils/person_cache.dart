@@ -52,4 +52,7 @@ class PersonCache {
   ///
   /// Returns `false` if the person is not found or `isSelf` is false.
   bool isSelf(String id) => _cache[id]?.isSelf ?? false;
+
+  /// Returns all persons in the cache as a list.
+  List<Person> get persons => _cache.values.toList();
 }

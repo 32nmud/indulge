@@ -68,15 +68,11 @@ class LocationMap extends StatelessWidget {
                   fm.TileLayer(
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName:
-                        'com.exampleindulge (dalton.craig1234@gmail.com)',
+                    userAgentPackageName: 'indlu/0.1.2-beta',
                   ),
                   fm.RichAttributionWidget(
                     attributions: [
-                      fm.TextSourceAttribution(
-                        'OpenStreetMap contributors',
-                        onTap: () {},
-                      ),
+                      fm.TextSourceAttribution('OpenStreetMap', onTap: () {}),
                     ],
                   ),
                 ],

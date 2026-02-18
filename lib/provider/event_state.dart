@@ -14,8 +14,8 @@ class EventState {
   final List<SexualEvent>? currentEvents;
   final DateTime? selectedDate;
   final Map<DateTime, int>? dailyEventCount;
-  final Person? myself;
   final List<Person>? allPersons;
+  final Person? myself;
 
   /// Flag indicating data has changed and consumers should refresh (set to true when events are saved/deleted)
   final bool needsDataRefresh;

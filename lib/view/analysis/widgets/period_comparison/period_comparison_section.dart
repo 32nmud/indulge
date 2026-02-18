@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../models/analysis_data.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/period_comparison_data.dart';
 
 /// Quick-select presets for period comparison.
 enum PeriodPreset {
@@ -11,7 +12,7 @@ enum PeriodPreset {
 }
 
 class PeriodComparisonSection extends StatelessWidget {
-  final AnalysisData data;
+  final PeriodComparisonData data;
   final PeriodPreset selectedPreset;
   final DateTimeRange? customFirstPeriod;
   final DateTimeRange? customSecondPeriod;

@@ -8,17 +8,24 @@ import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
 import 'package:logging/logging.dart';
-import 'models/analysis_data.dart';
-import 'utils/analysis_calculator.dart';
+import 'models/overview_data.dart';
+import 'utils/overview_calculator.dart';
+import 'utils/activity_breakdown_calculator.dart';
+import 'utils/partner_breakdown_calculator.dart';
+import 'utils/period_comparison_calculator.dart';
 import 'widgets/overview/overview_page.dart';
 import 'widgets/activity_breakdown/activity_breakdown_page.dart';
 import 'widgets/partner_breakdown/partner_breakdown_page.dart';
 import 'widgets/period_comparison/period_comparison_page.dart';
 import 'widgets/period_comparison/period_comparison_section.dart';
 import 'widgets/sexual_health/sexual_health_page.dart';
-import 'models/since_last_test_data.dart';
-import 'utils/since_last_test_calculator.dart';
+import 'models/sexual_health_analysis_data.dart';
+import 'models/period_comparison_data.dart';
+import 'models/partner_breakdown_data.dart';
+import 'utils/sexual_health_calculator.dart';
 import 'package:indulge/services/preferences_service.dart';
+import 'models/activity_breakdown_data.dart';
+import 'models/analysis_event_type.dart';
 
 enum TimeWindow { last12Months, allTime, specificYear }
 
@@ -37,7 +44,14 @@ class _AnalysisPageState extends State<AnalysisPage>
   List<int> _availableYears = [];
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  AnalysisData? _currentData;
+
+  // Page-specific data
+  OverviewData? _overviewData;
+  ActivityBreakdownData? _activityBreakdownData;
+  PartnerBreakdownData? _partnerBreakdownData;
+  PeriodComparisonData? _periodComparisonData;
+  SexualHealthAnalysisData? _sexualHealthData;
+
   bool _isLoading = false;
 
   // ── Persisted filter state (survives recalculations) ──────────────
@@ -45,9 +59,6 @@ class _AnalysisPageState extends State<AnalysisPage>
   PeriodPreset _periodPreset = PeriodPreset.lastMonthVsThisMonth;
   DateTimeRange? _customFirstPeriod;
   DateTimeRange? _customSecondPeriod;
-
-  // Since Last Test data
-  SinceLastTestData? _sinceLastTestData;
 
   /// Debounce timer to coalesce rapid-fire provider notifications.
   Timer? _debounceTimer;
@@ -153,12 +164,18 @@ class _AnalysisPageState extends State<AnalysisPage>
     }
   }
 
-  Future<AnalysisData> _loadData({bool force = false}) async {
+  Future<void> _loadPageData({
+    required SexualEventsProvider provider,
+    required EventStateStore store,
+    required DateTime? startDate,
+    required DateTime? endDate,
+    required List<SexualEvent> events,
+    required List<Person> allPersons,
+  }) async {
     // Skip recalculation if data hasn't changed and we already have results.
-    // Use _isDirty which was set by _onStoreChange when dirty flag was triggered.
-    if (!force && !_isDirty && _currentData != null) {
+    if (!_isDirty && _overviewData != null) {
       _logger.info('Skipping recalculation — data is not dirty');
-      return _currentData!;
+      return;
     }
     final store = context.read<EventStateStore>();
     final provider = context.read<SexualEventsProvider>();
@@ -228,49 +245,140 @@ class _AnalysisPageState extends State<AnalysisPage>
     await clinicalProvider.ready;
     final lastStiTestDate = await clinicalProvider.getLastClinicalEventDate();
 
-    // Calculate all statistics
-    final analysisData = await AnalysisCalculator.calculate(
-      events,
-      provider,
-      store.state,
-      startDate: startDate,
-      endDate: endDate,
-      preFetchedPersons: allPersons,
-      lastStiTestDate: lastStiTestDate,
-    );
+    // Calculate page-specific data in parallel
+    final results = await Future.wait([
+      OverviewCalculator.calculate(
+        events: events,
+        provider: provider,
+        stateSnapshot: store.state,
+        startDate: startDate,
+        endDate: endDate,
+        preFetchedPersons: allPersons,
+        lastStiTestDate: lastStiTestDate,
+      ),
+      ActivityBreakdownCalculator.calculate(
+        events: events,
+        provider: provider,
+        stateSnapshot: store.state,
+        startDate: startDate,
+        endDate: endDate,
+        preFetchedPersons: allPersons,
+      ),
+      PartnerBreakdownCalculator.calculate(
+        events: events,
+        provider: provider,
+        stateSnapshot: store.state,
+        startDate: startDate,
+        endDate: endDate,
+        preFetchedPersons: allPersons,
+      ),
+      PeriodComparisonCalculator.calculate(
+        events: events,
+        provider: provider,
+        stateSnapshot: store.state,
+        startDate: startDate,
+        endDate: endDate,
+        preFetchedPersons: allPersons,
+      ),
+    ]);
 
-    _logger.info('Calculated data - ${analysisData.totalEvents} total events');
+    _overviewData = results[0] as OverviewData;
+    _activityBreakdownData = results[1] as ActivityBreakdownData;
+    _partnerBreakdownData = results[2] as PartnerBreakdownData;
+    _periodComparisonData = results[3] as PeriodComparisonData;
+
+    _logger.info(
+      'Calculated data - ${_overviewData!.totalEvents} total events',
+    );
 
     // Calculation succeeded — data is no longer dirty.
     _isDirty = false;
     store.clearDataDirty();
-
-    return analysisData;
   }
 
   void _refresh() {
     _isDirty = true;
     _loadDataAsync(
-      selectedTestIndex: _sinceLastTestData?.selectedTestIndex ?? 0,
+      selectedTestIndex: _sexualHealthData?.selectedTestIndex ?? 0,
     );
   }
 
   Future<void> _loadDataAsync({int selectedTestIndex = 0}) async {
+    final store = context.read<EventStateStore>();
+    final provider = context.read<SexualEventsProvider>();
+    final clinicalProvider = context.read<ClinicalEventsProvider>();
+
+    await provider.ready;
+    await clinicalProvider.ready;
+
+    final allEvents = await provider.getAllEvents();
+    final allPersons = store.state.allPersons ?? await provider.getAllPersons();
+
+    // Filter events based on selected time window
+    final now = DateTime.now();
+    DateTime? startDate;
+    DateTime? endDate;
+    List<SexualEvent> events;
+
+    switch (_timeWindow) {
+      case TimeWindow.last12Months:
+        startDate = DateTime(now.year, now.month - 11, 1);
+        events = allEvents.where((event) {
+          return event.date.isAfter(
+            startDate!.subtract(const Duration(days: 1)),
+          );
+        }).toList();
+        break;
+      case TimeWindow.allTime:
+        events = allEvents;
+        startDate = null;
+        endDate = null;
+        break;
+      case TimeWindow.specificYear:
+        if (_selectedYear != null) {
+          startDate = DateTime(_selectedYear!, 1, 1);
+          endDate = DateTime(_selectedYear!, 12, 31, 23, 59, 59);
+          events = allEvents.where((event) {
+            return event.date.isAfter(
+                  startDate!.subtract(const Duration(days: 1)),
+                ) &&
+                event.date.isBefore(endDate!.add(const Duration(days: 1)));
+          }).toList();
+        } else {
+          events = allEvents;
+        }
+    }
+
+    // Update available years
+    if (allEvents.isNotEmpty) {
+      final years = allEvents.map((e) => e.date.year).toSet().toList()..sort();
+      if (_availableYears.length != years.length ||
+          !_availableYears.every((y) => years.contains(y))) {
+        if (mounted) {
+          setState(() {
+            _availableYears = years;
+          });
+        }
+      }
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final data = await _loadData();
+      // Load page-specific data
+      await _loadPageData(
+        provider: provider,
+        store: store,
+        startDate: startDate,
+        endDate: endDate,
+        events: events,
+        allPersons: allPersons,
+      );
 
-      // Also load since-last-test data
-      final store = context.read<EventStateStore>();
-      final clinicalProvider = context.read<ClinicalEventsProvider>();
-      final sexualProvider = context.read<SexualEventsProvider>();
-      await clinicalProvider.ready;
-      await sexualProvider.ready;
-      final allEvents = await sexualProvider.getAllEvents();
-      final sinceLastTestData = await SinceLastTestCalculator.calculate(
+      // Also load sexual health data
+      final sexualHealthData = await SexualHealthCalculator.calculate(
         allEvents: allEvents,
         clinicalProvider: clinicalProvider,
         stateSnapshot: store.state,
@@ -281,8 +389,7 @@ class _AnalysisPageState extends State<AnalysisPage>
 
       if (mounted) {
         setState(() {
-          _currentData = data;
-          _sinceLastTestData = sinceLastTestData;
+          _sexualHealthData = sexualHealthData;
           _isLoading = false;
         });
       }
@@ -292,7 +399,6 @@ class _AnalysisPageState extends State<AnalysisPage>
         setState(() {
           _isLoading = false;
         });
-        // Show error to user
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load analysis data: $e'),
@@ -308,17 +414,20 @@ class _AnalysisPageState extends State<AnalysisPage>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
     // Load data on first build or when refresh is triggered
-    if (_currentData == null && !_isLoading) {
+    if (_overviewData == null && !_isLoading) {
       _loadDataAsync();
     }
+
+    final hasData =
+        (_overviewData?.totalEvents ?? 0) > 0 ||
+        (_sexualHealthData?.hasValidData ?? false);
 
     return SafeArea(
       child: Stack(
         children: [
-          _currentData == null
+          _overviewData == null && _sexualHealthData == null
               ? const Center(child: CircularProgressIndicator())
-              : (_currentData!.totalEvents == 0 &&
-                    !(_sinceLastTestData?.hasValidData ?? false))
+              : !hasData
               ? _buildEmptyState()
               : Column(
                   children: [
@@ -366,11 +475,17 @@ class _AnalysisPageState extends State<AnalysisPage>
                               });
                             },
                             children: [
-                              _buildOverviewPage(_currentData!),
-                              _buildActivityBreakdownPage(_currentData!),
-                              _buildPartnerBreakdownPage(_currentData!),
-                              _buildPeriodComparisonPage(_currentData!),
-                              _buildSinceLastTestPage(),
+                              _buildOverviewPage(_overviewData!),
+                              _buildActivityBreakdownPage(
+                                _activityBreakdownData!,
+                              ),
+                              _buildPartnerBreakdownPage(
+                                _partnerBreakdownData!,
+                              ),
+                              _buildPeriodComparisonPage(
+                                _periodComparisonData!,
+                              ),
+                              _buildSexualHealthPage(),
                             ],
                           ),
                         ),
@@ -379,7 +494,7 @@ class _AnalysisPageState extends State<AnalysisPage>
                     _buildPageIndicator(),
                   ],
                 ),
-          if (_isLoading && _currentData != null)
+          if (_isLoading && _overviewData != null)
             Container(
               color: Colors.black26,
               child: const Center(child: CircularProgressIndicator()),
@@ -555,14 +670,14 @@ class _AnalysisPageState extends State<AnalysisPage>
     );
   }
 
-  Widget _buildOverviewPage(AnalysisData data) {
+  Widget _buildOverviewPage(OverviewData data) {
     return OverviewPage(
       data: data,
       showCurrentMonthStats: _timeWindow == TimeWindow.last12Months,
     );
   }
 
-  Widget _buildActivityBreakdownPage(AnalysisData data) {
+  Widget _buildActivityBreakdownPage(ActivityBreakdownData data) {
     return ActivityBreakdownPage(
       data: data,
       selectedType: _activityBreakdownFilterType,
@@ -570,7 +685,6 @@ class _AnalysisPageState extends State<AnalysisPage>
         setState(() {
           _activityBreakdownFilterType = type;
         });
-        // Persist selection to SharedPreferences via PreferencesService
         try {
           final prefs = Provider.of<PreferencesService>(context, listen: false);
           await prefs.setActivityFilter(type);
@@ -581,11 +695,11 @@ class _AnalysisPageState extends State<AnalysisPage>
     );
   }
 
-  Widget _buildPartnerBreakdownPage(AnalysisData data) {
+  Widget _buildPartnerBreakdownPage(PartnerBreakdownData data) {
     return PartnerBreakdownPage(data: data);
   }
 
-  Widget _buildPeriodComparisonPage(AnalysisData data) {
+  Widget _buildPeriodComparisonPage(PeriodComparisonData data) {
     return PeriodComparisonPage(
       data: data,
       selectedPreset: _periodPreset,
@@ -608,7 +722,6 @@ class _AnalysisPageState extends State<AnalysisPage>
         });
         try {
           final prefs = Provider.of<PreferencesService>(context, listen: false);
-          // Persist start/end components of the selected range (if any).
           await prefs.setCustomFirst(range?.start);
           await prefs.setCustomSecond(range?.end);
         } catch (e) {
@@ -621,7 +734,6 @@ class _AnalysisPageState extends State<AnalysisPage>
         });
         try {
           final prefs = Provider.of<PreferencesService>(context, listen: false);
-          // Persist any updates to the second custom period endpoint
           await prefs.setCustomSecond(range?.end);
         } catch (e) {
           _logger.warning('Failed to persist custom second period: $e');
@@ -630,12 +742,12 @@ class _AnalysisPageState extends State<AnalysisPage>
     );
   }
 
-  Widget _buildSinceLastTestPage() {
-    if (_sinceLastTestData == null) {
+  Widget _buildSexualHealthPage() {
+    if (_sexualHealthData == null) {
       return const Center(child: CircularProgressIndicator());
     }
     return SexualHealthPage(
-      data: _sinceLastTestData!,
+      data: _sexualHealthData!,
       onTestIndexChanged: (index) {
         _loadSinceLastTestData(testIndex: index);
       },
@@ -651,7 +763,7 @@ class _AnalysisPageState extends State<AnalysisPage>
     await clinicalProvider.ready;
     await sexualProvider.ready;
     final allEvents = await sexualProvider.getAllEvents();
-    final sinceLastTestData = await SinceLastTestCalculator.calculate(
+    final sexualHealthData = await SexualHealthCalculator.calculate(
       allEvents: allEvents,
       clinicalProvider: clinicalProvider,
       stateSnapshot: store.state,
@@ -662,7 +774,7 @@ class _AnalysisPageState extends State<AnalysisPage>
 
     if (mounted) {
       setState(() {
-        _sinceLastTestData = sinceLastTestData;
+        _sexualHealthData = sexualHealthData;
       });
     }
   }

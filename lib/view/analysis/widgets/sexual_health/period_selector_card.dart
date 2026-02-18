@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../models/since_last_test_data.dart';
+import '../../models/sexual_health_analysis_data.dart';
 
 /// Widget for selecting which test period to view.
 class PeriodSelectorCard extends StatelessWidget {
-  final SinceLastTestData data;
+  final SexualHealthAnalysisData data;
   final void Function(int testIndex)? onTestIndexChanged;
 
   const PeriodSelectorCard({

@@ -13,7 +13,6 @@ import 'package:indulge/data/models/v1/sexual_activity_participant/sexual_activi
     as v1;
 import 'package:indulge/data/models/v1/property_count/property_count.dart'
     as v1;
-import 'package:indulge/data/models/v2/person/person.dart';
 import 'package:indulge/data/models/v2/sexual_activity_category/sexual_activity_category.dart';
 import 'package:indulge/data/models/v2/sexual_activity/sexual_activity.dart';
 import 'package:indulge/data/models/v2/sexual_event/sexual_event.dart';

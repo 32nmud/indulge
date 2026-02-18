@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
-import '../../models/analysis_data.dart';
 import '../common/expandable_activity_card.dart';
 import 'package:indulge/view/common/dialogs/category_filter_dialog.dart';
 import 'package:indulge/services/preferences_service.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/activity_breakdown_data.dart';
 
 class PropertiesByActivitySection extends StatefulWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
 
   const PropertiesByActivitySection({

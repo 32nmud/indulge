@@ -271,8 +271,7 @@ class _AnalysisLocationHeatmapState extends State<AnalysisLocationHeatmap> {
                   fm.TileLayer(
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName:
-                        'com.example.indulge (dalton.craig1234@gmail.com)',
+                    userAgentPackageName: 'indulge/0.1.2-beta',
                   ),
 
                   if (circleMarkers.isNotEmpty)
@@ -280,10 +279,7 @@ class _AnalysisLocationHeatmapState extends State<AnalysisLocationHeatmap> {
 
                   fm.RichAttributionWidget(
                     attributions: [
-                      fm.TextSourceAttribution(
-                        'OpenStreetMap contributors',
-                        onTap: () {},
-                      ),
+                      fm.TextSourceAttribution('OpenStreetMap', onTap: () {}),
                     ],
                   ),
                 ],

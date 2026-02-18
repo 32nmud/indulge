@@ -35,7 +35,6 @@ abstract class Location with _$Location {
   // -----------------------------------------------------------------
   // Fixed getters
   // -----------------------------------------------------------------
-  @override
   @JsonKey(name: 'resourceType')
   String get resourceType => "Location";
 

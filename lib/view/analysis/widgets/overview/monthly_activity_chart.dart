@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import '../../models/analysis_data.dart';
+import '../../models/overview_data.dart';
 import '../../utils/analysis_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/services/preferences_service.dart';
+import '../../models/analysis_event_type.dart';
 
 class MonthlyActivityChart extends StatefulWidget {
-  final AnalysisData data;
+  final OverviewData data;
 
   const MonthlyActivityChart({super.key, required this.data});
 

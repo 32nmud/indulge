@@ -88,7 +88,7 @@ class _ClinicalEventEditorPageState extends State<ClinicalEventEditorPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: ClinicalEventForm(
-            key: _formKey,
+            _formKey,
             initialEvent: widget.initialEvent,
             initialDate: widget.initialDate,
             onSave: widget.onSave,

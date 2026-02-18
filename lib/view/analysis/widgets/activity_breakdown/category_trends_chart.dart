@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/services/preferences_service.dart';
 import 'package:indulge/data/models.dart';
-import '../../models/analysis_data.dart';
+import '../../models/analysis_event_type.dart';
+import '../../models/activity_breakdown_data.dart';
 
 class CategoryTrendsChart extends StatefulWidget {
-  final AnalysisData data;
+  final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
   final bool showTypeFilter;
 
@@ -449,7 +449,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
       }
 
       // Safety: clamp windowEnd so it is not before windowStart
-      if (windowEnd == null || windowEnd.isBefore(windowStart)) {
+      if (windowEnd.isBefore(windowStart)) {
         windowEnd = windowStart;
       }
     }

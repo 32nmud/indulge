@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
-import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/event_state_store.dart';
 
 class SexualEventsProvider extends ChangeNotifier {

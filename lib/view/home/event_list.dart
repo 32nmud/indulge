@@ -47,7 +47,7 @@ class AnimatedEventList extends StatelessWidget {
         if (item is SexualEvent) {
           card = SexualEventCard(event: item);
         } else if (item is ClinicalEvent) {
-          card = ClinicalEventCard(event: item);
+          card = ClinicalEventCard(key, event: item);
         } else {
           // Fallback for unknown types
           card = const SizedBox.shrink();

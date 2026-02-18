@@ -1,15 +1,15 @@
 import 'package:indulge/data/models.dart';
 import 'package:indulge/provider/event_state.dart';
 import 'package:indulge/provider/clinical_event_provider.dart';
-import '../models/since_last_test_data.dart';
+import '../models/sexual_health_analysis_data.dart';
 
 /// Calculator for statistics between two STI test dates.
-class SinceLastTestCalculator {
+class SexualHealthCalculator {
   /// Computes statistics for a period between two tests.
   ///
   /// [selectedTestIndex] - which test to use as the start of the period
   /// (0 = most recent, 1 = second most recent, etc.)
-  static Future<SinceLastTestData> calculate({
+  static Future<SexualHealthAnalysisData> calculate({
     required List<SexualEvent> allEvents,
     required ClinicalEventsProvider clinicalProvider,
     required EventState stateSnapshot,
@@ -21,7 +21,7 @@ class SinceLastTestCalculator {
     final testDates = await clinicalProvider.getRecentClinicalEventDates(10);
 
     if (testDates.isEmpty) {
-      return SinceLastTestData.empty();
+      return SexualHealthAnalysisData.empty();
     }
 
     // Ensure selected index is valid
@@ -205,7 +205,7 @@ class SinceLastTestCalculator {
       nextRecommendedTestDate = periodStart.add(const Duration(days: 90));
     }
 
-    return SinceLastTestData(
+    return SexualHealthAnalysisData(
       testDates: testDates,
       selectedTestIndex: selectedTestIndex,
       periodStartDate: periodStart,

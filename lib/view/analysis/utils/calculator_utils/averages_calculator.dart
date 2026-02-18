@@ -1,6 +1,6 @@
 import 'package:indulge/data/models.dart';
-import '../../models/analysis_data.dart';
 import 'analysis_date_utils.dart';
+import '../../models/analysis_event_type.dart';
 
 /// Result of average computations.
 class AveragesResult {

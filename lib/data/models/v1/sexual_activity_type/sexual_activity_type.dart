@@ -40,7 +40,6 @@ abstract class SexualActivityType with _$SexualActivityType {
   // -----------------------------------------------------------------
   // Fixed getters
   // -----------------------------------------------------------------
-  @override
   @JsonKey(name: 'resourceType')
   String get resourceType => "SexualActivityType";
 
