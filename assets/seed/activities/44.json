@@ -1,0 +1,9 @@
+{
+  "id": "44",
+  "name": "GHB",
+  "displayCharacter": "💧",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": false
+}

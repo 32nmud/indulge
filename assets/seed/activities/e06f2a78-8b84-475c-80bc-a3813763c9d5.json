@@ -1,0 +1,9 @@
+{
+  "id": "e06f2a78-8b84-475c-80bc-a3813763c9d5",
+  "name": "Estim",
+  "displayCharacter": "⚡",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": false
+}

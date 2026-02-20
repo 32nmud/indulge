@@ -1,0 +1,9 @@
+{
+  "id": "39",
+  "name": "On PrEP",
+  "displayCharacter": "💊",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

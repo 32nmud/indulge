@@ -1,0 +1,9 @@
+{
+  "id": "49",
+  "name": "Gave head",
+  "displayCharacter": "🧒",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": true
+}

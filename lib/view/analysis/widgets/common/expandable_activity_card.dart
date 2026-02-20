@@ -150,7 +150,9 @@ class _ExpandableActivityCardState extends State<ExpandableActivityCard>
                             // Risky indicator
                             SizedBox(
                               width: 20,
-                              child: activity?.isRisky ?? false
+                              child:
+                                  (activity?.stiRisk ?? false) ||
+                                      (activity?.healthRisk ?? false)
                                   ? Icon(
                                       Icons.warning_amber_rounded,
                                       size: 16,

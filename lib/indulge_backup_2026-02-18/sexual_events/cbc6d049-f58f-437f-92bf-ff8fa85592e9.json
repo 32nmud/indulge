@@ -1,0 +1,157 @@
+{
+  "id": "cbc6d049-f58f-437f-92bf-ff8fa85592e9",
+  "date": "2026-02-14T14:54:00.000",
+  "lastModifiedDate": null,
+  "activities": [
+    {
+      "category": {
+        "reference": "bottoming",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "1",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "3",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "oral",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "53",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "47",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "kink",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "8",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "11",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "27",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "e93fcdd7-c6f9-45c2-98fb-5f436a8ee6d9",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "9fde733e-a2c6-4373-b74d-ed4835b05f6b",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        },
+        {
+          "participant": {
+            "reference": "me",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "9fde733e-a2c6-4373-b74d-ed4835b05f6b",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "location": {
+    "latitude": 39.7920123,
+    "longitude": -85.9562869,
+    "address": null
+  },
+  "notes": null
+}

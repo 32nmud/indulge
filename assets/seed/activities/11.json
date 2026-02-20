@@ -1,0 +1,9 @@
+{
+  "id": "11",
+  "name": "Chastity",
+  "displayCharacter": "🔐",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

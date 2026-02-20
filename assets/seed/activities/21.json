@@ -1,0 +1,9 @@
+{
+  "id": "21",
+  "name": "Humiliation",
+  "displayCharacter": "🤭",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": true
+}

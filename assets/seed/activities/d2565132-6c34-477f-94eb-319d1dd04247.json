@@ -1,0 +1,9 @@
+{
+  "id": "d2565132-6c34-477f-94eb-319d1dd04247",
+  "name": "Massage table",
+  "displayCharacter": "💆‍♂️",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

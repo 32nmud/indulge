@@ -1,0 +1,9 @@
+{
+  "id": "6",
+  "name": "Fisting",
+  "displayCharacter": "👊",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": true
+}

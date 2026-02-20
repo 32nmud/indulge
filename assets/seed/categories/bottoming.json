@@ -1,0 +1,27 @@
+{
+  "id": "bottoming",
+  "lastUpdateDate": null,
+  "name": "Bottoming",
+  "displayCharacter": "🍑",
+  "minParticipants": -1,
+  "maxParticipants": -1,
+  "activities": [
+    {
+      "reference": "1",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "2",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "3",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "4",
+      "resourceType": "SexualActivityTypeProperty"
+    }
+  ],
+  "requiresPartner": true
+}

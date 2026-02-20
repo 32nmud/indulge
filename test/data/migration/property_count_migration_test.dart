@@ -6,7 +6,7 @@ import 'package:indulge/data/models/v2/reference/reference.dart';
 import 'package:indulge/data/models/v2/activity_count/activity_count.dart';
 import 'package:indulge/data/models/versioned_model.dart';
 import 'package:indulge/domain/database/migration/migration_service.dart';
-import 'package:indulge/domain/database/migration/v1_to_v2_migrators.dart';
+import 'package:indulge/domain/database/migration/migrators.dart';
 
 void main() {
   group('PropertyCount to ActivityCount Migration', () {
@@ -103,11 +103,11 @@ void main() {
       expect(MigrationService.needsMigration(json), true);
     });
 
-    test('MigrationService detects no migration needed for v2', () {
+    test('MigrationService detects no migration needed for v3', () {
       final json = {
         'activityReference': {'reference': 'activity_123'},
         'count': 3,
-        'version': 2,
+        'version': 3,
       };
 
       expect(MigrationService.needsMigration(json), false);
@@ -128,7 +128,7 @@ void main() {
 
         expect(result.activityReference.reference, 'prop_123');
         expect(result.count, 5);
-        expect(result.version, 2);
+        expect(result.version, 3);
       },
     );
 
@@ -147,7 +147,7 @@ void main() {
 
         expect(result.activityReference.reference, 'prop_123');
         expect(result.count, 3);
-        expect(result.version, 2);
+        expect(result.version, 3);
       },
     );
 
@@ -157,7 +157,7 @@ void main() {
         final v2Json = {
           'activityReference': {'reference': 'activity_123'},
           'count': 7,
-          'version': 2,
+          'version': 3,
         };
 
         final result = await MigrationService.migrateIfNeeded<ActivityCount>(
@@ -167,7 +167,7 @@ void main() {
 
         expect(result.activityReference.reference, 'activity_123');
         expect(result.count, 7);
-        expect(result.version, 2);
+        expect(result.version, 3);
       },
     );
 
@@ -184,7 +184,7 @@ void main() {
         {
           'activityReference': {'reference': 'activity_3'},
           'count': 3,
-          'version': 2,
+          'version': 3,
         },
       ];
 
@@ -196,15 +196,15 @@ void main() {
       expect(results.length, 3);
       expect(results[0].activityReference.reference, 'prop_1');
       expect(results[0].count, 1);
-      expect(results[0].version, 2);
+      expect(results[0].version, 3);
 
       expect(results[1].activityReference.reference, 'prop_2');
       expect(results[1].count, 2);
-      expect(results[1].version, 2);
+      expect(results[1].version, 3);
 
       expect(results[2].activityReference.reference, 'activity_3');
       expect(results[2].count, 3);
-      expect(results[2].version, 2);
+      expect(results[2].version, 3);
     });
 
     test('ModelVersionMigration.getVersion returns 1 for missing version', () {
@@ -222,8 +222,8 @@ void main() {
       expect(ModelVersionMigration.needsMigration(json), true);
     });
 
-    test('ModelVersionMigration.needsMigration returns false for v2', () {
-      final json = {'version': 2, 'someField': 'someValue'};
+    test('ModelVersionMigration.needsMigration returns false for v3', () {
+      final json = {'version': 3, 'someField': 'someValue'};
       expect(ModelVersionMigration.needsMigration(json), false);
     });
 

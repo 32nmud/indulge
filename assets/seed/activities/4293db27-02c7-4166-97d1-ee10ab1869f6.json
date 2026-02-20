@@ -1,0 +1,9 @@
+{
+  "id": "4293db27-02c7-4166-97d1-ee10ab1869f6",
+  "name": "Tawse",
+  "displayCharacter": "🏒",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

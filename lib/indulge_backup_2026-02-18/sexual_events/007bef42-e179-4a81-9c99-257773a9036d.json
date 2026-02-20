@@ -1,0 +1,189 @@
+{
+  "id": "007bef42-e179-4a81-9c99-257773a9036d",
+  "date": "2026-02-09T23:42:45.538975",
+  "lastModifiedDate": "2026-02-11T17:04:31.789648",
+  "activities": [
+    {
+      "category": {
+        "reference": "bottoming",
+        "resourceType": "SexualActivityType"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "1",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "kink",
+        "resourceType": "SexualActivityType"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "8",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "9",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "11",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "94d1819e-5141-4afe-8050-0166085e9a37",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "substances",
+        "resourceType": "SexualActivityType"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "36",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        },
+        {
+          "participant": {
+            "reference": "me",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "36",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "oral",
+        "resourceType": "SexualActivityType"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "47",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "49",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "53",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "a87a5a29-db90-4f09-b8a2-99fd77426544",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "2d25a6a7-414d-4612-82b1-e01abdb63a87",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "location": {
+    "latitude": 39.7921433,
+    "longitude": -85.9563986,
+    "address": null
+  },
+  "notes": null
+}

@@ -120,24 +120,67 @@ class _MigrationCheckState extends State<MigrationCheck> {
     // Open database - schema migration happens via onUpgrade in main.dart
     final db = await openDatabase(dbPath);
 
-    // Check if JSON migration is needed
+    // Check whether a schema-level migration is needed (metadata) and whether
+    // JSON document migration is required. Also check if a migration was already
+    // started (in-progress marker). If any of these indicate work, show the
+    // migration UI so the user sees progress and we avoid silent background work.
+    final needsMetaMigration = await DatabaseEngine.needsMigration(db, dbPath);
     final needsJsonMigration = await DatabaseEngine.needsJsonMigration(
       db,
       dbPath,
     );
 
+    // Check for migration-in-progress marker in the metadata table. If the
+    // metadata table or key cannot be read, conservatively show the UI.
+    bool migrationInProgress = false;
+    try {
+      final result = await db.query(
+        'database_metadata',
+        where: 'key = ?',
+        whereArgs: ['migration_in_progress'],
+      );
+      if (result.isNotEmpty && result.first['value'] == 'true') {
+        migrationInProgress = true;
+      }
+    } catch (_) {
+      // If we cannot read metadata for whatever reason, prefer to show the UI
+      // to avoid silent partial migrations or corruption.
+      migrationInProgress = true;
+    }
+
+    final showMigrationUI =
+        needsMetaMigration || needsJsonMigration || migrationInProgress;
+
     return _MigrationState(
-      needsJsonMigration: needsJsonMigration,
+      needsJsonMigration: showMigrationUI,
       database: db,
+      needsMigrationByMeta: needsMetaMigration,
+      migrationInProgress: migrationInProgress,
     );
   }
 }
 
 class _MigrationState {
+  /// If true, the migration UI should be shown. This now represents the
+  /// combined decision: schema metadata migration, JSON document migration,
+  /// or an in-progress migration marker.
   final bool needsJsonMigration;
+
+  /// Open database instance (so the UI/migration screen can run the migration).
   final Database? database;
 
-  _MigrationState({required this.needsJsonMigration, this.database});
+  /// Whether a schema-level migration (by metadata) was detected.
+  final bool? needsMigrationByMeta;
+
+  /// Whether a previous migration run was left in-progress (metadata marker).
+  final bool? migrationInProgress;
+
+  _MigrationState({
+    required this.needsJsonMigration,
+    this.database,
+    this.needsMigrationByMeta,
+    this.migrationInProgress,
+  });
 }
 
 /// Progress screen shown during JSON migration (v1 -> v2)

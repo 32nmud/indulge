@@ -1,0 +1,9 @@
+{
+  "id": "33f8e824-61d8-4ecf-873f-b72cb36bf16e",
+  "name": "Milker",
+  "displayCharacter": "🥛",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

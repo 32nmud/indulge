@@ -48,7 +48,8 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
               emojiController: TextEditingController(
                 text: activity.displayCharacter,
               ),
-              isRisky: activity.isRisky,
+              stiRisk: activity.stiRisk,
+              healthRisk: activity.healthRisk,
               requiresPartner: activity.requiresPartner,
               canHaveMultipleParticipants: activity.canHaveMultipleParticipants,
             ),
@@ -145,7 +146,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Activity-level requiresPartner checkbox
+                    // Activity-level requiresPartner checkbox (category-level)
                     CheckboxListTile(
                       title: const Text('Requires Partner'),
                       subtitle: const Text(
@@ -237,71 +238,76 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                                           },
                                         ),
                                         const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: CheckboxListTile(
-                                                title: const Text(
-                                                  'Risky',
+                                        // Replace checkboxes with selectable chips
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            children: [
+                                              FilterChip(
+                                                label: const Text(
+                                                  'STI risk',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                   ),
                                                 ),
-                                                value: activity.isRisky,
-                                                onChanged: (value) {
+                                                selected: activity.stiRisk,
+                                                onSelected: (selected) {
                                                   setState(() {
-                                                    activity.isRisky =
-                                                        value ?? false;
+                                                    activity.stiRisk = selected;
                                                   });
                                                 },
-                                                dense: true,
-                                                contentPadding: EdgeInsets.zero,
-                                                controlAffinity:
-                                                    ListTileControlAffinity
-                                                        .leading,
                                               ),
-                                            ),
-                                            Expanded(
-                                              child: CheckboxListTile(
-                                                title: const Text(
-                                                  'Needs Partner',
+                                              FilterChip(
+                                                label: const Text(
+                                                  'Health risk',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                   ),
                                                 ),
-                                                value: activity.requiresPartner,
-                                                onChanged: (value) {
+                                                selected: activity.healthRisk,
+                                                onSelected: (selected) {
+                                                  setState(() {
+                                                    activity.healthRisk =
+                                                        selected;
+                                                  });
+                                                },
+                                              ),
+                                              FilterChip(
+                                                label: const Text(
+                                                  'Needs partner',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                selected:
+                                                    activity.requiresPartner,
+                                                onSelected: (selected) {
                                                   setState(() {
                                                     activity.requiresPartner =
-                                                        value ?? false;
+                                                        selected;
                                                   });
                                                 },
-                                                dense: true,
-                                                contentPadding: EdgeInsets.zero,
-                                                controlAffinity:
-                                                    ListTileControlAffinity
-                                                        .leading,
                                               ),
-                                            ),
-                                          ],
-                                        ),
-                                        CheckboxListTile(
-                                          title: const Text(
-                                            'Can have multiple participants',
-                                            style: TextStyle(fontSize: 12),
+                                              FilterChip(
+                                                label: const Text(
+                                                  'Multiple participants',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                selected: activity
+                                                    .canHaveMultipleParticipants,
+                                                onSelected: (selected) {
+                                                  setState(() {
+                                                    activity.canHaveMultipleParticipants =
+                                                        selected;
+                                                  });
+                                                },
+                                              ),
+                                            ],
                                           ),
-                                          value: activity
-                                              .canHaveMultipleParticipants,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              activity.canHaveMultipleParticipants =
-                                                  value ?? true;
-                                            });
-                                          },
-                                          dense: true,
-                                          contentPadding: EdgeInsets.zero,
-                                          controlAffinity:
-                                              ListTileControlAffinity.leading,
                                         ),
                                       ],
                                     ),
@@ -349,7 +355,8 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
           id: const Uuid().v4(),
           nameController: TextEditingController(),
           emojiController: TextEditingController(text: '❔'),
-          isRisky: false,
+          stiRisk: false,
+          healthRisk: false,
           requiresPartner: false,
           canHaveMultipleParticipants: true,
         ),
@@ -426,7 +433,9 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
           id: activity.id,
           name: activity.nameController.text.trim(),
           displayCharacter: activity.emojiController.text.trim(),
-          isRisky: activity.isRisky,
+          // Updated model: use explicit stiRisk and healthRisk instead of a single isRisky
+          stiRisk: activity.stiRisk,
+          healthRisk: activity.healthRisk,
           requiresPartner: activity.requiresPartner,
           canHaveMultipleParticipants: activity.canHaveMultipleParticipants,
         );
@@ -470,7 +479,8 @@ class _ActivityRow {
   final String id;
   final TextEditingController nameController;
   final TextEditingController emojiController;
-  bool isRisky;
+  bool stiRisk;
+  bool healthRisk;
   bool requiresPartner;
   bool canHaveMultipleParticipants;
 
@@ -478,7 +488,8 @@ class _ActivityRow {
     required this.id,
     required this.nameController,
     required this.emojiController,
-    required this.isRisky,
+    required this.stiRisk,
+    required this.healthRisk,
     required this.requiresPartner,
     required this.canHaveMultipleParticipants,
   });

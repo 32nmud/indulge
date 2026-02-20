@@ -1,0 +1,8 @@
+{
+  "id": "e40ae363-00a0-49c2-b7c1-a0f9a1115827",
+  "name": "Blindfold",
+  "displayCharacter": "🙈",
+  "canHaveMultipleParticipants": true,
+  "isRisky": false,
+  "requiresPartner": false
+}

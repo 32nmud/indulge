@@ -87,7 +87,8 @@ class ComparisonCalculator {
             final sexualActivity =
                 providerState.sexualActivities?[sexualActivityId];
 
-            if (sexualActivity?.isRisky ?? false) {
+            if ((sexualActivity?.stiRisk ?? false) ||
+                (sexualActivity?.healthRisk ?? false)) {
               lastRiskyDate = event.date;
               _logger.fine(
                 'Last risky activity found on ${event.date} with sexual activity ${sexualActivity?.name}',

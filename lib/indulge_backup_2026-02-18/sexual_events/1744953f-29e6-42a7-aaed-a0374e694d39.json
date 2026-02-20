@@ -1,0 +1,45 @@
+{
+  "id": "1744953f-29e6-42a7-aaed-a0374e694d39",
+  "date": "2026-02-08T00:00:00.000",
+  "lastModifiedDate": null,
+  "activities": [
+    {
+      "category": {
+        "reference": "bottoming",
+        "resourceType": "SexualActivityType"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "1",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "3",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "location": {
+    "latitude": 39.7921005,
+    "longitude": -85.9563783,
+    "address": null
+  },
+  "notes": null
+}

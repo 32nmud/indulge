@@ -1,0 +1,9 @@
+{
+  "id": "017c87a7-ba6e-486f-9821-fd5db3ef51d5",
+  "name": "Gas mask",
+  "displayCharacter": "🪖",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

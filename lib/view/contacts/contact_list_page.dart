@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:indulge/data/models.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
@@ -50,6 +51,22 @@ class _ContactListPageState extends State<ContactListPage>
   void _onStoreChange() {
     if (!mounted) return;
     final store = context.read<EventStateStore>();
+
+    // If the centralized store contains an updated persons snapshot, prefer
+    // reloading from that immediately so the Contacts page reflects imported
+    // persons without waiting for a separate refresh trigger.
+    final cachedPersons = store.state.allPersons;
+    if (cachedPersons != null) {
+      final cachedIds = cachedPersons.map((p) => p.id).toSet();
+      final currentIds = _persons.map((p) => p.id).toSet();
+      // Use setEquals (from foundation) to avoid unnecessary reloads when lists are identical.
+      if (!setEquals(cachedIds, currentIds)) {
+        _loadPersons(forceLoadEvents: true);
+        return;
+      }
+    }
+
+    // Fallback: if a global dirty flag was set, reload as before.
     if (store.needsDataRefresh) {
       _loadPersons(forceLoadEvents: true);
     }

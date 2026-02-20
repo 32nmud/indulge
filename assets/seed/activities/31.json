@@ -1,0 +1,9 @@
+{
+  "id": "31",
+  "name": "Wrestling",
+  "displayCharacter": "🤼",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": true
+}

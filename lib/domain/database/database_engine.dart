@@ -187,30 +187,42 @@ class DatabaseEngine {
     // First check metadata-based migration requirement.
     final migrationNeededByMeta = await migrationService.needsMigration();
 
-    if (!migrationNeededByMeta) {
-      // Defensive check: even if metadata says up-to-date, ensure critical v2 tables exist.
-      // If a required table is missing (e.g. clinical_event), force migration to run.
-      try {
-        final tables = await database.query(
-          'sqlite_master',
-          where: 'type = ? AND name = ?',
-          whereArgs: ['table', 'clinical_event'],
-        );
+    // Also check whether JSON (v1->v2) migration is required even if schema metadata
+    // indicates no migration. It's possible the DB schema is at v3 but some JSON
+    // payloads still need to be migrated; in that case we must run the JSON migration.
+    final jsonMigrationNeeded = await migrationService.needsJsonMigration();
 
-        if (tables.isEmpty) {
-          _logger.warning(
-            'Schema metadata indicates no migration needed, but `clinical_event` table is missing. Forcing migration.',
-          );
-          // fall through to perform migration
-        } else {
-          _logger.info('No migration needed');
-          return null;
-        }
-      } catch (e) {
-        _logger.warning(
-          'Error checking for clinical_event table presence: $e. Forcing migration as a defensive measure.',
+    if (!migrationNeededByMeta) {
+      if (jsonMigrationNeeded) {
+        _logger.info(
+          'Schema metadata indicates up-to-date, but JSON documents require migration. Forcing migration.',
         );
         // fall through to perform migration
+      } else {
+        // Defensive check: even if metadata says up-to-date, ensure critical v2 tables exist.
+        // If a required table is missing (e.g. clinical_event), force migration to run.
+        try {
+          final tables = await database.query(
+            'sqlite_master',
+            where: 'type = ? AND name = ?',
+            whereArgs: ['table', 'clinical_event'],
+          );
+
+          if (tables.isEmpty) {
+            _logger.warning(
+              'Schema metadata indicates no migration needed, but `clinical_event` table is missing. Forcing migration.',
+            );
+            // fall through to perform migration
+          } else {
+            _logger.info('No migration needed');
+            return null;
+          }
+        } catch (e) {
+          _logger.warning(
+            'Error checking for clinical_event table presence: $e. Forcing migration as a defensive measure.',
+          );
+          // fall through to perform migration
+        }
       }
     }
 

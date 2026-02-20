@@ -1,4 +1,4 @@
-import 'package:indulge/data/models/v2/models.dart';
+import 'package:indulge/data/models.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';

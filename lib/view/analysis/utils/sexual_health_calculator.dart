@@ -104,7 +104,7 @@ class SexualHealthCalculator {
 
             // Track risky activities by category
             final act = sexualActivities[actId];
-            if (act != null && act.isRisky) {
+            if (act != null && (act.stiRisk || act.healthRisk)) {
               riskyActivityCountsByCategory.putIfAbsent(categoryId, () => {});
               riskyActivityCountsByCategory[categoryId]![actId] =
                   (riskyActivityCountsByCategory[categoryId]![actId] ?? 0) +
@@ -125,7 +125,7 @@ class SexualHealthCalculator {
           for (final activityCount in participant.activityCounts) {
             final actId = activityCount.activityReference.reference;
             final act = sexualActivities[actId];
-            if (act != null && act.isRisky) {
+            if (act != null && (act.stiRisk || act.healthRisk)) {
               hasRiskyInActivity = true;
               break;
             }

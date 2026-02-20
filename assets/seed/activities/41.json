@@ -1,0 +1,9 @@
+{
+  "id": "41",
+  "name": "LSD",
+  "displayCharacter": "🌈",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": false
+}

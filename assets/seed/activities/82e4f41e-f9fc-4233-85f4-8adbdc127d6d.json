@@ -1,0 +1,9 @@
+{
+  "id": "82e4f41e-f9fc-4233-85f4-8adbdc127d6d",
+  "name": "Vibrating insertable",
+  "displayCharacter": "📳",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

@@ -1,0 +1,9 @@
+{
+  "id": "36",
+  "name": "Smoked cannabis",
+  "displayCharacter": "🌿",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

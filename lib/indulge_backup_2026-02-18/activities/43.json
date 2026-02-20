@@ -1,0 +1,8 @@
+{
+  "id": "43",
+  "name": "Ketamine",
+  "displayCharacter": "🐴",
+  "canHaveMultipleParticipants": true,
+  "isRisky": true,
+  "requiresPartner": false
+}

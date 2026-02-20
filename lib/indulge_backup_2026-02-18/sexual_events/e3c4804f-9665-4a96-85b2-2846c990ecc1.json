@@ -1,0 +1,149 @@
+{
+  "id": "e3c4804f-9665-4a96-85b2-2846c990ecc1",
+  "date": "2026-01-30T00:00:00.000",
+  "lastModifiedDate": "2026-02-11T17:04:31.811669",
+  "activities": [
+    {
+      "category": {
+        "reference": "kink",
+        "resourceType": "SexualActivityType"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "8",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "11",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "15",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "7",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        },
+        {
+          "participant": {
+            "reference": "anonymous",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "8",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "15",
+                "resourceType": "SexualActivityTypeProperty"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "a87a5a29-db90-4f09-b8a2-99fd77426544",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "4293db27-02c7-4166-97d1-ee10ab1869f6",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        },
+        {
+          "participant": {
+            "reference": "anonymous",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "4293db27-02c7-4166-97d1-ee10ab1869f6",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "0e0ad456-446c-4c54-84d5-97bda8956515",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "me",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "d396d80d-945f-4053-9f7f-0a356b396c22",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "location": {
+    "latitude": 40.445714925933714,
+    "longitude": -79.9928849903238,
+    "address": null
+  },
+  "notes": "This was at Yinzfur on the rooftop. Got paddled with the tawse and bitten by Caldera and some chick I can't remember her name\n\nThis was in front of a pretty big crowd too, one which I silenced a few times with how hard I was being beaten"
+}

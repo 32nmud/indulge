@@ -75,12 +75,14 @@ void main() {
         const activity1 = SexualActivity(
           id: 'giving',
           name: 'Giving',
-          isRisky: false,
+          stiRisk: false,
+          healthRisk: false,
         );
         const activity2 = SexualActivity(
           id: 'receiving',
           name: 'Receiving',
-          isRisky: true,
+          stiRisk: false,
+          healthRisk: false,
         );
 
         final state = EventState(

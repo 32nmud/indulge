@@ -1,0 +1,8 @@
+{
+  "id": "d396d80d-945f-4053-9f7f-0a356b396c22",
+  "name": "Pup gear",
+  "displayCharacter": "🐶",
+  "canHaveMultipleParticipants": true,
+  "isRisky": false,
+  "requiresPartner": false
+}

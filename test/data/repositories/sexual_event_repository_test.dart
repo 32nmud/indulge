@@ -149,14 +149,16 @@ void main() {
           id: 'giving',
           name: 'Giving',
           displayCharacter: '👅',
-          isRisky: false,
+          stiRisk: false,
+          healthRisk: false,
           requiresPartner: true,
         );
 
         expect(activity.id, equals('giving'));
         expect(activity.name, equals('Giving'));
         expect(activity.displayCharacter, equals('👅'));
-        expect(activity.isRisky, isFalse);
+        expect(activity.stiRisk, isFalse);
+        expect(activity.healthRisk, isFalse);
         expect(activity.requiresPartner, isTrue);
       });
 

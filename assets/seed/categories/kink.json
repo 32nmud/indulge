@@ -1,0 +1,115 @@
+{
+  "id": "kink",
+  "lastUpdateDate": null,
+  "name": "Kink",
+  "displayCharacter": "🪢",
+  "minParticipants": -1,
+  "maxParticipants": -1,
+  "activities": [
+    {
+      "reference": "6",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "7",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "8",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "9",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "10",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "11",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "12",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "13",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "15",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "16",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "17",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "19",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "20",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "21",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "22",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "23",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "24",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "25",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "26",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "27",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "31",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "32",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "33",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "34",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "35",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "94d1819e-5141-4afe-8050-0166085e9a37",
+      "resourceType": "SexualActivity"
+    }
+  ],
+  "requiresPartner": false
+}

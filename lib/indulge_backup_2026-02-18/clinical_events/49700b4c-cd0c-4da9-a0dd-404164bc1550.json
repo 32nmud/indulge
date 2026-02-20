@@ -1,0 +1,39 @@
+{
+  "id": "49700b4c-cd0c-4da9-a0dd-404164bc1550",
+  "date": "2026-01-23T00:00:00.000",
+  "lastModifiedDate": null,
+  "tests": [
+    {
+      "testType": "trichomonas",
+      "result": "negative",
+      "specimenSite": "throat"
+    },
+    {
+      "testType": "gonorrhea",
+      "result": "negative",
+      "specimenSite": "throat"
+    },
+    {
+      "testType": "trichomonas",
+      "result": "negative",
+      "specimenSite": "rectal"
+    },
+    {
+      "testType": "gonorrhea",
+      "result": "negative",
+      "specimenSite": "rectal"
+    },
+    {
+      "testType": "hiv",
+      "result": "negative",
+      "specimenSite": "blood"
+    },
+    {
+      "testType": "syphilis",
+      "result": "negative",
+      "specimenSite": "blood"
+    }
+  ],
+  "facility": "Damien Center",
+  "notes": null
+}

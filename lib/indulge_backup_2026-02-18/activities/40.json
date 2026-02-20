@@ -1,0 +1,8 @@
+{
+  "id": "40",
+  "name": "Molly/MDMA",
+  "displayCharacter": "💊",
+  "canHaveMultipleParticipants": true,
+  "isRisky": true,
+  "requiresPartner": false
+}

@@ -235,7 +235,8 @@ void main() {
             'safe-activity': const SexualActivity(
               id: 'safe-activity',
               name: 'Safe Activity',
-              isRisky: false,
+              stiRisk: false,
+              healthRisk: false,
             ),
           },
         );
@@ -264,12 +265,14 @@ void main() {
             'risky-activity': const SexualActivity(
               id: 'risky-activity',
               name: 'Risky Activity',
-              isRisky: true,
+              stiRisk: false,
+              healthRisk: false,
             ),
             'safe-activity': const SexualActivity(
               id: 'safe-activity',
               name: 'Safe Activity',
-              isRisky: false,
+              stiRisk: false,
+              healthRisk: false,
             ),
           },
         );
@@ -302,17 +305,20 @@ void main() {
             'risky-activity': const SexualActivity(
               id: 'risky-activity',
               name: 'Risky Activity',
-              isRisky: true,
+              stiRisk: false,
+              healthRisk: false,
             ),
             'safe-activity': const SexualActivity(
               id: 'safe-activity',
               name: 'Safe Activity',
-              isRisky: false,
+              stiRisk: false,
+              healthRisk: false,
             ),
             'another-safe': const SexualActivity(
               id: 'another-safe',
               name: 'Another Safe',
-              isRisky: false,
+              stiRisk: false,
+              healthRisk: false,
             ),
           },
         );

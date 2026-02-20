@@ -1,0 +1,9 @@
+{
+  "id": "ae10194e-91c0-4527-8002-6bd17a5be240",
+  "name": "Pain stick",
+  "displayCharacter": "💥",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

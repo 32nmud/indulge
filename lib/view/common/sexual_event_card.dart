@@ -379,7 +379,8 @@ class _SexualEventCardState extends State<SexualEventCard>
           final activity = eventState.sexualActivities?[entry.key];
           final activityEmoji = activity?.displayCharacter ?? '❔';
           final activityName = activity?.name ?? 'Unknown';
-          final isRisky = activity?.isRisky ?? false;
+          final isRisky =
+              (activity?.stiRisk ?? false) || (activity?.healthRisk ?? false);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),

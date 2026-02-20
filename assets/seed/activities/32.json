@@ -1,0 +1,9 @@
+{
+  "id": "32",
+  "name": "Foodplay",
+  "displayCharacter": "🍩",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

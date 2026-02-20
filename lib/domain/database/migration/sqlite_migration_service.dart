@@ -4,7 +4,7 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../data/models/versioned_model.dart';
-import 'v1_to_v2_migrators.dart';
+import 'migrators.dart';
 
 /// Progress callback typedef
 typedef ProgressCallback =
@@ -148,15 +148,20 @@ class SQLiteMigrationService {
     }
   }
 
-  /// Check if JSON document migration is needed (v1 -> v2).
-  /// This is separate from schema migration - JSON migration can be slow
-  /// for large databases, so callers may want to show a progress UI.
+  /// Check if JSON document migration is needed.
+  ///
+  /// We use a broader concept here:
+  /// - v1 -> v2 JSON migration (legacy)
+  /// - v2 -> v3 document-level model migration (some DBs may already have the new schema
+  ///   but still contain v2-shaped JSON without explicit version metadata)
+  ///
+  /// If either pass reports documents to be migrated, callers should run the migration flow.
   Future<bool> needsJsonMigration() async {
     try {
-      // First ensure metadata table exists
+      // Ensure metadata table exists
       await ensureMetadataTableExists();
 
-      // Check if we've already completed JSON migration
+      // If we've already completed the JSON migration marker, nothing to do.
       final jsonMigrationCompleted = await getMetadata(
         'json_migration_completed',
       );
@@ -165,11 +170,28 @@ class SQLiteMigrationService {
         return false;
       }
 
-      // Check if there are v1 documents that need migration
-      return await detectV1Documents();
+      // If there are v1 documents, we must run the v1->v2 migration.
+      final hasV1 = await detectV1Documents();
+      if (hasV1) {
+        _logger.info('Detected v1 documents -> JSON migration required');
+        return true;
+      }
+
+      // If there are v2 documents that still require model-level v2->v3 changes,
+      // we should also consider migration needed so we can run the v2->v3 document pass.
+      final hasV2 = await detectV2Documents();
+      if (hasV2) {
+        _logger.info(
+          'Detected v2-shaped documents needing v2->v3 model migration',
+        );
+        return true;
+      }
+
+      // No JSON-level migrations required
+      return false;
     } catch (e) {
       _logger.warning('Error checking JSON migration status: $e');
-      return true; // Be conservative
+      return true; // Be conservative on error
     }
   }
 
@@ -199,25 +221,36 @@ class SQLiteMigrationService {
             final doc = jsonDecode(jsonString) as Map<String, dynamic>;
             final version = ModelVersionMigration.getVersion(doc);
 
-            // If version field exists and is current, no migration needed
-            if (version == ModelVersionMigration.currentVersion) {
-              continue;
+            // Refined detection:
+            // - If the JSON explicitly declares a 'version' and it's v1, it requires v1->v2 migration.
+            // - If no 'version' is declared, use structural heuristics: if it already has v2-specific
+            //   structure, treat as migrated; otherwise treat as v1 and require migration.
+            if (doc.containsKey('version')) {
+              if (version == 1) {
+                _logger.info(
+                  'Detected explicit v1 document in $table -> needs migration',
+                );
+                return true;
+              } else {
+                // Explicit version present and not v1 (e.g., v2) — do not treat as v1.
+                continue;
+              }
+            } else {
+              // No explicit version present.
+              if (_hasV2Format(table, doc)) {
+                _logger.fine(
+                  'Document in $table appears to be v2-shaped (no version field); treating as migrated',
+                );
+                continue;
+              } else {
+                _logger.info(
+                  'Detected v1-shaped document in $table (no version field and not v2-shaped) -> needs migration',
+                );
+                return true;
+              }
             }
 
-            // No version field (defaults to 1) - check if data is actually v2 format
-            // by looking for v2-specific fields
-            if (!_hasV2Format(table, doc)) {
-              _logger.info(
-                'Detected v$version (or no version) document in $table with v1 format -> needs migration',
-              );
-              return true;
-            }
-
-            // Has v2 format but no version field - this is the corrupted backup case
-            // Treat as already migrated (v2 format present)
-            _logger.info(
-              'Document in $table has v2 format but no version field - treating as already migrated',
-            );
+            // Otherwise continue scanning
           } catch (_) {
             // Ignore parse errors
           }
@@ -226,6 +259,105 @@ class SQLiteMigrationService {
     } catch (e) {
       _logger.warning('Error while detecting v1 documents: $e');
       return true;
+    }
+    return false;
+  }
+
+  /// Detect whether any table contains v2 JSON documents that should be
+  /// migrated at the document (model) level from v2 -> v3.
+  ///
+  /// Some DBs have already upgraded schema but still contain v2-shaped JSON
+  /// (sometimes without an explicit 'version' key). This scanner is conservative:
+  /// - It returns true if it finds an explicit version==2 document.
+  /// - It also returns true if it finds a document lacking 'version' but
+  ///   structurally matching v2 shape for the given table (heuristic).
+  /// - Additionally, detect common v2-only fields such as `isRisky` on
+  ///   SexualActivity or embedded activities within SexualEvent that contain
+  ///   `isRisky`. These are strong signals that a v2->v3 model migration is required.
+  Future<bool> detectV2Documents() async {
+    try {
+      for (final table in tables) {
+        // If the table doesn't exist, skip it.
+        final exists = await database.query(
+          'sqlite_master',
+          where: 'type = ? AND name = ?',
+          whereArgs: ['table', table],
+        );
+        if (exists.isEmpty) continue;
+
+        // Read a small sample of rows to detect v2 JSON.
+        final rows = await database.query(table, limit: 20);
+
+        for (final row in rows) {
+          final jsonString = row['json'] as String?;
+          if (jsonString == null) continue;
+          try {
+            final doc = jsonDecode(jsonString) as Map<String, dynamic>;
+            final version = ModelVersionMigration.getVersion(doc);
+
+            // If explicit version==2, we should migrate it.
+            if (doc.containsKey('version') && version == 2) {
+              _logger.fine(
+                'Detected explicit v2 document in $table id=${row['id']}',
+              );
+              return true;
+            }
+
+            // Heuristic checks for v2-shaped payloads:
+            // 1) Structural v2 shape via existing helper.
+            if (!doc.containsKey('version') && _hasV2Format(table, doc)) {
+              _logger.fine(
+                'Detected v2-shaped document without version in $table id=${row['id']}',
+              );
+              return true;
+            }
+
+            // 2) Look for legacy v2-only fields that clearly indicate the older model.
+            // For SexualActivity (table 'sexual_activity_type_property') presence
+            // of `isRisky` signals v2 that must be converted to stiRisk/healthRisk.
+            if (table == 'sexual_activity_type_property') {
+              if (doc.containsKey('isRisky')) {
+                _logger.fine(
+                  'Detected legacy isRisky field in sexual activity doc id=${row['id']} -> needs v2->v3',
+                );
+                return true;
+              }
+            }
+
+            // 3) For sexual_event rows, activities may be embedded and contain
+            //    activity-level `isRisky` flags; scan activities list for that.
+            if (table == 'sexual_event') {
+              final activities = doc['activities'];
+              if (activities is List) {
+                for (final act in activities) {
+                  if (act is Map<String, dynamic>) {
+                    if (act.containsKey('isRisky')) {
+                      _logger.fine(
+                        'Detected embedded isRisky in sexual_event id=${row['id']} -> needs v2->v3',
+                      );
+                      return true;
+                    }
+                    // Also detect nested SexualActivity shapes lacking version but
+                    // containing isRisky (older exports).
+                    if (!act.containsKey('version') &&
+                        act.containsKey('isRisky')) {
+                      _logger.fine(
+                        'Detected embedded v2-shaped activity (isRisky) in sexual_event id=${row['id']} -> needs v2->v3',
+                      );
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (_) {
+            // ignore parse errors for scanning
+          }
+        }
+      }
+    } catch (e) {
+      _logger.warning('Error while detecting v2 documents: $e');
+      return true; // Be conservative
     }
     return false;
   }
@@ -440,6 +572,14 @@ class SQLiteMigrationService {
       await _writeLog('Backup created at: $backupPath');
 
       // Helper: detect whether any table contains v1 JSON documents.
+      // Refined to avoid misclassifying v2-shaped documents that simply lack
+      // an explicit 'version' field (older exports/backups). Behavior:
+      // - If the JSON explicitly declares a 'version' and it is < current, we
+      //   treat it as needing migration.
+      // - If the JSON lacks a 'version' field, we use structural heuristics
+      //   via `_hasV2Format(table, doc)` to determine whether it looks like v2.
+      //   If it looks like v2 we treat it as already migrated; otherwise we
+      //   treat it as v1 and require migration.
       Future<bool> _detectV1Documents() async {
         try {
           for (final table in tables) {
@@ -460,13 +600,35 @@ class SQLiteMigrationService {
               if (jsonString == null) continue;
               try {
                 final doc = jsonDecode(jsonString) as Map<String, dynamic>;
-                final version = ModelVersionMigration.getVersion(doc);
-                if (version < ModelVersionMigration.currentVersion) {
+
+                // If an explicit version is present, use it.
+                if (doc.containsKey('version')) {
+                  final version = ModelVersionMigration.getVersion(doc);
+                  if (version < ModelVersionMigration.currentVersion) {
+                    _logger.info(
+                      'Detected explicit v$version document in $table -> needs migration',
+                    );
+                    return true;
+                  } else {
+                    // Explicit version and up-to-date — continue scanning.
+                    continue;
+                  }
+                }
+
+                // No explicit version: use structural heuristics.
+                // If it does not match the v2 shape we expect, consider it v1.
+                if (!_hasV2Format(table, doc)) {
                   _logger.info(
-                    'Detected v$version document in $table -> needs migration',
+                    'Detected v1-shaped document in $table (no version field) -> needs migration',
                   );
                   return true;
                 }
+
+                // Looks v2-shaped and has no version metadata; treat as migrated.
+                _logger.fine(
+                  'Document in $table lacks version but matches v2 shape - treating as v2',
+                );
+                continue;
               } catch (_) {
                 // Ignore parse errors for detection; they'll be surfaced in real migration.
               }
@@ -513,7 +675,8 @@ class SQLiteMigrationService {
 
       // Step 1/2: Detect & perform v1 -> v2 JSON migrations if needed.
       // Note: v1 documents can exist in v2 schema, so we always check for v1 docs.
-      final hasV1Docs = await _detectV1Documents();
+      // Use the centralized detection helper (refined heuristics).
+      final hasV1Docs = await detectV1Documents();
       if (hasV1Docs) {
         _logger.info('v1 documents detected - performing v1->v2 migration');
         await _writeLog('Performing v1->v2 migrations');
@@ -527,6 +690,150 @@ class SQLiteMigrationService {
       } else {
         _logger.info('No v1 documents detected - skipping v1->v2 migration');
         await _writeLog('No v1->v2 migrations required');
+      }
+
+      // New: Perform a document-level v2->v3 migration pass across JSON-bearing tables.
+      // Some databases may already be schema-upgraded to v3 but still contain v2-shaped
+      // JSON documents that require model-level transformations. Run a conservative
+      // pass that only touches documents whose version==2 (or explicit v2), leaving
+      // others untouched.
+      Future<int> _performV2toV3DocumentMigration() async {
+        var migratedCount = 0;
+        try {
+          for (final table in tables) {
+            // Defensive: ensure the table exists before attempting to query it.
+            final master = await database.query(
+              'sqlite_master',
+              where: 'type = ? AND name = ?',
+              whereArgs: ['table', table],
+            );
+
+            if (master.isEmpty) {
+              // Table missing; nothing to do
+              continue;
+            }
+
+            // Read all rows from the table
+            final rows = await database.query(table);
+            for (final row in rows) {
+              final id = row['id'] as String?;
+              final jsonString = row['json'] as String?;
+              if (jsonString == null) continue;
+
+              try {
+                final doc = jsonDecode(jsonString) as Map<String, dynamic>;
+                var version = ModelVersionMigration.getVersion(doc);
+
+                // Determine whether this document should be considered v2 for the
+                // purposes of the v2->v3 migrator.
+                //
+                // - If the document explicitly declares a version and it equals 2,
+                //   treat it as v2.
+                // - If the document has no explicit 'version' but structurally looks
+                //   like v2 (heuristic), treat it as v2 as well (we'll set an
+                //   explicit version so the migrator takes the v2->v3 path).
+                // - Otherwise skip.
+                var shouldTreatAsV2 = false;
+                if (doc.containsKey('version')) {
+                  if (version == 2) {
+                    shouldTreatAsV2 = true;
+                  } else {
+                    // Explicit version present and not v2 -> skip.
+                    shouldTreatAsV2 = false;
+                  }
+                } else {
+                  // No explicit version field: if the document matches v2 shape,
+                  // treat it as v2 for migration.
+                  if (_hasV2Format(table, doc)) {
+                    shouldTreatAsV2 = true;
+                    // Insert a temporary explicit version so _migrateJsonDocument
+                    // will follow the v2->v3 path (it reads ModelVersionMigration.getVersion).
+                    doc['version'] = 2;
+                    version = 2;
+                    await _writeLog(
+                      'Document in $table lacked explicit version but matched v2 shape; treating as v2 id=${row['id']}',
+                    );
+                  } else {
+                    shouldTreatAsV2 = false;
+                  }
+                }
+
+                if (shouldTreatAsV2) {
+                  // Attempt to migrate this document using existing migrator logic.
+                  // _migrateJsonDocument expects the JSON to indicate its version
+                  // (we set it above for no-version v2-shaped docs).
+                  final migratedJson = await _migrateJsonDocument(doc, table);
+
+                  // Persist migrated JSON only if we got a result
+                  if (migratedJson != null) {
+                    try {
+                      // Only persist when the migration actually changed the JSON.
+                      // Compare canonical JSON strings: if they differ, persist.
+                      final migratedStr = const JsonEncoder.withIndent(
+                        '',
+                      ).convert(migratedJson);
+                      // Use the original DB JSON string for comparison (preserves original formatting)
+                      final originalStr = jsonString!.trim();
+                      if (migratedStr != originalStr) {
+                        await database.update(
+                          table,
+                          {
+                            'json': jsonEncode(migratedJson),
+                            'last_modified': DateTime.now().toIso8601String(),
+                          },
+                          where: 'id = ?',
+                          whereArgs: [id],
+                        );
+                        migratedCount++;
+                        await _writeLog(
+                          'Migrated v2->v3 document in $table id=$id',
+                        );
+                      } else {
+                        // No effective change; skip persisting to avoid touching unrelated fields.
+                        await _writeLog(
+                          'No changes for v2->v3 migration in $table id=$id; skipped persist',
+                        );
+                      }
+                    } catch (e) {
+                      _logger.warning(
+                        'Failed to persist migrated doc in $table id=$id: $e',
+                      );
+                      await _writeLog(
+                        'ERROR persisting migrated doc in $table id=$id: $e',
+                      );
+                    }
+                  }
+                }
+              } catch (e) {
+                // Log and continue on per-row failures to avoid aborting the whole pass
+                _logger.warning(
+                  'Failed to migrate v2 doc in $table id=${row['id']}: $e',
+                );
+                await _writeLog(
+                  'ERROR migrating v2 doc in $table id=${row['id']}: $e',
+                );
+              }
+            }
+          }
+        } catch (e) {
+          _logger.warning('Error during v2->v3 document migration: $e');
+          await _writeLog('ERROR during v2->v3 document migration: $e');
+        }
+        return migratedCount;
+      }
+
+      // Run the v2->v3 document migration pass (idempotent if already migrated)
+      final v2MigratedCount = await _performV2toV3DocumentMigration();
+      if (v2MigratedCount > 0) {
+        _logger.info(
+          'Performed document-level v2->v3 migration: $v2MigratedCount documents migrated',
+        );
+        await _writeLog(
+          'Performed document-level v2->v3 migration: $v2MigratedCount documents migrated',
+        );
+      } else {
+        _logger.info('No v2 documents required v2->v3 model migration');
+        await _writeLog('No v2 documents required v2->v3 model migration');
       }
 
       // Step 3/4: After JSON migration, ensure schema upgrades (v2 -> v3) occur.
@@ -836,38 +1143,75 @@ class SQLiteMigrationService {
     Map<String, dynamic> json,
     String tableName,
   ) async {
-    // Get resource type from JSON or infer from table name
+    // Determine resource type and document version
     final resourceType =
         json['resourceType'] as String? ?? _inferResourceType(tableName);
+    final version = ModelVersionMigration.getVersion(json);
 
-    // Get the appropriate migrator
-    final migrator = MigratorRegistry.getMigrator(resourceType, 1, 2);
+    // Handle legacy v1 -> v2 migration (existing flow)
+    if (version == 1) {
+      // Get the appropriate migrator for v1->v2
+      final migrator = MigratorRegistry.getMigrator(resourceType, 1, 2);
 
-    if (migrator == null) {
-      throw MigrationException(
-        'No migrator found for resource type: $resourceType',
-        tableName: tableName,
+      if (migrator == null) {
+        throw MigrationException(
+          'No migrator found for resource type: $resourceType',
+          tableName: tableName,
+        );
+      }
+
+      // For JSON-based migration, we need to work with the JSON directly
+      // The migrators expect model objects, so we:
+      // 1. Deserialize v1 JSON to v1 model
+      // 2. Migrate v1 model to v2 model
+      // 3. Serialize v2 model back to JSON
+
+      final v1Model = migrator.deserializeV1(json);
+      final v2Model = migrator.migrate(v1Model);
+      final v2Json = migrator.serializeV2(v2Model);
+
+      // Ensure migrated JSON includes the version metadata (now bumped);
+      // this will mark it as migrated to the current version.
+      final v2JsonWithVersion = ModelVersionMigration.addVersion(
+        v2Json,
+        ModelVersionMigration.currentVersion,
       );
+
+      return v2JsonWithVersion;
     }
 
-    // For JSON-based migration, we need to work with the JSON directly
-    // The migrators expect model objects, so we:
-    // 1. Deserialize v1 JSON to v1 model
-    // 2. Migrate v1 model to v2 model
-    // 3. Serialize v2 model back to JSON
+    // Handle v2 -> v3 migrations (only for resource types that have v2->v3 migrators)
+    if (version == 2) {
+      // Attempt to find a migrator for v2->v3 for this resource type
+      final migrator = MigratorRegistry.getMigrator(resourceType, 2, 3);
 
-    final v1Model = migrator.deserializeV1(json);
-    final v2Model = migrator.migrate(v1Model);
-    final v2Json = migrator.serializeV2(v2Model);
+      if (migrator == null) {
+        throw MigrationException(
+          'No v2->v3 migrator found for resource type: $resourceType',
+          tableName: tableName,
+        );
+      }
 
-    // Ensure migrated JSON includes the version metadata so subsequent checks
-    // recognize this as a v2 document.
-    final v2JsonWithVersion = ModelVersionMigration.addVersion(
-      v2Json,
-      ModelVersionMigration.currentVersion,
+      // Here the migrator's deserializeV1 will be used to turn the v2 JSON into
+      // the expected v2 model instance (despite the method name).
+      final v2Model = migrator.deserializeV1(json);
+      final v3Model = migrator.migrate(v2Model);
+      final v3Json = migrator.serializeV2(v3Model);
+
+      // Add the current version metadata so subsequent checks recognize this as current
+      final v3JsonWithVersion = ModelVersionMigration.addVersion(
+        v3Json,
+        ModelVersionMigration.currentVersion,
+      );
+
+      return v3JsonWithVersion;
+    }
+
+    // If document version is already current, or is unsupported, raise an error.
+    throw MigrationException(
+      'Unsupported migration path for $resourceType from v$version',
+      tableName: tableName,
     );
-
-    return v2JsonWithVersion;
   }
 
   /// Infer resource type from table name
@@ -899,26 +1243,88 @@ class SQLiteMigrationService {
   /// - Drops the standalone `location` table
   Future<void> _migrateV2toV3({ProgressCallback? onProgress}) async {
     try {
-      // Check if the location table exists; if not, nothing to do.
+      // Check if the location table exists. If it doesn't exist we cannot
+      // perform embedding from the location table, but we still need to run
+      // the v2->v3 pass in some cases (e.g., to ensure indexes). To avoid
+      // skipping needed work, scan `sexual_event` to see whether any events
+      // contain Location *references* (which indicate embedding is required).
+      // If there are no reference-shaped locations and no location table, we
+      // can safely skip the embedding work; otherwise, continue the migration
+      // run but leave embedding attempts no-op (they will log missing refs).
       final tables = await database.query(
         'sqlite_master',
         where: 'type = ? AND name = ?',
         whereArgs: ['table', 'location'],
       );
-      if (tables.isEmpty) {
-        _logger.info('No location table found; skipping v2->v3 migration');
-        await _writeLog('No location table found; skipping v2->v3 migration');
-        return;
+      final locationTableExists = tables.isNotEmpty;
+      if (!locationTableExists) {
+        try {
+          // Look for any sexual_event rows that contain a Location reference.
+          final eventRows = await database.query(
+            'sexual_event',
+            columns: ['id', 'json'],
+            limit: 100,
+          );
+          var hasRefLocations = false;
+          for (final row in eventRows) {
+            final jsonStr = row['json'] as String?;
+            if (jsonStr == null) continue;
+            try {
+              final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
+              final locField = jsonMap['location'];
+              if (locField is Map &&
+                  locField['resourceType'] == 'Location' &&
+                  locField['reference'] != null) {
+                hasRefLocations = true;
+                break;
+              }
+            } catch (_) {
+              // ignore parse errors while scanning
+            }
+          }
+
+          if (!hasRefLocations) {
+            _logger.info(
+              'No location table and no reference-shaped locations in sexual_event; skipping v2->v3 migration',
+            );
+            await _writeLog(
+              'No location table and no reference-shaped locations in sexual_event; skipping v2->v3 migration',
+            );
+            return;
+          } else {
+            _logger.warning(
+              'Location table missing but sexual_event contains Location references; proceeding with v2->v3 migration to run other upgrade steps. Embedding cannot be completed without location table.',
+            );
+            await _writeLog(
+              'Location table missing but sexual_event contains Location references; proceeding with v2->v3 migration to run other upgrade steps. Embedding cannot be completed without location table.',
+            );
+            // Continue: locationsById will be empty and embedding attempts will log not-found.
+          }
+        } catch (e) {
+          _logger.warning(
+            'Error scanning sexual_event for location references: $e. Proceeding with migration to be safe.',
+          );
+          await _writeLog(
+            'Error scanning sexual_event for location references: $e. Proceeding with migration to be safe.',
+          );
+          // Continue migration as a conservative measure.
+        }
       }
 
-      // Load locations into a map for quick lookup
-      final locRows = await database.query('location');
+      // Load locations into a map for quick lookup (only if the table exists).
+      // If the table is missing (we scanned earlier), leave locationsById empty so
+      // embedding attempts will record missing references rather than removing data.
       final Map<String, Map<String, dynamic>> locationsById = {};
-      for (final row in locRows) {
-        final id = row['id'] as String;
-        final locJson =
-            jsonDecode(row['json'] as String) as Map<String, dynamic>;
-        locationsById[id] = locJson;
+      if (locationTableExists) {
+        final locRows = await database.query('location');
+        for (final row in locRows) {
+          final id = row['id'] as String;
+          final locJson =
+              jsonDecode(row['json'] as String) as Map<String, dynamic>;
+          locationsById[id] = locJson;
+        }
+      } else {
+        // No location table present; locationsById intentionally left empty.
       }
 
       // Iterate over sexual_event rows and embed location JSON where a Reference exists

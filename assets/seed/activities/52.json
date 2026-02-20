@@ -1,0 +1,9 @@
+{
+  "id": "52",
+  "name": "I rimmed",
+  "displayCharacter": "🍩",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": true
+}

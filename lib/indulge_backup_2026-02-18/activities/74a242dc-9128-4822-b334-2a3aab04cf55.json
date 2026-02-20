@@ -1,0 +1,8 @@
+{
+  "id": "74a242dc-9128-4822-b334-2a3aab04cf55",
+  "name": "Cane",
+  "displayCharacter": "🩼",
+  "canHaveMultipleParticipants": true,
+  "isRisky": false,
+  "requiresPartner": false
+}

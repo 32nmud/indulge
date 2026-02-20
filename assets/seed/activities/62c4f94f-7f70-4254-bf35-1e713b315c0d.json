@@ -1,0 +1,9 @@
+{
+  "id": "62c4f94f-7f70-4254-bf35-1e713b315c0d",
+  "name": "Flogger",
+  "displayCharacter": "💥",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

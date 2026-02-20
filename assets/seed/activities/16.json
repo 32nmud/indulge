@@ -1,0 +1,9 @@
+{
+  "id": "16",
+  "name": "Escort/John",
+  "displayCharacter": "💰",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": true
+}

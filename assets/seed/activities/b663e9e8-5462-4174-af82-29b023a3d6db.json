@@ -1,0 +1,9 @@
+{
+  "id": "b663e9e8-5462-4174-af82-29b023a3d6db",
+  "name": "St. Andrew's cross",
+  "displayCharacter": "✝️",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

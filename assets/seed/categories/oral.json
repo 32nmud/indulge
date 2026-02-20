@@ -1,0 +1,39 @@
+{
+  "id": "oral",
+  "lastUpdateDate": null,
+  "name": "Oral",
+  "displayCharacter": "👄",
+  "minParticipants": -1,
+  "maxParticipants": -1,
+  "activities": [
+    {
+      "reference": "47",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "48",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "49",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "50",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "51",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "52",
+      "resourceType": "SexualActivityTypeProperty"
+    },
+    {
+      "reference": "53",
+      "resourceType": "SexualActivityTypeProperty"
+    }
+  ],
+  "requiresPartner": true
+}

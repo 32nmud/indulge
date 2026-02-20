@@ -1,0 +1,8 @@
+{
+  "id": "9fde733e-a2c6-4373-b74d-ed4835b05f6b",
+  "name": "Magic wand",
+  "displayCharacter": "🪄",
+  "canHaveMultipleParticipants": true,
+  "isRisky": false,
+  "requiresPartner": false
+}

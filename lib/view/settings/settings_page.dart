@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/provider/theme_provider.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
+import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
 import 'package:indulge/services/preferences_service.dart';
 
@@ -266,8 +268,17 @@ class SettingsPage extends StatelessWidget {
 
       // Refresh the provider data
       if (context.mounted) {
-        streamController.add('Refreshing app data...');
-        await context.read<SexualEventsProvider>().refreshAllData();
+        streamController.add(
+          'Refreshing app data...',
+        ); // Mark global event-state as dirty so any consumers watching the store
+        // will re-evaluate and refresh as needed.
+        try {
+          context.read<SexualEventsProvider>().refreshAllData();
+          context.read<ClinicalEventsProvider>().refreshAllData();
+          context.read<EventStateStore>().markDataDirty();
+        } catch (_) {
+          // Ignore if any provider fails to refresh data
+        }
       }
 
       streamController.add('Import complete!');

@@ -1,0 +1,9 @@
+{
+  "id": "8922ea9b-05d2-4a87-bbcc-2a00ec52d181",
+  "name": "Sports gear",
+  "displayCharacter": "🏈",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

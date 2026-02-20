@@ -342,7 +342,7 @@ class ActivityCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (sexualActivity.isRisky)
+                if (sexualActivity.stiRisk || sexualActivity.healthRisk)
                   Tooltip(
                     message: 'Risky activity',
                     child: Icon(

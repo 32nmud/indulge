@@ -1,0 +1,9 @@
+{
+  "id": "85b39b9a-5e6a-4e26-bca9-e4ac6f9c03e4",
+  "name": "Bondage",
+  "displayCharacter": "🔗",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

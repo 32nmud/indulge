@@ -1,0 +1,69 @@
+{
+  "id": "0e8a1d1b-944c-4297-8b92-b753c91ad4cf",
+  "date": "2026-02-17T00:00:00.000",
+  "lastModifiedDate": null,
+  "activities": [
+    {
+      "category": {
+        "reference": "bottoming",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "1",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            },
+            {
+              "activityReference": {
+                "reference": "3",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": {
+        "reference": "oral",
+        "resourceType": "SexualActivityCategory"
+      },
+      "participants": [
+        {
+          "participant": {
+            "reference": "8ee70f56-5182-4c82-8889-acc6dcd8d7f4",
+            "resourceType": "Person"
+          },
+          "activityCounts": [
+            {
+              "activityReference": {
+                "reference": "47",
+                "resourceType": "SexualActivity"
+              },
+              "count": 1,
+              "version": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "location": {
+    "latitude": 39.7920528,
+    "longitude": -85.9562464,
+    "address": null
+  },
+  "notes": null
+}

@@ -1,0 +1,8 @@
+{
+  "id": "46",
+  "name": "Mushrooms",
+  "displayCharacter": "🍄",
+  "canHaveMultipleParticipants": true,
+  "isRisky": false,
+  "requiresPartner": false
+}

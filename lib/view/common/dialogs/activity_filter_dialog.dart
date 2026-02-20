@@ -118,7 +118,7 @@ class _ActivityFilterDialogState extends State<ActivityFilterDialog> {
                               ),
                               const SizedBox(width: 8),
                               Expanded(child: Text(activity.name)),
-                              if (activity.isRisky) ...[
+                              if (activity.stiRisk || activity.healthRisk) ...[
                                 const SizedBox(width: 4),
                                 const Icon(
                                   Icons.warning,

@@ -1,0 +1,9 @@
+{
+  "id": "47",
+  "name": "Kissing/Makeout",
+  "displayCharacter": "😘",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": true
+}

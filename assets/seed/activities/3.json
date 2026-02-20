@@ -1,0 +1,9 @@
+{
+  "id": "3",
+  "name": "Came inside",
+  "displayCharacter": "💦",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": true
+}

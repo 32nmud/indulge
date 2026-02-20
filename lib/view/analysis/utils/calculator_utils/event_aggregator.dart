@@ -361,7 +361,7 @@ class EventAggregator {
               sexualActivities[sexualActivityId] = sexualActivity;
 
               // Check if this sexual activity is risky
-              if (sexualActivity.isRisky) {
+              if (sexualActivity.stiRisk || sexualActivity.healthRisk) {
                 _logger.fine(
                   'Found risky sexual activity: ${sexualActivity.name} (${sexualActivity.id})',
                 );

@@ -1,0 +1,9 @@
+{
+  "id": "4",
+  "name": "Broken condom",
+  "displayCharacter": "💔",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": true
+}

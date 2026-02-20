@@ -1,0 +1,9 @@
+{
+  "id": "30",
+  "name": "Toys",
+  "displayCharacter": "🥒",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": false
+}

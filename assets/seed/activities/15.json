@@ -1,0 +1,9 @@
+{
+  "id": "15",
+  "name": "Exhibition/Voyer",
+  "displayCharacter": "👀",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": false,
+  "healthRisk": false,
+  "requiresPartner": true
+}

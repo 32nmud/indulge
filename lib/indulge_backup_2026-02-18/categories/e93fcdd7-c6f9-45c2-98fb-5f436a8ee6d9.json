@@ -1,0 +1,43 @@
+{
+  "id": "e93fcdd7-c6f9-45c2-98fb-5f436a8ee6d9",
+  "lastUpdateDate": null,
+  "name": "Toys",
+  "displayCharacter": "🥒",
+  "minParticipants": -1,
+  "maxParticipants": -1,
+  "activities": [
+    {
+      "reference": "5112ded0-e16c-4286-bc91-1558c9c00a34",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "3c242e19-a6b5-4d6a-97bf-f13ae1627c8d",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "82e654bb-bb54-47db-aa58-05f3be013e05",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "4c5fb140-2aba-4e2c-81e0-58f174526b88",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "3d23747c-c739-40dd-a453-d8cd3676bb6f",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "9fde733e-a2c6-4373-b74d-ed4835b05f6b",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "82e4f41e-f9fc-4233-85f4-8adbdc127d6d",
+      "resourceType": "SexualActivity"
+    },
+    {
+      "reference": "6ad23e06-9dc8-4d15-87d5-860c128d03fc",
+      "resourceType": "SexualActivity"
+    }
+  ],
+  "requiresPartner": false
+}

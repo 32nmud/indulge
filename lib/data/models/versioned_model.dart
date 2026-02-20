@@ -15,7 +15,7 @@ abstract class VersionedModel {
 /// Utility class for handling model version migrations
 class ModelVersionMigration {
   /// The current/latest version of all models
-  static const int currentVersion = 2;
+  static const int currentVersion = 3;
 
   /// Determines the version of a model from its JSON data
   /// Returns 1 if no version field is present (legacy data)

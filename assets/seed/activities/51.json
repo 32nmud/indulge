@@ -1,0 +1,9 @@
+{
+  "id": "51",
+  "name": "I swallowed",
+  "displayCharacter": "💦",
+  "canHaveMultipleParticipants": true,
+  "stiRisk": true,
+  "healthRisk": true,
+  "requiresPartner": true
+}

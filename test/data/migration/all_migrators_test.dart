@@ -16,7 +16,7 @@ import 'package:indulge/data/models/v1/property_count/property_count.dart'
 import 'package:indulge/data/models/v2/sexual_activity_category/sexual_activity_category.dart';
 import 'package:indulge/data/models/v2/sexual_activity/sexual_activity.dart';
 import 'package:indulge/data/models/v2/sexual_event/sexual_event.dart';
-import 'package:indulge/domain/database/migration/v1_to_v2_migrators.dart';
+import 'package:indulge/domain/database/migration/migrators.dart';
 
 void main() {
   group('PersonMigrator', () {
