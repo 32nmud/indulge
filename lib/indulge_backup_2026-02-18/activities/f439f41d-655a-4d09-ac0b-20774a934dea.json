@@ -1,8 +1,0 @@
-{
-  "id": "f439f41d-655a-4d09-ac0b-20774a934dea",
-  "name": "Medical",
-  "displayCharacter": "⚕️",
-  "canHaveMultipleParticipants": true,
-  "isRisky": false,
-  "requiresPartner": false
-}

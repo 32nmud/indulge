@@ -1,8 +1,0 @@
-{
-  "id": "2",
-  "name": "Condom",
-  "displayCharacter": "🛡️",
-  "canHaveMultipleParticipants": true,
-  "isRisky": false,
-  "requiresPartner": false
-}

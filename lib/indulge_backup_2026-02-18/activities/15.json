@@ -1,8 +1,0 @@
-{
-  "id": "15",
-  "name": "Exhibition/Voyer",
-  "displayCharacter": "👀",
-  "canHaveMultipleParticipants": true,
-  "isRisky": false,
-  "requiresPartner": true
-}

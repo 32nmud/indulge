@@ -68,7 +68,7 @@ class LocationMap extends StatelessWidget {
                   fm.TileLayer(
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'indlu/0.1.2-beta',
+                    userAgentPackageName: 'indlu/0.2.0-beta',
                   ),
                   fm.RichAttributionWidget(
                     attributions: [

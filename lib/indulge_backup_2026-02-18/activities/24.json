@@ -1,8 +1,0 @@
-{
-  "id": "24",
-  "name": "Public Play",
-  "displayCharacter": "🌳",
-  "canHaveMultipleParticipants": true,
-  "isRisky": true,
-  "requiresPartner": false
-}

@@ -1,8 +1,0 @@
-{
-  "id": "9",
-  "name": "Breath control",
-  "displayCharacter": "💨",
-  "canHaveMultipleParticipants": true,
-  "isRisky": true,
-  "requiresPartner": false
-}
