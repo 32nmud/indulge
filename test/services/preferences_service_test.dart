@@ -28,9 +28,7 @@ void main() {
       });
 
       test('loads saved period preset', () async {
-        SharedPreferences.setMockInitialValues({
-          'pref_period_preset': 0,
-        });
+        SharedPreferences.setMockInitialValues({'pref_period_preset': 0});
         final service = await PreferencesService.build();
 
         expect(
@@ -193,6 +191,47 @@ void main() {
       });
     });
 
+    group('calendar view mode', () {
+      test('getCalendarViewMode returns false by default', () {
+        expect(preferencesService.getCalendarViewMode(), isFalse);
+      });
+
+      test('setCalendarViewMode true updates value and notifies', () async {
+        var notified = false;
+        preferencesService.calendarViewModeNotifier.addListener(
+          () => notified = true,
+        );
+
+        await preferencesService.setCalendarViewMode(true);
+
+        expect(preferencesService.getCalendarViewMode(), isTrue);
+        expect(notified, isTrue);
+      });
+
+      test('setCalendarViewMode false updates value and notifies', () async {
+        // First set to true
+        await preferencesService.setCalendarViewMode(true);
+        var notified = false;
+        preferencesService.calendarViewModeNotifier.addListener(
+          () => notified = true,
+        );
+
+        await preferencesService.setCalendarViewMode(false);
+
+        expect(preferencesService.getCalendarViewMode(), isFalse);
+        expect(notified, isTrue);
+      });
+
+      test('loads saved calendar view mode', () async {
+        SharedPreferences.setMockInitialValues({
+          'pref_calendar_view_mode': true,
+        });
+        final service = await PreferencesService.build();
+
+        expect(service.getCalendarViewMode(), isTrue);
+      });
+    });
+
     group('category selected IDs', () {
       test('getCategorySelectedIds returns empty list by default', () {
         expect(preferencesService.getCategorySelectedIds(), isEmpty);
@@ -281,6 +320,7 @@ void main() {
         );
         await preferencesService.setCustomFirst(DateTime(2024, 1, 1));
         await preferencesService.setAutoAddLocation(true);
+        await preferencesService.setCalendarViewMode(true);
 
         // Clear all
         await preferencesService.clearAll();
@@ -292,6 +332,7 @@ void main() {
         );
         expect(preferencesService.getCustomFirst(), isNull);
         expect(preferencesService.getAutoAddLocation(), isFalse);
+        expect(preferencesService.getCalendarViewMode(), isFalse);
       });
     });
 

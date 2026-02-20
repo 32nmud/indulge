@@ -45,8 +45,11 @@ class PreferencesService {
   // Auto-add location setting
   static const String _kAutoAddLocation = 'pref_auto_add_location';
 
+  // Calendar view mode: true => calendar view, false => timeline view
+  static const String _kCalendarViewMode = 'pref_calendar_view_mode';
+
   // Current preferences version. Increment when stored keys/shape change.
-  static const int _currentPreferencesVersion = 4;
+  static const int _currentPreferencesVersion = 5;
 
   // Default values
   static const PeriodPreset _defaultPreset = PeriodPreset.lastMonthVsThisMonth;
@@ -84,6 +87,9 @@ class PreferencesService {
   // Auto-add location setting
   final ValueNotifier<bool> autoAddLocationNotifier;
 
+  // Calendar view mode: true => calendar view, false => timeline view
+  final ValueNotifier<bool> calendarViewModeNotifier;
+
   PreferencesService._(
     this._prefs,
     this.periodPresetNotifier,
@@ -96,6 +102,7 @@ class PreferencesService {
     this.categoryShowPatternNotifier,
     this.activityShowPatternNotifier,
     this.autoAddLocationNotifier,
+    this.calendarViewModeNotifier,
     this.categorySelectedIdsNotifier,
     this.propertiesCategorySelectedIdsNotifier,
     this.partnerPropertiesCategorySelectedIdsNotifier,
@@ -178,6 +185,9 @@ class PreferencesService {
     // Load auto-add location setting (default to false)
     final autoAddLocation = prefs.getBool(_kAutoAddLocation) ?? false;
 
+    // Load calendar view mode (default to false => timeline view)
+    final calendarViewMode = prefs.getBool(_kCalendarViewMode) ?? false;
+
     // Load selected IDs (JSON-encoded lists). Use a safe parser that falls back
     // to an empty list on parse errors.
     List<String> _parseStringList(String? jsonStr) {
@@ -219,6 +229,7 @@ class PreferencesService {
       ValueNotifier<bool>(categoryPattern),
       ValueNotifier<bool>(activityPattern),
       ValueNotifier<bool>(autoAddLocation),
+      ValueNotifier<bool>(calendarViewMode),
       ValueNotifier<List<String>>(categorySelected),
       ValueNotifier<List<String>>(propertiesCategorySelected),
       ValueNotifier<List<String>>(partnerPropertiesCategorySelected),
@@ -399,6 +410,21 @@ class PreferencesService {
   }
 
   // -------------------------
+  // Calendar view mode API
+  // -------------------------
+
+  bool getCalendarViewMode() => calendarViewModeNotifier.value;
+
+  Future<void> setCalendarViewMode(bool isCalendarView) async {
+    final success = await _prefs.setBool(_kCalendarViewMode, isCalendarView);
+    if (success) {
+      calendarViewModeNotifier.value = isCalendarView;
+    } else {
+      calendarViewModeNotifier.value = isCalendarView;
+    }
+  }
+
+  // -------------------------
   // Selected IDs APIs
   // -------------------------
   //
@@ -480,6 +506,7 @@ class PreferencesService {
     await _prefs.remove(_kCategoryShowPattern);
     await _prefs.remove(_kActivityShowPattern);
     await _prefs.remove(_kAutoAddLocation);
+    await _prefs.remove(_kCalendarViewMode);
     await _prefs.remove(_kCategorySelectedIds);
     await _prefs.remove(_kPropertiesCategorySelectedIds);
     await _prefs.remove(_kActivitySelectedIds);
@@ -496,6 +523,8 @@ class PreferencesService {
     activityShowPatternNotifier.value = false;
 
     autoAddLocationNotifier.value = false;
+
+    calendarViewModeNotifier.value = false;
 
     categorySelectedIdsNotifier.value = <String>[];
     propertiesCategorySelectedIdsNotifier.value = <String>[];
