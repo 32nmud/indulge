@@ -80,6 +80,8 @@ class SexualHealthCalculator {
     final categoryCounts = <String, int>{};
     final categoryActivityCounts = <String, Map<String, int>>{};
     final riskyActivityCountsByCategory = <String, Map<String, int>>{};
+    int stiRiskCount = 0;
+    int healthRiskCount = 0;
     int riskyCount = 0;
     int safeCount = 0;
     int totalActivities = 0;
@@ -102,7 +104,7 @@ class SexualHealthCalculator {
                 (categoryActivityCounts[categoryId]![actId] ?? 0) +
                 actCount.count;
 
-            // Track risky activities by category
+            // Track risky activities by category (combined STI + health risk)
             final act = sexualActivities[actId];
             if (act != null && (act.stiRisk || act.healthRisk)) {
               riskyActivityCountsByCategory.putIfAbsent(categoryId, () => {});
@@ -119,21 +121,35 @@ class SexualHealthCalculator {
               (sexualActivityCounts[sexualActivity.name] ?? 0) + 1;
         }
 
-        // Determine if this activity has any risky sexual activities
-        bool hasRiskyInActivity = false;
+        // Determine if this activity has any STI or health risky sexual activities
+        bool hasStiRiskInActivity = false;
+        bool hasHealthRiskInActivity = false;
         for (final participant in activity.participants) {
           for (final activityCount in participant.activityCounts) {
             final actId = activityCount.activityReference.reference;
             final act = sexualActivities[actId];
-            if (act != null && (act.stiRisk || act.healthRisk)) {
-              hasRiskyInActivity = true;
-              break;
+            if (act != null) {
+              if (act.stiRisk) {
+                hasStiRiskInActivity = true;
+              }
+              if (act.healthRisk) {
+                hasHealthRiskInActivity = true;
+              }
             }
           }
-          if (hasRiskyInActivity) break;
+          if (hasStiRiskInActivity && hasHealthRiskInActivity) break;
         }
 
-        if (hasRiskyInActivity) {
+        // Count STI and health risks separately
+        if (hasStiRiskInActivity) {
+          stiRiskCount++;
+        }
+        if (hasHealthRiskInActivity) {
+          healthRiskCount++;
+        }
+
+        // Combined risky count for backward compatibility
+        if (hasStiRiskInActivity || hasHealthRiskInActivity) {
           riskyCount++;
         } else {
           safeCount++;
@@ -175,7 +191,8 @@ class SexualHealthCalculator {
     final riskScore = _calculateRiskScore(
       eventCount: eventsInPeriod.length,
       uniquePartners: uniquePartnersInPeriod,
-      riskyActivityCount: riskyCount,
+      stiRiskCount: stiRiskCount,
+      healthRiskCount: healthRiskCount,
       totalActivities: totalActivities,
       daysInPeriod: daysInPeriod,
     );
@@ -215,6 +232,8 @@ class SexualHealthCalculator {
       eventsInPeriod: eventsInPeriod,
       uniquePartnersInPeriod: uniquePartnersInPeriod,
       eventCountInPeriod: eventsInPeriod.length,
+      stiRiskCountInPeriod: stiRiskCount,
+      healthRiskCountInPeriod: healthRiskCount,
       riskyActivityCountInPeriod: riskyCount,
       safeActivityCountInPeriod: safeCount,
       totalActivitiesInPeriod: totalActivities,
@@ -257,7 +276,8 @@ class SexualHealthCalculator {
   static int _calculateRiskScore({
     required int eventCount,
     required int uniquePartners,
-    required int riskyActivityCount,
+    required int stiRiskCount,
+    required int healthRiskCount,
     required int totalActivities,
     required int daysInPeriod,
   }) {
@@ -265,26 +285,32 @@ class SexualHealthCalculator {
 
     double score = 0;
 
-    // Factor 1: Number of events (0-30 points)
-    score += (eventCount.clamp(0, 30) * 30 / 30);
+    // Factor 1: Number of events (0-25 points)
+    score += (eventCount.clamp(0, 25) * 25 / 25);
 
     // Factor 2: Number of unique partners (0-30 points)
     score += (uniquePartners.clamp(0, 30) * 30 / 30);
 
-    // Factor 3: Ratio of risky activities (0-25 points)
+    // Factor 3: Ratio of STI risky activities (0-25 points)
     if (totalActivities > 0) {
-      final riskyRatio = riskyActivityCount / totalActivities;
-      score += (riskyRatio * 25);
+      final stiRatio = stiRiskCount / totalActivities;
+      score += (stiRatio * 25);
     }
 
-    // Factor 4: Period length factor (0-15 points)
+    // Factor 4: Ratio of health risk activities (0-10 points)
+    if (totalActivities > 0) {
+      final healthRiskRatio = healthRiskCount / totalActivities;
+      score += (healthRiskRatio * 10);
+    }
+
+    // Factor 4: Period length factor (0-10 points)
     // Longer period with activity = higher accumulated risk
     if (daysInPeriod <= 30) {
-      score += 15;
-    } else if (daysInPeriod <= 90) {
-      score += 10;
-    } else if (daysInPeriod <= 180) {
+      score += 1;
+    } else if (daysInPeriod <= 60) {
       score += 5;
+    } else {
+      score += 10;
     }
 
     return score.round().clamp(0, 100);

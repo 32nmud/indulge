@@ -257,7 +257,6 @@ class BackupService {
     // simple counters and error aggregation
     var importedCount = 0;
     var skippedCount = 0;
-    final List<String> errors = [];
 
     try {
       // 1. Use provided path (test helper) or pick file via FilePicker

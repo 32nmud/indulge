@@ -265,7 +265,7 @@ void main() {
             'risky-activity': const SexualActivity(
               id: 'risky-activity',
               name: 'Risky Activity',
-              stiRisk: false,
+              stiRisk: true,
               healthRisk: false,
             ),
             'safe-activity': const SexualActivity(
@@ -305,7 +305,7 @@ void main() {
             'risky-activity': const SexualActivity(
               id: 'risky-activity',
               name: 'Risky Activity',
-              stiRisk: false,
+              stiRisk: true,
               healthRisk: false,
             ),
             'safe-activity': const SexualActivity(
@@ -328,7 +328,7 @@ void main() {
           mockState,
         );
 
-        // Should find the risky activity from 7 days ago, not 3
+        // Should find the risky activity from 7 days ago
         expect(result, closeTo(7, 1));
       });
 

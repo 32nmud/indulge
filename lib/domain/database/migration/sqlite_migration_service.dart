@@ -571,77 +571,6 @@ class SQLiteMigrationService {
       backupPath = await createBackup();
       await _writeLog('Backup created at: $backupPath');
 
-      // Helper: detect whether any table contains v1 JSON documents.
-      // Refined to avoid misclassifying v2-shaped documents that simply lack
-      // an explicit 'version' field (older exports/backups). Behavior:
-      // - If the JSON explicitly declares a 'version' and it is < current, we
-      //   treat it as needing migration.
-      // - If the JSON lacks a 'version' field, we use structural heuristics
-      //   via `_hasV2Format(table, doc)` to determine whether it looks like v2.
-      //   If it looks like v2 we treat it as already migrated; otherwise we
-      //   treat it as v1 and require migration.
-      Future<bool> _detectV1Documents() async {
-        try {
-          for (final table in tables) {
-            // If the table doesn't exist, skip it.
-            final exists = await database.query(
-              'sqlite_master',
-              where: 'type = ? AND name = ?',
-              whereArgs: ['table', table],
-            );
-            if (exists.isEmpty) continue;
-
-            // Read a small sample of rows to detect legacy JSON. We only need
-            // to find one v1 document to trigger migration work.
-            final rows = await database.query(table, limit: 10);
-
-            for (final row in rows) {
-              final jsonString = row['json'] as String?;
-              if (jsonString == null) continue;
-              try {
-                final doc = jsonDecode(jsonString) as Map<String, dynamic>;
-
-                // If an explicit version is present, use it.
-                if (doc.containsKey('version')) {
-                  final version = ModelVersionMigration.getVersion(doc);
-                  if (version < ModelVersionMigration.currentVersion) {
-                    _logger.info(
-                      'Detected explicit v$version document in $table -> needs migration',
-                    );
-                    return true;
-                  } else {
-                    // Explicit version and up-to-date — continue scanning.
-                    continue;
-                  }
-                }
-
-                // No explicit version: use structural heuristics.
-                // If it does not match the v2 shape we expect, consider it v1.
-                if (!_hasV2Format(table, doc)) {
-                  _logger.info(
-                    'Detected v1-shaped document in $table (no version field) -> needs migration',
-                  );
-                  return true;
-                }
-
-                // Looks v2-shaped and has no version metadata; treat as migrated.
-                _logger.fine(
-                  'Document in $table lacks version but matches v2 shape - treating as v2',
-                );
-                continue;
-              } catch (_) {
-                // Ignore parse errors for detection; they'll be surfaced in real migration.
-              }
-            }
-          }
-        } catch (e) {
-          _logger.warning('Error while detecting v1 documents: $e');
-          // If detection fails, be conservative and indicate migration is required.
-          return true;
-        }
-        return false;
-      }
-
       // Helper: perform v1->v2 migration across the tables. This reuses the
       // existing _migrateTable implementation which handles per-table JSON
       // migration (v1 -> v2).
@@ -765,43 +694,41 @@ class SQLiteMigrationService {
                   final migratedJson = await _migrateJsonDocument(doc, table);
 
                   // Persist migrated JSON only if we got a result
-                  if (migratedJson != null) {
-                    try {
-                      // Only persist when the migration actually changed the JSON.
-                      // Compare canonical JSON strings: if they differ, persist.
-                      final migratedStr = const JsonEncoder.withIndent(
-                        '',
-                      ).convert(migratedJson);
-                      // Use the original DB JSON string for comparison (preserves original formatting)
-                      final originalStr = jsonString!.trim();
-                      if (migratedStr != originalStr) {
-                        await database.update(
-                          table,
-                          {
-                            'json': jsonEncode(migratedJson),
-                            'last_modified': DateTime.now().toIso8601String(),
-                          },
-                          where: 'id = ?',
-                          whereArgs: [id],
-                        );
-                        migratedCount++;
-                        await _writeLog(
-                          'Migrated v2->v3 document in $table id=$id',
-                        );
-                      } else {
-                        // No effective change; skip persisting to avoid touching unrelated fields.
-                        await _writeLog(
-                          'No changes for v2->v3 migration in $table id=$id; skipped persist',
-                        );
-                      }
-                    } catch (e) {
-                      _logger.warning(
-                        'Failed to persist migrated doc in $table id=$id: $e',
+                  try {
+                    // Only persist when the migration actually changed the JSON.
+                    // Compare canonical JSON strings: if they differ, persist.
+                    final migratedStr = const JsonEncoder.withIndent(
+                      '',
+                    ).convert(migratedJson);
+                    // Use the original DB JSON string for comparison (preserves original formatting)
+                    final originalStr = jsonString.trim();
+                    if (migratedStr != originalStr) {
+                      await database.update(
+                        table,
+                        {
+                          'json': jsonEncode(migratedJson),
+                          'last_modified': DateTime.now().toIso8601String(),
+                        },
+                        where: 'id = ?',
+                        whereArgs: [id],
                       );
+                      migratedCount++;
                       await _writeLog(
-                        'ERROR persisting migrated doc in $table id=$id: $e',
+                        'Migrated v2->v3 document in $table id=$id',
+                      );
+                    } else {
+                      // No effective change; skip persisting to avoid touching unrelated fields.
+                      await _writeLog(
+                        'No changes for v2->v3 migration in $table id=$id; skipped persist',
                       );
                     }
+                  } catch (e) {
+                    _logger.warning(
+                      'Failed to persist migrated doc in $table id=$id: $e',
+                    );
+                    await _writeLog(
+                      'ERROR persisting migrated doc in $table id=$id: $e',
+                    );
                   }
                 }
               } catch (e) {

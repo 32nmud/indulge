@@ -6,6 +6,7 @@ class PersonPickerDialog extends StatelessWidget {
   final List<Person> availablePersons;
   final Set<String> existingParticipantIds;
   final Person? myself;
+  final bool hideMyself;
   final VoidCallback onAddNew;
 
   const PersonPickerDialog({
@@ -13,6 +14,7 @@ class PersonPickerDialog extends StatelessWidget {
     required this.availablePersons,
     required this.existingParticipantIds,
     required this.myself,
+    this.hideMyself = false,
     required this.onAddNew,
   });
 
@@ -59,11 +61,12 @@ class PersonPickerDialog extends StatelessWidget {
           },
         ),
         const Divider(),
-        // Other persons (excluding anonymous and myself)
+        // Other persons (excluding anonymous, myself if hideMyself is true)
         ...availablePersons
             .where((person) {
               if (person.id == 'anonymous') return false;
-              if (myself != null && person.id == myself?.id) return false;
+              if (hideMyself && myself != null && person.id == myself?.id)
+                return false;
               return true;
             })
             .map((person) {
@@ -124,6 +127,7 @@ class PersonPickerDialog extends StatelessWidget {
     required List<Person> availablePersons,
     required Set<String> existingParticipantIds,
     required Person? myself,
+    bool hideMyself = false,
     required VoidCallback onAddNew,
   }) {
     return showDialog<dynamic>(
@@ -133,6 +137,7 @@ class PersonPickerDialog extends StatelessWidget {
         availablePersons: availablePersons,
         existingParticipantIds: existingParticipantIds,
         myself: myself,
+        hideMyself: hideMyself,
         onAddNew: onAddNew,
       ),
     );

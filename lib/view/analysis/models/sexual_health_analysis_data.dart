@@ -47,8 +47,16 @@ class SexualHealthAnalysisData {
   /// Count of total events in this period.
   final int eventCountInPeriod;
 
-  /// Count of risky activities in this period.
-  /// Based on the risky flag in SexualActivity.
+  /// Count of activities with STI risk in this period.
+  /// Based on the stiRisk flag in SexualActivity.
+  final int stiRiskCountInPeriod;
+
+  /// Count of activities with general health/safety risk in this period.
+  /// Based on the healthRisk flag in SexualActivity.
+  final int healthRiskCountInPeriod;
+
+  /// Count of total risky activities in this period (STI + health risk combined).
+  /// Based on either stiRisk or healthRisk flag in SexualActivity.
   final int riskyActivityCountInPeriod;
 
   /// Count of safe activities in this period.
@@ -117,6 +125,8 @@ class SexualHealthAnalysisData {
     this.eventsInPeriod = const [],
     this.uniquePartnersInPeriod = 0,
     this.eventCountInPeriod = 0,
+    this.stiRiskCountInPeriod = 0,
+    this.healthRiskCountInPeriod = 0,
     this.riskyActivityCountInPeriod = 0,
     this.safeActivityCountInPeriod = 0,
     this.totalActivitiesInPeriod = 0,

@@ -119,10 +119,18 @@ class RiskAssessmentCard extends StatelessWidget {
               children: [
                 _buildStatChip(
                   context,
-                  '${data.riskyActivityCountInPeriod}',
-                  'Risky Activities',
-                  Colors.red.shade100,
-                  Colors.red.shade900,
+                  '${data.stiRiskCountInPeriod}',
+                  'STI Risk',
+                  Colors.purple.shade100,
+                  Colors.purple.shade900,
+                ),
+                const SizedBox(width: 8),
+                _buildStatChip(
+                  context,
+                  '${data.healthRiskCountInPeriod}',
+                  'Health Risk',
+                  Colors.orange.shade100,
+                  Colors.orange.shade900,
                 ),
                 const SizedBox(width: 8),
                 _buildStatChip(

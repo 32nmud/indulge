@@ -115,7 +115,21 @@ class _SexualEventCardState extends State<SexualEventCard>
           _getEventTitleString(persons),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: _buildCompactPreview(activities, eventState, persons),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _formatTime(widget.event.date),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 4),
+            _buildCompactPreview(activities, eventState, persons),
+          ],
+        ),
         children: [
           if (activities.isEmpty)
             const Padding(
@@ -511,5 +525,13 @@ class _SexualEventCardState extends State<SexualEventCard>
       return 'Event (no participants)';
     }
     return 'Event with ${persons.length} ${persons.length == 1 ? 'person' : 'people'}';
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
   }
 }

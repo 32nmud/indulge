@@ -24,8 +24,8 @@ class AnimatedEventList extends StatelessWidget {
       // Defensive: assume both have a `date` field of type DateTime
       final DateTime da = a.date;
       final DateTime db = b.date;
-      // Newest first
-      return db.compareTo(da);
+      // Oldest first (ascending)
+      return da.compareTo(db);
     });
 
     // If both lists are empty, show an empty state

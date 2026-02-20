@@ -117,9 +117,19 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
       }
     } else {
       // Creating a new event: initialize a blank working event and clear pending.
+      // If the event is for today, populate with current time; otherwise use midnight.
+      final initialDate = widget.initialDate ?? DateTime.now();
+      final now = DateTime.now();
+      final bool isSameDay =
+          initialDate.year == now.year &&
+          initialDate.month == now.month &&
+          initialDate.day == now.day;
+      final eventDate = isSameDay
+          ? DateTime(now.year, now.month, now.day, now.hour, now.minute)
+          : DateTime(initialDate.year, initialDate.month, initialDate.day);
       _workingEvent = SexualEvent(
         id: const Uuid().v4(),
-        date: widget.initialDate ?? DateTime.now(),
+        date: eventDate,
         activities: [],
       );
       _clearPendingLocation();
@@ -312,6 +322,9 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
     final myself = context.read<EventStateStore>().state.myself;
 
     final EventActivity activity = _workingEvent.activities[activityIndex];
+    final activityCategory =
+        _availableActivityCategories[activity.category.reference];
+    final activityRequiresPartner = activityCategory?.requiresPartner ?? false;
     final existingParticipantIds = activity.participants
         .map((p) => p.participant.reference)
         .toSet();
@@ -321,6 +334,7 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
       availablePersons: _availablePersons,
       existingParticipantIds: existingParticipantIds,
       myself: myself,
+      hideMyself: activityRequiresPartner,
       onAddNew: () {},
     );
 

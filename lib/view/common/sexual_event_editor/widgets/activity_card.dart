@@ -285,11 +285,10 @@ class ActivityCard extends StatelessWidget {
     );
     final meHasProperty = meActivityCount.count > 0;
 
-    // Determine if "Me" checkbox should be enabled
+    // Determine if "Me" checkbox should be shown (hide if property or category requires partner)
     final activityRequiresPartner = activityCategory?.requiresPartner ?? false;
     final propertyRequiresPartner = sexualActivity.requiresPartner;
-    final meCheckboxEnabled =
-        !activityRequiresPartner && !propertyRequiresPartner;
+    final showMeOption = !activityRequiresPartner && !propertyRequiresPartner;
 
     // Get non-self participants who have this property
     final participantsWithProperty = <String>[];
@@ -342,9 +341,18 @@ class ActivityCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (sexualActivity.stiRisk || sexualActivity.healthRisk)
+                if (sexualActivity.stiRisk)
                   Tooltip(
-                    message: 'Risky activity',
+                    message: 'STI Risk',
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      size: 20,
+                      color: Colors.purple.shade700,
+                    ),
+                  )
+                else if (sexualActivity.healthRisk)
+                  Tooltip(
+                    message: 'Health Risk',
                     child: Icon(
                       Icons.warning_amber_rounded,
                       size: 20,
@@ -360,8 +368,8 @@ class ActivityCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                // "Me" checkbox (only show if activity doesn't require partner)
-                if (myself != null && !activityRequiresPartner)
+                // "Me" checkbox (only show if property doesn't require partner)
+                if (myself != null && showMeOption)
                   Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: Row(
@@ -375,16 +383,14 @@ class ActivityCard extends StatelessWidget {
                           count: meActivityCount.count > 0
                               ? meActivityCount.count
                               : null,
-                          onTap: meCheckboxEnabled
-                              ? () {
-                                  toggleMyselfForProperty(
-                                    activityIndex,
-                                    sexualActivity.id,
-                                  );
-                                }
-                              : null,
+                          onTap: () {
+                            toggleMyselfForProperty(
+                              activityIndex,
+                              sexualActivity.id,
+                            );
+                          },
                         ),
-                        if (meHasProperty && meCheckboxEnabled) ...[
+                        if (meHasProperty) ...[
                           const SizedBox(width: 4),
                           Column(
                             mainAxisSize: MainAxisSize.min,
