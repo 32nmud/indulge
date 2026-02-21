@@ -95,7 +95,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   context,
                   icon: Icons.info,
                   title: 'Version',
-                  subtitle: 'Beta 0.2.0',
+                  subtitle: 'Beta 0.3.0',
                   onTap: null,
                 ),
               ],

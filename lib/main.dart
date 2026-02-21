@@ -390,7 +390,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 const EventViewPage(),
                 SearchPage(key: _searchPageKey),
                 const AnalysisPage(),
-                const ContactListPage(),
+                const ContactListPage(key: PageStorageKey('contact_list')),
                 const SettingsPage(),
               ],
             );

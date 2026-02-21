@@ -35,49 +35,46 @@ class _ContactListPageState extends State<ContactListPage>
   @override
   bool get wantKeepAlive => true;
 
-  // Guards to prevent multiple loads
-  bool _isLoadingPersons = false;
-  bool _initialLoadComplete = false;
+  // Static flag to prevent multiple loads - persists across hot reloads
+  static bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    // Guard against re-initialization (can happen with IndexedStack)
-    if (_initialLoadComplete) {
+    // Use static flag to truly prevent multiple loads
+    if (_hasLoadedOnce) {
       return;
     }
+    _hasLoadedOnce = true;
+
     // Defer loading to avoid triggering during widget tree build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadPersons();
-      // Add listener after initial load to avoid triggering on initial state
-      context.read<EventStateStore>().addListener(_onStoreChange);
     });
 
     // Listen for scrolls to implement load-more for the contacts list.
     _scrollController.addListener(_onScroll);
+
+    // Listen to store to refresh when persons change (not on date changes)
+    context.read<EventStateStore>().addListener(_onStoreChange);
   }
 
   void _onStoreChange() {
-    if (!mounted) return;
+    // Only react to store changes if we've already loaded initial data
+    // or if the store indicates a data refresh is needed.
+    // This prevents unnecessary loads during initialization
     final store = context.read<EventStateStore>();
-
-    // If the centralized store contains an updated persons snapshot, prefer
-    // reloading from that immediately so the Contacts page reflects imported
-    // persons without waiting for a separate refresh trigger.
+    if (_persons.isEmpty || !store.needsDataRefresh) {
+      return;
+    }
+    // Only reload if persons actually changed, not for date changes
     final cachedPersons = store.state.allPersons;
     if (cachedPersons != null) {
       final cachedIds = cachedPersons.map((p) => p.id).toSet();
       final currentIds = _persons.map((p) => p.id).toSet();
-      // Use setEquals (from foundation) to avoid unnecessary reloads when lists are identical.
       if (!setEquals(cachedIds, currentIds)) {
         _loadPersons(forceLoadEvents: true);
-        return;
       }
-    }
-
-    // Fallback: if a global dirty flag was set, reload as before.
-    if (store.needsDataRefresh) {
-      _loadPersons(forceLoadEvents: true);
     }
   }
 
@@ -108,26 +105,23 @@ class _ContactListPageState extends State<ContactListPage>
 
   @override
   void dispose() {
+    // Remove store listener when widget is disposed
     context.read<EventStateStore>().removeListener(_onStoreChange);
     _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _loadPersons({bool forceLoadEvents = false}) async {
-    // Guard against concurrent loading
-    if (_isLoadingPersons) {
+    final store = context.read<EventStateStore>();
+    // Skip if we already have counts AND data isn't dirty (no new events/persons added)
+    if (_personEventCounts.isNotEmpty &&
+        !forceLoadEvents &&
+        !store.needsDataRefresh) {
       return;
     }
 
-    // Skip if we already have counts and not forced
-    if (_personEventCounts.isNotEmpty && !forceLoadEvents) {
-      return;
-    }
-
-    _isLoadingPersons = true;
     setState(() => _isLoading = true);
     final provider = context.read<SexualEventsProvider>();
-    final store = context.read<EventStateStore>();
 
     // Prefer the cached list of persons from the centralized store when available
     // to avoid an extra DB call; fall back to the provider otherwise.
@@ -179,8 +173,7 @@ class _ContactListPageState extends State<ContactListPage>
     _pager.reset();
     _pager.loadInitial(visiblePersons);
 
-    _isLoadingPersons = false;
-    _initialLoadComplete = true;
+    // Note: _hasLoadedOnce is static, so we don't reset it here
 
     setState(() {
       _persons = visiblePersons;

@@ -177,15 +177,12 @@ class _AnalysisPageState extends State<AnalysisPage>
       _logger.info('Skipping recalculation — data is not dirty');
       return;
     }
-    final store = context.read<EventStateStore>();
-    final provider = context.read<SexualEventsProvider>();
-    await provider.ready;
-    final allEvents = await provider.getAllEvents();
-    _logger.info('Loaded ${allEvents.length} events');
-    // Prefer cached persons from the centralized store when available to avoid an extra DB call.
-    final allPersons = store.state.allPersons ?? await provider.getAllPersons();
 
-    // Calculate available years from data
+    _logger.info('Loaded ${events.length} events');
+
+    // Get all events for available years calculation - prefer store cache if available
+    final store = context.read<EventStateStore>();
+    final allEvents = store.state.currentEvents ?? events;
     if (allEvents.isNotEmpty) {
       final years = allEvents.map((e) => e.date.year).toSet().toList()..sort();
       // Only update if the years list has actually changed
@@ -199,45 +196,6 @@ class _AnalysisPageState extends State<AnalysisPage>
           }
         });
       }
-    }
-
-    // Filter events based on selected time window
-    final now = DateTime.now();
-    DateTime? startDate;
-    DateTime? endDate;
-    List<SexualEvent> events;
-
-    switch (_timeWindow) {
-      case TimeWindow.last12Months:
-        startDate = DateTime(now.year, now.month - 11, 1);
-        events = allEvents.where((event) {
-          return event.date.isAfter(
-            startDate!.subtract(const Duration(days: 1)),
-          );
-        }).toList();
-        _logger.info('Filtering to last 12 months (from $startDate)');
-        break;
-      case TimeWindow.allTime:
-        events = allEvents;
-        startDate = null;
-        endDate = null;
-        _logger.info('Using all-time data');
-        break;
-      case TimeWindow.specificYear:
-        if (_selectedYear != null) {
-          startDate = DateTime(_selectedYear!, 1, 1);
-          endDate = DateTime(_selectedYear!, 12, 31, 23, 59, 59);
-          events = allEvents.where((event) {
-            return event.date.isAfter(
-                  startDate!.subtract(const Duration(days: 1)),
-                ) &&
-                event.date.isBefore(endDate!.add(const Duration(days: 1)));
-          }).toList();
-          _logger.info('Filtering to year $_selectedYear');
-        } else {
-          events = allEvents;
-        }
-        break;
     }
 
     // Get last STI test date from clinical events
@@ -304,6 +262,14 @@ class _AnalysisPageState extends State<AnalysisPage>
   }
 
   Future<void> _loadDataAsync({int selectedTestIndex = 0}) async {
+    // Set loading state first to prevent race conditions from build() calling this multiple times
+    if (_isLoading) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+    });
+
     final store = context.read<EventStateStore>();
     final provider = context.read<SexualEventsProvider>();
     final clinicalProvider = context.read<ClinicalEventsProvider>();
@@ -361,10 +327,6 @@ class _AnalysisPageState extends State<AnalysisPage>
         }
       }
     }
-
-    setState(() {
-      _isLoading = true;
-    });
 
     try {
       // Load page-specific data

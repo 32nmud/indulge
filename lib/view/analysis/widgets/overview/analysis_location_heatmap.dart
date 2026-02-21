@@ -271,7 +271,7 @@ class _AnalysisLocationHeatmapState extends State<AnalysisLocationHeatmap> {
                   fm.TileLayer(
                     urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'indulge/0.2.0-beta',
+                    userAgentPackageName: 'indulge/0.3.0-beta',
                   ),
 
                   if (circleMarkers.isNotEmpty)
