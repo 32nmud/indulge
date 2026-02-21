@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import '../../../data/models/versioned_model.dart';
 import 'migrators.dart';
 
@@ -366,31 +366,22 @@ class SQLiteMigrationService {
   bool _hasV2Format(String table, Map<String, dynamic> doc) {
     switch (table) {
       case 'person':
-        // v2 Person has new fields like 'location', 'notes', 'isSelf'
-        return doc.containsKey('isSelf') || doc.containsKey('notes');
+        // FIXED: isSelf and notes exist in BOTH v2 and v3, so don't use them
+        // as v2 indicators. This was causing false positives.
+        // No reliable heuristic for person - only explicit version field
+        return false;
       case 'sexual_activity_type':
-        // v2 SexualActivityCategory has 'activities' (list of references) and new fields
-        return doc.containsKey('activities') && doc['activities'] is List;
+        // FIXED: activities exists in v2 and v3 - can't use as v2 indicator
+        // Only check for fields unique to v2 SexualActivityCategory
+        // (none that are reliably detectable without version field)
+        return false;
       case 'sexual_activity_type_property':
-        // v2 SexualActivity has 'category' reference and new fields
-        return doc.containsKey('category') ||
-            doc.containsKey('displayCharacter');
+        // isRisky field is unique to v2 (v3 has stiRisk and healthRisk)
+        // This is checked separately in the main logic
+        return false;
       case 'sexual_event':
-        // v2 SexualEvent has 'location', 'notes', and uses 'EventActivity' not 'SexualActivity'
-        // v1 uses 'SexualActivity' objects, v2 uses 'EventActivity'
-        if (doc.containsKey('location') || doc.containsKey('notes')) {
-          return true;
-        }
-        // Check if activities are in v2 format (EventActivity has 'category' and 'participants')
-        final activities = doc['activities'];
-        if (activities is List && activities.isNotEmpty) {
-          final firstActivity = activities.first as Map<String, dynamic>?;
-          if (firstActivity != null) {
-            // v2 EventActivity has 'category' and 'participants'
-            // v1 SexualActivity has 'type' and 'participants'
-            return firstActivity.containsKey('category');
-          }
-        }
+        // FIXED: location and notes exist in v2 AND v3
+        // Only detect embedded v2 activities via isRisky (checked separately)
         return false;
       default:
         return false;

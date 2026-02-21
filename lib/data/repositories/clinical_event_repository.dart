@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:indulge/data/models.dart';
 import 'package:indulge/data/models/versioned_model.dart';
 import 'package:logging/logging.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 
-import '../../domain/database/database_engine.dart';
+import '../../services/database_connection_service.dart';
 
 /// Repository that manages persistence for `ClinicalEvent` resources.
 ///
@@ -23,7 +23,7 @@ class ClinicalEventRepository {
 
   /// Create a repository instance backed by the local DB connection.
   static Future<ClinicalEventRepository> create() async {
-    final db = await DatabaseEngine.buildLocalConnection();
+    final db = DatabaseConnectionService.instance.database;
     return ClinicalEventRepository._(db);
   }
 

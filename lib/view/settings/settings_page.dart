@@ -6,17 +6,24 @@ import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
 import 'package:indulge/services/preferences_service.dart';
+import 'package:indulge/view/security/pin_setup_screen.dart';
 
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
 import 'package:indulge/data/repositories/clinical_event_repository.dart';
 import 'package:indulge/services/backup_service.dart';
+import 'package:indulge/services/security/encryption_key_service.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'dart:async';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -38,6 +45,9 @@ class SettingsPage extends StatelessWidget {
                 const Divider(),
                 _buildSectionHeader('Event Creation'),
                 _buildAutoAddLocationTile(context),
+                const Divider(),
+                _buildSectionHeader('Security'),
+                _buildPinSettingsTile(context),
                 const Divider(),
                 _buildSectionHeader('Activity Configuration'),
                 _buildListTile(
@@ -130,6 +140,98 @@ class SettingsPage extends StatelessWidget {
               onChanged: (value) {
                 prefs.setAutoAddLocation(value);
               },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPinSettingsTile(BuildContext context) {
+    return FutureBuilder<EncryptionKeyService>(
+      future: Future(() => EncryptionKeyService()),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final keyService = snapshot.data!;
+
+        return FutureBuilder<bool>(
+          future: keyService.isPinEnabled(),
+          builder: (context, pinSnapshot) {
+            if (!pinSnapshot.hasData) {
+              return const SizedBox.shrink();
+            }
+            final isPinEnabled = pinSnapshot.data!;
+
+            return Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('PIN Protection'),
+                  subtitle: Text(
+                    isPinEnabled
+                        ? 'Require PIN to open the app'
+                        : 'Secure app with a PIN',
+                  ),
+                  value: isPinEnabled,
+                  onChanged: (value) async {
+                    if (value) {
+                      // Enable PIN - navigate to setup screen
+                      final result = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PinSetupScreen(),
+                        ),
+                      );
+                      if (result == true && context.mounted) {
+                        setState(() {});
+                      }
+                    } else {
+                      // Disable PIN - confirm first
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Disable PIN?'),
+                          content: const Text(
+                            'Are you sure you want to disable PIN protection?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Disable'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        await keyService.disablePin();
+                        if (context.mounted) {
+                          setState(() {});
+                        }
+                      }
+                    }
+                  },
+                ),
+                if (isPinEnabled)
+                  ListTile(
+                    leading: const Icon(Icons.lock),
+                    title: const Text('Change PIN'),
+                    subtitle: const Text('Update your security PIN'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const PinSetupScreen(isChanging: true),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             );
           },
         );
@@ -268,10 +370,7 @@ class SettingsPage extends StatelessWidget {
 
       // Refresh the provider data
       if (context.mounted) {
-        streamController.add(
-          'Refreshing app data...',
-        ); // Mark global event-state as dirty so any consumers watching the store
-        // will re-evaluate and refresh as needed.
+        streamController.add('Refreshing app data...');
         try {
           context.read<SexualEventsProvider>().refreshAllData();
           context.read<ClinicalEventsProvider>().refreshAllData();

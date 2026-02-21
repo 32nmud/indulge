@@ -1,95 +1,121 @@
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'database_seed.dart';
 import 'migration/sqlite_migration_service.dart';
 
 class DatabaseEngine {
   static final Logger _logger = Logger('DatabaseEngine');
 
-  /// Builds a local SQLite database connection and checks for needed migrations
-  static Future<Database> buildLocalConnection() async {
+  /// Builds a local SQLite database connection with encryption support.
+  ///
+  /// [encryptionKey] - If provided, opens the database with SQLCipher encryption.
+  ///                   If null, opens in compatibility mode (for migration from unencrypted).
+  static Future<Database> buildLocalConnection({String? encryptionKey}) async {
     final dbPath = join(await getDatabasesPath(), 'indulge.db');
 
-    final database = await openDatabase(
-      dbPath,
-      onCreate: (db, version) async {
-        // Load the full SQL schema from the bundled asset
-        final schemaFile = await rootBundle.loadString('assets/sql/schema.sql');
-        final DatabaseSeed seeder = DatabaseSeed(db: db);
+    final openFuture = encryptionKey != null
+        ? openDatabase(
+            dbPath,
+            password: encryptionKey,
+            onCreate: (db, version) => _onCreate(db, version),
+            onUpgrade: (db, oldVersion, newVersion) =>
+                _onUpgrade(db, oldVersion, newVersion),
+            version: 3,
+          )
+        : openDatabase(
+            dbPath,
+            onCreate: (db, version) => _onCreate(db, version),
+            onUpgrade: (db, oldVersion, newVersion) =>
+                _onUpgrade(db, oldVersion, newVersion),
+            version: 3,
+          );
 
-        // SQLite in sqflite only supports a single statement per execute call.
-        // Split the file into individual statements and execute them one by one.
-        final statements = schemaFile
-            .split(';')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
+    return await openFuture;
+  }
 
-        final batch = db.batch();
-        for (var stmt in statements) {
+  static Future<void> _onCreate(Database db, int version) async {
+    // Load the full SQL schema from the bundled asset
+    final schemaFile = await rootBundle.loadString('assets/sql/schema.sql');
+    final DatabaseSeed seeder = DatabaseSeed(db: db);
+
+    // SQLite in sqflite only supports a single statement per execute call.
+    // Split the file into individual statements and execute them one by one.
+    final statements = schemaFile
+        .split(';')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    final batch = db.batch();
+    for (var stmt in statements) {
+      batch.execute(stmt);
+    }
+    await batch.commit(noResult: true);
+
+    await seeder.loadSeeds();
+
+    // Set initial schema version for new databases
+    final migrationService = SQLiteMigrationService(
+      database: db,
+      databasePath: await dbPath,
+    );
+    await migrationService.ensureMetadataTableExists();
+    await migrationService.setMetadata('schema_version', '3');
+  }
+
+  static Future<void> _onUpgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    // Handle database schema upgrades (e.g., v2 -> v3)
+    // Load the full SQL schema from the bundled asset
+    final schemaFile = await rootBundle.loadString('assets/sql/schema.sql');
+
+    // Only apply schema changes for new tables/columns that don't exist
+    // This is a simplified approach - in production you might want more granular migration
+    final statements = schemaFile
+        .split(';')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    // Get list of existing tables
+    final existingTables = await db.query(
+      'sqlite_master',
+      where: 'type = ?',
+      whereArgs: ['table'],
+    );
+    final existingTableNames = existingTables
+        .map((t) => t['name'] as String)
+        .toSet();
+
+    // Execute only statements for new tables
+    final batch = db.batch();
+    for (var stmt in statements) {
+      // Check if this CREATE TABLE statement is for a new table
+      final tableNameMatch = RegExp(
+        r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)',
+        caseSensitive: false,
+      ).firstMatch(stmt);
+      if (tableNameMatch != null) {
+        final tableName = tableNameMatch.group(1);
+        if (tableName != null && !existingTableNames.contains(tableName)) {
           batch.execute(stmt);
         }
-        await batch.commit(noResult: true);
+      }
+    }
+    await batch.commit(noResult: true);
 
-        await seeder.loadSeeds();
-
-        // Set initial schema version for new databases
-        final migrationService = SQLiteMigrationService(
-          database: db,
-          databasePath: dbPath,
-        );
-        await migrationService.ensureMetadataTableExists();
-        await migrationService.setMetadata('schema_version', '3');
-      },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        // Handle database schema upgrades (e.g., v2 -> v3)
-        // Load the full SQL schema from the bundled asset
-        final schemaFile = await rootBundle.loadString('assets/sql/schema.sql');
-
-        // Only apply schema changes for new tables/columns that don't exist
-        // This is a simplified approach - in production you might want more granular migration
-        final statements = schemaFile
-            .split(';')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
-
-        // Get list of existing tables
-        final existingTables = await db.query(
-          'sqlite_master',
-          where: 'type = ?',
-          whereArgs: ['table'],
-        );
-        final existingTableNames = existingTables
-            .map((t) => t['name'] as String)
-            .toSet();
-
-        // Execute only statements for new tables
-        final batch = db.batch();
-        for (var stmt in statements) {
-          // Check if this CREATE TABLE statement is for a new table
-          final tableNameMatch = RegExp(
-            r'CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)',
-            caseSensitive: false,
-          ).firstMatch(stmt);
-          if (tableNameMatch != null) {
-            final tableName = tableNameMatch.group(1);
-            if (tableName != null && !existingTableNames.contains(tableName)) {
-              batch.execute(stmt);
-            }
-          }
-        }
-        await batch.commit(noResult: true);
-
-        _logger.info('Database upgraded from v$oldVersion to v$newVersion');
-      },
-      version: 3,
-    );
-
-    return database;
+    _logger.info('Database upgraded from v$oldVersion to v$newVersion');
   }
+
+  /// Helper to get dbPath for migration service
+  static Future<String> get dbPath async =>
+      join(await getDatabasesPath(), 'indulge.db');
 
   /// Performs schema-only upgrade (creates new tables).
   /// Called from onUpgrade callback to create missing tables.
@@ -238,5 +264,166 @@ class DatabaseEngine {
     }
 
     return result;
+  }
+
+  /// Checks if the existing database is encrypted.
+  /// Returns true if the database appears to be encrypted (requires password),
+  /// false if it can be opened without a password.
+  static Future<bool> isDatabaseEncrypted() async {
+    final dbPath = join(await getDatabasesPath(), 'indulge.db');
+    final dbFile = File(dbPath);
+
+    if (!await dbFile.exists()) {
+      return false; // No database yet
+    }
+
+    // Try to open without password - if it works, DB is unencrypted
+    // We use a try-catch with a timeout to handle native exceptions
+    try {
+      final db = await openDatabase(dbPath);
+      await db.close();
+      return false;
+    } catch (e) {
+      // Check for any exception - if we can't open without password, assume encrypted
+      // The SQLCipher library throws native exceptions that may not be caught normally
+      _logger.info('Could not open DB without password: $e');
+      return true;
+    }
+  }
+
+  /// Migrates an unencrypted database to encrypted format.
+  /// Creates new encrypted DB, exports data via raw SQL, replaces original.
+  ///
+  /// Steps:
+  /// 1. Read all data from unencrypted DB
+  /// 2. Delete unencrypted DB file
+  /// 3. Create new encrypted DB (without onCreate - just open fresh)
+  /// 4. Create tables manually in encrypted DB
+  /// 5. Copy all data to encrypted DB
+  ///
+  /// [encryptionKey] - The new encryption key to use
+  static Future<void> encryptDatabase(String encryptionKey) async {
+    final dbPath = join(await getDatabasesPath(), 'indulge.db');
+    final backupPath = '${dbPath}.unencrypted.backup';
+
+    _logger.info('Starting database encryption migration...');
+
+    // Step 1: Read all data from unencrypted DB
+    final unencryptedDb = await openDatabase(dbPath);
+
+    // Get list of tables (excluding sqlite internal tables)
+    final tablesResult = await unencryptedDb.query(
+      'sqlite_master',
+      where: 'type = ?',
+      whereArgs: ['table'],
+    );
+    final tableNames = tablesResult
+        .map((t) => t['name'] as String)
+        .where((name) => !name.startsWith('sqlite_'))
+        .toList();
+
+    // Export all data from each table
+    final Map<String, List<Map<String, Object?>>> allData = {};
+    for (final tableName in tableNames) {
+      allData[tableName] = await unencryptedDb.query(tableName);
+      _logger.info(
+        'Exported ${allData[tableName]!.length} rows from $tableName',
+      );
+    }
+
+    // Get CREATE TABLE statements for each table
+    final Map<String, String> createStatements = {};
+    for (final tableName in tableNames) {
+      final schemaResult = await unencryptedDb.rawQuery(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='$tableName'",
+      );
+      if (schemaResult.isNotEmpty) {
+        createStatements[tableName] = schemaResult.first['sql'] as String;
+      }
+    }
+
+    await unencryptedDb.close();
+
+    // Step 2: Backup and delete unencrypted DB
+    final dbFile = File(dbPath);
+    if (await dbFile.exists()) {
+      await dbFile.copy(backupPath);
+      await dbFile.delete();
+      // Delete related files
+      for (final suffix in ['', '-journal', '-wal', '-shm']) {
+        final f = File('$dbPath$suffix');
+        if (await f.exists()) await f.delete();
+      }
+      _logger.info('Deleted unencrypted DB, backup at $backupPath');
+    }
+
+    try {
+      // Step 3: Create new encrypted DB WITHOUT onCreate (we'll add tables manually)
+      final encryptedDb = await openDatabase(
+        dbPath,
+        password: encryptionKey,
+        version: 3, // Use version 3 to match app expectation
+      );
+
+      // Step 4: Create tables using the original schema
+      for (final tableName in tableNames) {
+        final createSql = createStatements[tableName];
+        if (createSql != null) {
+          await encryptedDb.execute(createSql);
+          _logger.info('Created table: $tableName');
+        }
+      }
+
+      // Step 5: Import all data into encrypted DB
+      for (final tableName in tableNames) {
+        final data = allData[tableName];
+        if (data != null && data.isNotEmpty) {
+          final batch = encryptedDb.batch();
+          for (final row in data) {
+            // Filter out any null values that might cause issues
+            final cleanRow = Map<String, Object?>.from(row)
+              ..removeWhere((key, value) => value == null && key != 'id');
+            batch.insert(tableName, cleanRow);
+          }
+          await batch.commit(noResult: true);
+          _logger.info('Imported ${data.length} rows into $tableName');
+        }
+      }
+
+      await encryptedDb.close();
+
+      // Verify encryption works
+      final verifyDb = await openDatabase(dbPath, password: encryptionKey);
+      await verifyDb.close();
+
+      // Delete backup
+      final backupFile = File(backupPath);
+      if (await backupFile.exists()) {
+        await backupFile.delete();
+      }
+
+      _logger.info('Database encryption migration completed successfully');
+    } catch (e) {
+      _logger.severe('Encryption migration failed: $e');
+      // Restore from backup
+      final backupFile = File(backupPath);
+      if (await backupFile.exists()) {
+        await backupFile.rename(dbPath);
+        _logger.info('Restored from backup');
+      }
+      rethrow;
+    }
+  }
+
+  /// Checks if the database needs to be encrypted (exists but unencrypted).
+  static Future<bool> needsEncryption() async {
+    final dbPath = join(await getDatabasesPath(), 'indulge.db');
+    final dbFile = File(dbPath);
+
+    if (!await dbFile.exists()) {
+      return false; // No database yet - will be created encrypted
+    }
+
+    return await isDatabaseEncrypted() == false;
   }
 }

@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/data/models/versioned_model.dart';
-import '../../domain/database/database_engine.dart';
+import '../../services/database_connection_service.dart';
 import 'package:logging/logging.dart';
 
 class SexualEventRepository {
@@ -12,7 +11,7 @@ class SexualEventRepository {
   SexualEventRepository._(this._db);
 
   static Future<SexualEventRepository> create() async {
-    final db = await DatabaseEngine.buildLocalConnection();
+    final db = DatabaseConnectionService.instance.database;
     return SexualEventRepository._(db);
   }
 

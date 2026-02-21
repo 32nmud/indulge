@@ -1,5 +1,5 @@
 import 'package:logging/logging.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import '../../../data/models/versioned_model.dart';
 import '../../../data/models/v1/property_count/property_count.dart' as v1;
 import '../../../data/models/v1/person/person.dart' as v1_person;

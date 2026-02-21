@@ -14,8 +14,9 @@ import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/search/search_page.dart';
 import 'package:indulge/view/migration/migration_check.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
+import 'package:indulge/view/security/pin_entry_screen.dart';
 import 'dart:io';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:indulge/domain/database/database_engine.dart';
 import 'package:indulge/view/common/speed_dial_fab.dart';
 import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
@@ -23,6 +24,9 @@ import 'package:logging/logging.dart';
 
 // Preferences service (SharedPreferences wrapper) - initialize at startup
 import 'package:indulge/services/preferences_service.dart';
+import 'package:indulge/services/security/encryption_key_service.dart';
+import 'package:indulge/services/security/database_encryption_service.dart';
+import 'package:indulge/services/database_connection_service.dart';
 
 Future<void> main() async {
   // Ensure bindings are initialized before we await async services.
@@ -36,20 +40,48 @@ Future<void> main() async {
   // Initialize preferences service before running the app so UI can read persisted prefs.
   final prefsService = await PreferencesService.build();
 
+  // Run encryption migration if needed (unencrypted -> encrypted)
+  await _runEncryptionMigration();
+
   // Run schema migration (creating new tables) before launching the app
   // This is fast - JSON migration will be handled later if needed
   await _runSchemaMigration();
+
+  // Check if PIN is enabled
+  final keyService = EncryptionKeyService();
+  final isPinEnabled = await keyService.isPinEnabled();
+
+  // Initialize database encryption key if PIN is not enabled
+  if (!isPinEnabled) {
+    final encryptionService = DatabaseEncryptionService();
+    final encryptionKey = await encryptionService.getEncryptionKey();
+    await DatabaseConnectionService.instance.initialize(
+      encryptionKey: encryptionKey,
+    );
+  }
 
   // Provide the PreferencesService to the widget tree so screens can access persisted UI preferences.
   runApp(
     Provider<PreferencesService>.value(
       value: prefsService,
-      child: const MyApp(),
+      child: MyApp(showPinOnStartup: isPinEnabled),
     ),
   );
 }
 
-/// Runs schema-only migration (creating new tables) before app starts.
+/// Runs database encryption migration if needed.
+/// This converts unencrypted databases to encrypted format.
+Future<void> _runEncryptionMigration() async {
+  try {
+    final encryptionService = DatabaseEncryptionService();
+    await encryptionService.migrateIfNeeded();
+  } catch (e) {
+    // Log but don't fail - the app will handle unencrypted DB
+    print('Encryption migration error: $e');
+  }
+}
+
+/// Runs schema-only migration (creates new tables).
 /// This is fast - no UI needed.
 Future<void> _runSchemaMigration() async {
   try {
@@ -58,8 +90,26 @@ Future<void> _runSchemaMigration() async {
     final dbPath = '${await getDatabasesPath()}/indulge.db';
     final dbFile = File(dbPath);
     if (!await dbFile.exists()) {
+      Logger.root.info('Schema migration: no DB file, skipping');
       return; // New install, onCreate will handle it
     }
+
+    // Check if database is encrypted - if so, skip schema migration here
+    // because it requires the encryption key which isn't available yet.
+    // Schema migration will happen when the app properly opens with the key.
+    final encryptionService = DatabaseEncryptionService();
+    Logger.root.info('Schema migration: checking if DB is encrypted...');
+    final isEncrypted = await encryptionService.isDatabaseEncrypted();
+    Logger.root.info('Schema migration: isEncrypted = $isEncrypted');
+
+    if (isEncrypted) {
+      Logger.root.info(
+        'Database is encrypted - skipping early schema migration',
+      );
+      return;
+    }
+
+    // Unencrypted DB - safe to open directly
     await openDatabase(
       dbPath,
       version: 3,
@@ -74,15 +124,91 @@ Future<void> _runSchemaMigration() async {
   }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  final bool showPinOnStartup;
 
+  const MyApp({super.key, required this.showPinOnStartup});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   // GlobalKey to maintain MaterialApp state across hot reloads
   static final GlobalKey<NavigatorState> _navigatorKey =
       GlobalKey<NavigatorState>();
 
+  bool _isUnlocked = false;
+  bool _isDbInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.showPinOnStartup) {
+      _isUnlocked = true;
+      _isDbInitialized = true;
+    }
+  }
+
+  Future<void> _initializeAfterPin() async {
+    try {
+      final encryptionService = DatabaseEncryptionService();
+      final encryptionKey = await encryptionService.getEncryptionKey();
+      await DatabaseConnectionService.instance.initialize(
+        encryptionKey: encryptionKey,
+      );
+      setState(() {
+        _isDbInitialized = true;
+        _isUnlocked = true;
+      });
+    } catch (e) {
+      Logger.root.warning('Error initializing database after PIN: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // If PIN is required but not yet entered, show PIN screen
+    if (widget.showPinOnStartup && !_isUnlocked) {
+      // Use system brightness for theme to match device settings
+      return MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.indigo,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        ),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.indigo,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        ),
+        themeMode: ThemeMode.system,
+        home: Scaffold(body: PinEntryScreen(onSuccess: _initializeAfterPin)),
+      );
+    }
+
+    // Wait for database to be initialized
+    if (!_isDbInitialized && !widget.showPinOnStartup) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Loading...'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
@@ -117,7 +243,7 @@ class MyApp extends StatelessWidget {
               useMaterial3: true,
             ),
             themeMode: themeProvider.themeMode,
-            home: MigrationCheck(child: const MyHomePage(title: 'Indulge')),
+            home: MigrationCheck(child: MyHomePage(title: 'Indulge')),
           );
         },
       ),
@@ -211,7 +337,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
-  build(BuildContext context) {
+  Widget build(BuildContext context) {
     return NavigationHelper(
       navigateToSearchWithPartner: navigateToSearchWithPartner,
       navigateToSearchWithEventType: navigateToSearchWithEventType,

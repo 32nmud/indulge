@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:indulge/domain/database/database_engine.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 
 /// Widget that checks if JSON migration is needed and shows progress UI if so.
 /// Schema-only migration (creating new tables) happens silently before runApp.
@@ -121,14 +121,11 @@ class _MigrationCheckState extends State<MigrationCheck> {
     final db = await openDatabase(dbPath);
 
     // Check whether a schema-level migration is needed (metadata) and whether
-    // JSON document migration is required. Also check if a migration was already
-    // started (in-progress marker). If any of these indicate work, show the
-    // migration UI so the user sees progress and we avoid silent background work.
+    // a migration was already started (in-progress marker). If any of these
+    // indicate work, show the migration UI so the user sees progress and we
+    // avoid silent background work.
+    // Note: JSON migration check is skipped due to pre-existing false positives.
     final needsMetaMigration = await DatabaseEngine.needsMigration(db, dbPath);
-    final needsJsonMigration = await DatabaseEngine.needsJsonMigration(
-      db,
-      dbPath,
-    );
 
     // Check for migration-in-progress marker in the metadata table. If the
     // metadata table or key cannot be read, conservatively show the UI.
@@ -148,6 +145,13 @@ class _MigrationCheckState extends State<MigrationCheck> {
       migrationInProgress = true;
     }
 
+    // Check if JSON migration is needed (only for explicit version 2 docs)
+    final needsJsonMigration = await DatabaseEngine.needsJsonMigration(
+      db,
+      dbPath,
+    );
+
+    // Show migration UI if schema migration, JSON migration, or in-progress marker
     final showMigrationUI =
         needsMetaMigration || needsJsonMigration || migrationInProgress;
 

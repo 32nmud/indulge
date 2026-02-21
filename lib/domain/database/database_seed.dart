@@ -1,5 +1,5 @@
 import 'package:indulge/data/models.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:logging/logging.dart';
