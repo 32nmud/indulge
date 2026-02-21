@@ -105,10 +105,8 @@ class SearchPageState extends State<SearchPage>
       _selectedPartnerIds.addAll(widget.initialPartnerIds!);
     }
 
-    // Auto-search on load to show all events initially
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _performSearch();
-    });
+    // Don't auto-search on load - only search when user explicitly triggers it
+    // This prevents redundant database queries when switching tabs
 
     _scrollController.addListener(_onScroll);
 
@@ -126,10 +124,23 @@ class SearchPageState extends State<SearchPage>
     super.dispose();
   }
 
+  DateTime? _lastSelectedDate;
+
   void _onStoreChange() {
     if (!mounted) return;
 
     final store = context.read<EventStateStore>();
+
+    // Skip reload if only selectedDate changed - that's irrelevant for search
+    if (_lastSelectedDate != null && store.state.selectedDate != null) {
+      if (_lastSelectedDate != store.state.selectedDate) {
+        _lastSelectedDate = store.state.selectedDate;
+        return;
+      }
+    }
+    _lastSelectedDate = store.state.selectedDate;
+
+    // Only reload if data was explicitly marked dirty
     if (store.needsDataRefresh) {
       Future.microtask(() => _performSearch());
     }
@@ -204,8 +215,13 @@ class SearchPageState extends State<SearchPage>
   Future<void> _performSearch() async {
     if (!mounted) return;
 
+    // Guard against concurrent searches
+    if (_isSearching) {
+      return;
+    }
+    _isSearching = true;
+
     setState(() {
-      _isSearching = true;
       _hasSearched = true;
     });
 
@@ -219,6 +235,8 @@ class SearchPageState extends State<SearchPage>
       }
 
       final allEvents = await provider.getAllEvents();
+
+      _isSearching = false;
       final myId = store.state.myself?.id;
 
       // Use the pure filter function from search_utils to get filtered & sorted events

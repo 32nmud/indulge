@@ -75,20 +75,33 @@ class SexualEventRepository {
     return normalizedResults;
   }
 
+  // Guard against concurrent calls to getAllEvents
+  static bool _isLoadingAllEvents = false;
+
   Future<List<SexualEvent>> getAllEvents() async {
+    if (_isLoadingAllEvents) {
+      _logger.info('Skipping getAllEvents - already loading');
+      return [];
+    }
+
+    _isLoadingAllEvents = true;
     _logger.info('Getting all sexual events');
 
-    final rows = await _db.query('sexual_event');
+    try {
+      final rows = await _db.query('sexual_event');
 
-    final events = <SexualEvent>[];
-    for (final row in rows) {
-      events.add(
-        SexualEvent.fromJson(
-          jsonDecode(row["json"] as String) as Map<String, dynamic>,
-        ),
-      );
+      final events = <SexualEvent>[];
+      for (final row in rows) {
+        events.add(
+          SexualEvent.fromJson(
+            jsonDecode(row["json"] as String) as Map<String, dynamic>,
+          ),
+        );
+      }
+      return events;
+    } finally {
+      _isLoadingAllEvents = false;
     }
-    return events;
   }
 
   Future<List<Person>> getPersonsFromActivity(EventActivity activity) async {

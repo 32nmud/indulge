@@ -331,17 +331,6 @@ class DatabaseEngine {
       );
     }
 
-    // Get CREATE TABLE statements for each table
-    final Map<String, String> createStatements = {};
-    for (final tableName in tableNames) {
-      final schemaResult = await unencryptedDb.rawQuery(
-        "SELECT sql FROM sqlite_master WHERE type='table' AND name='$tableName'",
-      );
-      if (schemaResult.isNotEmpty) {
-        createStatements[tableName] = schemaResult.first['sql'] as String;
-      }
-    }
-
     await unencryptedDb.close();
 
     // Step 2: Backup and delete unencrypted DB
@@ -366,16 +355,25 @@ class DatabaseEngine {
       );
 
       // Step 4: Create tables using the original schema
-      for (final tableName in tableNames) {
-        final createSql = createStatements[tableName];
-        if (createSql != null) {
-          await encryptedDb.execute(createSql);
-          _logger.info('Created table: $tableName');
-        }
+      // Load schema from asset file (which has correct PRIMARY KEY definitions)
+      final schemaContent = await rootBundle.loadString(
+        'assets/sql/schema.sql',
+      );
+      final schemaStatements = schemaContent
+          .split(';')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      for (final statement in schemaStatements) {
+        await encryptedDb.execute(statement);
+        _logger.info('DEBUGGING: Executed statement: $statement');
       }
 
       // Step 5: Import all data into encrypted DB
+      // Skip android_metadata - it's Android-specific and not in our schema
       for (final tableName in tableNames) {
+        if (tableName == 'android_metadata') continue;
+
         final data = allData[tableName];
         if (data != null && data.isNotEmpty) {
           final batch = encryptedDb.batch();

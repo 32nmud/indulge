@@ -35,12 +35,21 @@ class _ContactListPageState extends State<ContactListPage>
   @override
   bool get wantKeepAlive => true;
 
+  // Guards to prevent multiple loads
+  bool _isLoadingPersons = false;
+  bool _initialLoadComplete = false;
+
   @override
   void initState() {
     super.initState();
-    _loadPersons();
-    // Add listener to store to refresh when data changes
+    // Guard against re-initialization (can happen with IndexedStack)
+    if (_initialLoadComplete) {
+      return;
+    }
+    // Defer loading to avoid triggering during widget tree build
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPersons();
+      // Add listener after initial load to avoid triggering on initial state
       context.read<EventStateStore>().addListener(_onStoreChange);
     });
 
@@ -105,6 +114,17 @@ class _ContactListPageState extends State<ContactListPage>
   }
 
   Future<void> _loadPersons({bool forceLoadEvents = false}) async {
+    // Guard against concurrent loading
+    if (_isLoadingPersons) {
+      return;
+    }
+
+    // Skip if we already have counts and not forced
+    if (_personEventCounts.isNotEmpty && !forceLoadEvents) {
+      return;
+    }
+
+    _isLoadingPersons = true;
     setState(() => _isLoading = true);
     final provider = context.read<SexualEventsProvider>();
     final store = context.read<EventStateStore>();
@@ -158,6 +178,9 @@ class _ContactListPageState extends State<ContactListPage>
     // Initialize pager with visible persons so the UI can show a paginated list.
     _pager.reset();
     _pager.loadInitial(visiblePersons);
+
+    _isLoadingPersons = false;
+    _initialLoadComplete = true;
 
     setState(() {
       _persons = visiblePersons;
