@@ -1,9 +1,0 @@
-{
-  "id": "7",
-  "name": "Pet Play",
-  "displayCharacter": "🐶",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

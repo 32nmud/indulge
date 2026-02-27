@@ -1,9 +1,0 @@
-{
-  "id": "6c49fb6e-339d-4788-b393-da416bbd6014",
-  "name": "Single tail/Whip",
-  "displayCharacter": "💥",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

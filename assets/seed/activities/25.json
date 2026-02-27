@@ -1,9 +1,0 @@
-{
-  "id": "25",
-  "name": "Age Play",
-  "displayCharacter": "👶",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

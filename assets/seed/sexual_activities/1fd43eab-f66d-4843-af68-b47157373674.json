@@ -1,0 +1,27 @@
+{
+  "id": "1fd43eab-f66d-4843-af68-b47157373674",
+  "name": "BSDM",
+  "displayCharacter": "",
+  "subCategories": [
+    {
+      "reference": "5a0cfb05-2b4d-4157-a615-2666886cf28c",
+      "resourceType": "SexualActivityCategory"
+    },
+    {
+      "reference": "e2dc5cc7-d90d-455d-a347-abba4b9d3acb",
+      "resourceType": "SexualActivityCategory"
+    },
+    {
+      "reference": "f05c8967-84e6-4ffb-a91a-0969f144f68f",
+      "resourceType": "SexualActivityCategory"
+    },
+    {
+      "reference": "a4d996a9-7339-45e1-b9f7-fad7cee807eb",
+      "resourceType": "SexualActivityCategory"
+    },
+    {
+      "reference": "7ae4241b-1938-4cc2-a936-b8640895156e",
+      "resourceType": "SexualActivityCategory"
+    }
+  ]
+}

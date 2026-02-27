@@ -12,7 +12,6 @@ void main() {
     ActivityCount activityCount(String activityId) => ActivityCount(
       activityReference: ref(activityId, 'SexualActivity'),
       count: 1,
-      version: 2,
     );
 
     ActivityParticipant participant(
@@ -287,7 +286,6 @@ void main() {
           resourceType: 'SexualActivity',
         ),
         count: 1,
-        version: 2,
       );
 
       final e = event(

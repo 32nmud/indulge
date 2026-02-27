@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/data/models/v2/clinical_event/clinical_event.dart';
+import 'package:indulge/data/models/v1/clinical_event/clinical_event.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/view/common/sexual_event_card.dart';
 import 'package:indulge/view/common/clinical_event_card/clinical_event_card.dart';

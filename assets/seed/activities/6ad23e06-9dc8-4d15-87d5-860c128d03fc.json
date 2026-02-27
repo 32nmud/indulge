@@ -1,9 +1,0 @@
-{
-  "id": "6ad23e06-9dc8-4d15-87d5-860c128d03fc",
-  "name": "Sound",
-  "displayCharacter": "🔊",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

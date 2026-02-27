@@ -1,0 +1,72 @@
+{
+  "id": "f2b66dcf-fc5d-431e-a847-2351d663bd6a",
+  "name": "Gear",
+  "displayCharacter": "",
+  "activities": [
+    {
+      "name": "Leather",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Rubber/latex",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Neoprene",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Athletic/sportswear",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Sneakers/boots",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Socks",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Underwear",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Miltac",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Uniforms (cop, medic, etc)",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Formalwear",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Pet play gear",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Harnesses",
+      "displayCharacter": "",
+      "isActionable": false
+    },
+    {
+      "name": "Masks/hoods",
+      "displayCharacter": "",
+      "isActionable": false
+    }
+  ]
+}

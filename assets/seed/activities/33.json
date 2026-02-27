@@ -1,9 +1,0 @@
-{
-  "id": "33",
-  "name": "Feeding",
-  "displayCharacter": "🍽️",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": true
-}

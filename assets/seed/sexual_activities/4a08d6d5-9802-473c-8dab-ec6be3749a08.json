@@ -1,0 +1,19 @@
+{
+  "id": "4a08d6d5-9802-473c-8dab-ec6be3749a08",
+  "name": "Penetration",
+  "displayCharacter": "",
+  "subCategories": [
+    {
+      "reference": "b11baab6-7ca5-4926-9231-a162f03fa6fe",
+      "resourceType": "SexualActivityCategory"
+    },
+    {
+      "reference": "fd081bca-e606-45ed-a0dc-00a68fb50714",
+      "resourceType": "SexualActivityCategory"
+    },
+    {
+      "reference": "edb045f5-ad3c-4424-b199-275f5ea5c132",
+      "resourceType": "SexualActivityCategory"
+    }
+  ]
+}

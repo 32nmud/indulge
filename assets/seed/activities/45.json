@@ -1,9 +1,0 @@
-{
-  "id": "45",
-  "name": "Meth",
-  "displayCharacter": "💎",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": true,
-  "healthRisk": true,
-  "requiresPartner": false
-}

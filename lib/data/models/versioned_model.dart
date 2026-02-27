@@ -1,8 +1,6 @@
 /// Base interface for versioned models that support migration
 abstract class VersionedModel {
   /// The version number of this model
-  /// Version 1 (or null) = original model
-  /// Version 2 = renamed terminology (activities → categories, properties → activities)
   int get version;
 
   /// The resource type identifier

@@ -39,7 +39,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
       final store = context.read<EventStateStore>();
 
       for (var ref in widget.activityCategory!.activities) {
-        final activity = store.state.sexualActivities?[ref.reference];
+        final activity = store.state.sexualActivities?[ref.id];
         if (activity != null) {
           _activities.add(
             _ActivityRow(
@@ -368,7 +368,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     final activityRow = _activities[index];
     final id = activityRow.id;
     final isExisting =
-        widget.activityCategory?.activities.any((ref) => ref.reference == id) ??
+        widget.activityCategory?.activities.any((ref) => ref.id == id) ??
         false;
 
     if (isExisting) {

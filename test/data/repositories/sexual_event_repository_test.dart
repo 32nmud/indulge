@@ -132,34 +132,26 @@ void main() {
 
       test('SexualActivityCategory can be created', () {
         const activityCategory = SexualActivityCategory(
-          id: 'oral',
           name: 'Oral',
           displayCharacter: '👄',
-          requiresPartner: true,
         );
 
-        expect(activityCategory.id, equals('oral'));
         expect(activityCategory.name, equals('Oral'));
         expect(activityCategory.displayCharacter, equals('👄'));
-        expect(activityCategory.requiresPartner, isTrue);
       });
 
       test('SexualActivity can be created', () {
         const activity = SexualActivity(
-          id: 'giving',
           name: 'Giving',
           displayCharacter: '👅',
           stiRisk: false,
           healthRisk: false,
-          requiresPartner: true,
         );
 
-        expect(activity.id, equals('giving'));
         expect(activity.name, equals('Giving'));
         expect(activity.displayCharacter, equals('👅'));
         expect(activity.stiRisk, isFalse);
         expect(activity.healthRisk, isFalse);
-        expect(activity.requiresPartner, isTrue);
       });
 
       test('Reference can be created', () {
@@ -221,7 +213,7 @@ void main() {
       );
 
       test('SexualActivity resourceType is always "SexualActivity"', () {
-        const activity = SexualActivity(id: 'test', name: 'Test');
+        const activity = SexualActivity(name: 'Test');
 
         expect(activity.resourceType, equals('SexualActivity'));
       });

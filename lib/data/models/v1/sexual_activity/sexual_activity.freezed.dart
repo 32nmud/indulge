@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualActivity {
 
- Reference get type; List<SexualActivityParticipant> get participants;
+ String get id; String get name; String get displayCharacter; bool get canHaveMultipleParticipants; bool get stiRisk; bool get healthRisk; bool get requiresPartner; bool get isActionable; int get sortOrder;
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SexualActivityCopyWith<SexualActivity> get copyWith => _$SexualActivityCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivity&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other.participants, participants));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivity&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants)&&(identical(other.stiRisk, stiRisk) || other.stiRisk == stiRisk)&&(identical(other.healthRisk, healthRisk) || other.healthRisk == healthRisk)&&(identical(other.requiresPartner, requiresPartner) || other.requiresPartner == requiresPartner)&&(identical(other.isActionable, isActionable) || other.isActionable == isActionable)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,const DeepCollectionEquality().hash(participants));
+int get hashCode => Object.hash(runtimeType,id,name,displayCharacter,canHaveMultipleParticipants,stiRisk,healthRisk,requiresPartner,isActionable,sortOrder);
 
 @override
 String toString() {
-  return 'SexualActivity(type: $type, participants: $participants)';
+  return 'SexualActivity(id: $id, name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants, stiRisk: $stiRisk, healthRisk: $healthRisk, requiresPartner: $requiresPartner, isActionable: $isActionable, sortOrder: $sortOrder)';
 }
 
 
@@ -48,11 +48,11 @@ abstract mixin class $SexualActivityCopyWith<$Res>  {
   factory $SexualActivityCopyWith(SexualActivity value, $Res Function(SexualActivity) _then) = _$SexualActivityCopyWithImpl;
 @useResult
 $Res call({
- Reference type, List<SexualActivityParticipant> participants
+ String id, String name, String displayCharacter, bool canHaveMultipleParticipants, bool stiRisk, bool healthRisk, bool requiresPartner, bool isActionable, int sortOrder
 });
 
 
-$ReferenceCopyWith<$Res> get type;
+
 
 }
 /// @nodoc
@@ -65,23 +65,21 @@ class _$SexualActivityCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? participants = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,Object? stiRisk = null,Object? healthRisk = null,Object? requiresPartner = null,Object? isActionable = null,Object? sortOrder = null,}) {
   return _then(_self.copyWith(
-type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as Reference,participants: null == participants ? _self.participants : participants // ignore: cast_nullable_to_non_nullable
-as List<SexualActivityParticipant>,
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,displayCharacter: null == displayCharacter ? _self.displayCharacter : displayCharacter // ignore: cast_nullable_to_non_nullable
+as String,canHaveMultipleParticipants: null == canHaveMultipleParticipants ? _self.canHaveMultipleParticipants : canHaveMultipleParticipants // ignore: cast_nullable_to_non_nullable
+as bool,stiRisk: null == stiRisk ? _self.stiRisk : stiRisk // ignore: cast_nullable_to_non_nullable
+as bool,healthRisk: null == healthRisk ? _self.healthRisk : healthRisk // ignore: cast_nullable_to_non_nullable
+as bool,requiresPartner: null == requiresPartner ? _self.requiresPartner : requiresPartner // ignore: cast_nullable_to_non_nullable
+as bool,isActionable: null == isActionable ? _self.isActionable : isActionable // ignore: cast_nullable_to_non_nullable
+as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
-/// Create a copy of SexualActivity
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ReferenceCopyWith<$Res> get type {
-  
-  return $ReferenceCopyWith<$Res>(_self.type, (value) {
-    return _then(_self.copyWith(type: value));
-  });
-}
+
 }
 
 
@@ -163,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference type,  List<SexualActivityParticipant> participants)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualActivity() when $default != null:
-return $default(_that.type,_that.participants);case _:
+return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
   return orElse();
 
 }
@@ -184,10 +182,10 @@ return $default(_that.type,_that.participants);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference type,  List<SexualActivityParticipant> participants)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivity():
-return $default(_that.type,_that.participants);case _:
+return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +202,10 @@ return $default(_that.type,_that.participants);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference type,  List<SexualActivityParticipant> participants)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivity() when $default != null:
-return $default(_that.type,_that.participants);case _:
+return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
   return null;
 
 }
@@ -218,18 +216,19 @@ return $default(_that.type,_that.participants);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _SexualActivity implements SexualActivity {
-  const _SexualActivity({this.type = const Reference(), final  List<SexualActivityParticipant> participants = const []}): _participants = participants;
+class _SexualActivity extends SexualActivity {
+  const _SexualActivity({this.id = "", this.name = "unknown", this.displayCharacter = "❔", this.canHaveMultipleParticipants = true, this.stiRisk = false, this.healthRisk = false, this.requiresPartner = false, this.isActionable = true, this.sortOrder = 0}): super._();
   factory _SexualActivity.fromJson(Map<String, dynamic> json) => _$SexualActivityFromJson(json);
 
-@override@JsonKey() final  Reference type;
- final  List<SexualActivityParticipant> _participants;
-@override@JsonKey() List<SexualActivityParticipant> get participants {
-  if (_participants is EqualUnmodifiableListView) return _participants;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_participants);
-}
-
+@override@JsonKey() final  String id;
+@override@JsonKey() final  String name;
+@override@JsonKey() final  String displayCharacter;
+@override@JsonKey() final  bool canHaveMultipleParticipants;
+@override@JsonKey() final  bool stiRisk;
+@override@JsonKey() final  bool healthRisk;
+@override@JsonKey() final  bool requiresPartner;
+@override@JsonKey() final  bool isActionable;
+@override@JsonKey() final  int sortOrder;
 
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
@@ -244,16 +243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivity&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other._participants, _participants));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivity&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants)&&(identical(other.stiRisk, stiRisk) || other.stiRisk == stiRisk)&&(identical(other.healthRisk, healthRisk) || other.healthRisk == healthRisk)&&(identical(other.requiresPartner, requiresPartner) || other.requiresPartner == requiresPartner)&&(identical(other.isActionable, isActionable) || other.isActionable == isActionable)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,const DeepCollectionEquality().hash(_participants));
+int get hashCode => Object.hash(runtimeType,id,name,displayCharacter,canHaveMultipleParticipants,stiRisk,healthRisk,requiresPartner,isActionable,sortOrder);
 
 @override
 String toString() {
-  return 'SexualActivity(type: $type, participants: $participants)';
+  return 'SexualActivity(id: $id, name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants, stiRisk: $stiRisk, healthRisk: $healthRisk, requiresPartner: $requiresPartner, isActionable: $isActionable, sortOrder: $sortOrder)';
 }
 
 
@@ -264,11 +263,11 @@ abstract mixin class _$SexualActivityCopyWith<$Res> implements $SexualActivityCo
   factory _$SexualActivityCopyWith(_SexualActivity value, $Res Function(_SexualActivity) _then) = __$SexualActivityCopyWithImpl;
 @override @useResult
 $Res call({
- Reference type, List<SexualActivityParticipant> participants
+ String id, String name, String displayCharacter, bool canHaveMultipleParticipants, bool stiRisk, bool healthRisk, bool requiresPartner, bool isActionable, int sortOrder
 });
 
 
-@override $ReferenceCopyWith<$Res> get type;
+
 
 }
 /// @nodoc
@@ -281,24 +280,22 @@ class __$SexualActivityCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? participants = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,Object? stiRisk = null,Object? healthRisk = null,Object? requiresPartner = null,Object? isActionable = null,Object? sortOrder = null,}) {
   return _then(_SexualActivity(
-type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as Reference,participants: null == participants ? _self._participants : participants // ignore: cast_nullable_to_non_nullable
-as List<SexualActivityParticipant>,
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,displayCharacter: null == displayCharacter ? _self.displayCharacter : displayCharacter // ignore: cast_nullable_to_non_nullable
+as String,canHaveMultipleParticipants: null == canHaveMultipleParticipants ? _self.canHaveMultipleParticipants : canHaveMultipleParticipants // ignore: cast_nullable_to_non_nullable
+as bool,stiRisk: null == stiRisk ? _self.stiRisk : stiRisk // ignore: cast_nullable_to_non_nullable
+as bool,healthRisk: null == healthRisk ? _self.healthRisk : healthRisk // ignore: cast_nullable_to_non_nullable
+as bool,requiresPartner: null == requiresPartner ? _self.requiresPartner : requiresPartner // ignore: cast_nullable_to_non_nullable
+as bool,isActionable: null == isActionable ? _self.isActionable : isActionable // ignore: cast_nullable_to_non_nullable
+as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
-/// Create a copy of SexualActivity
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ReferenceCopyWith<$Res> get type {
-  
-  return $ReferenceCopyWith<$Res>(_self.type, (value) {
-    return _then(_self.copyWith(type: value));
-  });
-}
+
 }
 
 // dart format on

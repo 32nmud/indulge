@@ -1,9 +1,0 @@
-{
-  "id": "42",
-  "name": "Cocaine",
-  "displayCharacter": "❄️",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": true,
-  "healthRisk": true,
-  "requiresPartner": false
-}

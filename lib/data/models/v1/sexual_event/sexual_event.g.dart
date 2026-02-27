@@ -13,8 +13,12 @@ _SexualEvent _$SexualEventFromJson(Map<String, dynamic> json) => _SexualEvent(
       ? null
       : DateTime.parse(json['lastModifiedDate'] as String),
   activities: (json['activities'] as List<dynamic>)
-      .map((e) => SexualActivity.fromJson(e as Map<String, dynamic>))
+      .map((e) => EventActivity.fromJson(e as Map<String, dynamic>))
       .toList(),
+  location: json['location'] == null
+      ? null
+      : Location.fromJson(json['location'] as Map<String, dynamic>),
+  notes: json['notes'] as String?,
 );
 
 Map<String, dynamic> _$SexualEventToJson(_SexualEvent instance) =>
@@ -23,4 +27,6 @@ Map<String, dynamic> _$SexualEventToJson(_SexualEvent instance) =>
       'date': instance.date.toIso8601String(),
       'lastModifiedDate': instance.lastModifiedDate?.toIso8601String(),
       'activities': instance.activities,
+      'location': instance.location,
+      'notes': instance.notes,
     };

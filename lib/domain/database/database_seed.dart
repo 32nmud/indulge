@@ -28,17 +28,9 @@ class DatabaseSeed {
           final json = jsonDecode(content) as Map<String, dynamic>;
 
           if (file.name.contains('categories/')) {
-            await _seedSexualActivityCategory(
-              txn,
-              'sexual_activity_type',
-              json,
-            );
+            await _seedSexualActivityCategory(txn, 'sexual_activities', json);
           } else if (file.name.contains('activities/')) {
-            await _seedSexualActivity(
-              txn,
-              'sexual_activity_type_property',
-              json,
-            );
+            await _seedSexualActivity(txn, 'sexual_activities', json);
           } else if (file.name.contains('persons/')) {
             await _seedPerson(txn, 'person', json);
           } else if (file.name.contains('sexual_events/')) {

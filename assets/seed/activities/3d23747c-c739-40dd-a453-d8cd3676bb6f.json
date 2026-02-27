@@ -1,9 +1,0 @@
-{
-  "id": "3d23747c-c739-40dd-a453-d8cd3676bb6f",
-  "name": "Penetrable",
-  "displayCharacter": "🕳️",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

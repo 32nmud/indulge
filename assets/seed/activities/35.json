@@ -1,9 +1,0 @@
-{
-  "id": "35",
-  "name": "Pay Play",
-  "displayCharacter": "💸",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": true
-}

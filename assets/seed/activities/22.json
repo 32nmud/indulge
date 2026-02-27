@@ -1,9 +1,0 @@
-{
-  "id": "22",
-  "name": "Hypnosis",
-  "displayCharacter": "😵‍💫",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}
