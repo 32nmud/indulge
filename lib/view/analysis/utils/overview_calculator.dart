@@ -60,6 +60,8 @@ class OverviewCalculator {
       dayOfWeekCountsByType: agg.dayOfWeekCountsByType,
       eventPartnerCounts: agg.eventPartnerCounts,
       eventPropertyCounts: agg.eventPropertyCounts,
+      eventActionablePropertyCounts: agg.eventActionablePropertyCounts,
+      eventGearPropertyCounts: agg.eventGearPropertyCounts,
       eventActivityCounts: agg.eventActivityCounts,
       thisYearStart: thisYearStart,
     );

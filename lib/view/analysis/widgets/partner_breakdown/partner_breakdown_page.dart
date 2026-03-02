@@ -20,7 +20,20 @@ class PartnerBreakdownPage extends StatelessWidget {
           subtitle: 'Top partners and diversity stats',
         ),
         TopPartnersSection(data: data),
-        PropertyPartnerSection(data: data),
+        PropertyPartnerSection(
+          data: data,
+          showActionable: true,
+          title: 'Partner Diversity — Activities',
+          subtitle: 'Unique partners per activity — grouped by category',
+          icon: Icons.sports_martial_arts,
+        ),
+        PropertyPartnerSection(
+          data: data,
+          showActionable: false,
+          title: 'Partner Diversity — Gear & Items',
+          subtitle: 'Unique partners per item — grouped by category',
+          icon: Icons.hardware,
+        ),
         const SizedBox(height: 16),
       ],
     );

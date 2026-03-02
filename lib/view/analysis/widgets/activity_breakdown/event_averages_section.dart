@@ -10,14 +10,14 @@ class EventAveragesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate values based on filter
     String eventsPerWeek;
     String eventsPerMonth;
     String activitiesPerWeek;
     String activitiesPerMonth;
     String partnersPerEvent;
     String activitiesPerEvent;
-    String sexualActivitiesPerEvent;
+    String actionablePerEvent;
+    String gearPerEvent;
 
     if (filterType == null) {
       eventsPerWeek = data.averageEventsPerWeek.toStringAsFixed(1);
@@ -26,14 +26,13 @@ class EventAveragesSection extends StatelessWidget {
       activitiesPerMonth = data.averageActivitiesPerMonth.toStringAsFixed(1);
       partnersPerEvent = data.averagePartnersPerEvent.toStringAsFixed(1);
       activitiesPerEvent = data.averageActivitiesPerEvent.toStringAsFixed(1);
-      sexualActivitiesPerEvent = data.averageSexualActivitiesPerEvent
+      actionablePerEvent = data.averageActionableActivitiesPerEvent
           .toStringAsFixed(1);
+      gearPerEvent = data.averageGearPerEvent.toStringAsFixed(1);
     } else {
       final events = data.eventsByType[filterType!] ?? [];
       final count = events.length;
 
-      // Approximate duration from global data
-      // Avoid division by zero
       final weeks = data.averageEventsPerWeek > 0
           ? data.eventsThisYear / data.averageEventsPerWeek
           : 1.0;
@@ -41,30 +40,35 @@ class EventAveragesSection extends StatelessWidget {
           ? data.eventsThisYear / data.averageEventsPerMonth
           : 1.0;
 
-      // Totals
       int totalActivities = 0;
-      int totalSexualActivities = 0;
+      int totalActionable = 0;
+      int totalGear = 0;
       int totalPartners = 0;
 
       for (final event in events) {
         totalActivities += event.activities.length;
+
         for (final act in event.activities) {
           for (final p in act.participants) {
             for (final ac in p.activityCounts) {
-              totalSexualActivities += ac.count;
+              final compositeKey =
+                  '${ac.categoryReference.reference}:${ac.activityName}';
+              final sexualActivity = data.sexualActivities[compositeKey];
+              final isActionable = sexualActivity?.isActionable ?? true;
+              if (isActionable) {
+                totalActionable += ac.count;
+              } else {
+                totalGear += ac.count;
+              }
             }
           }
         }
 
-        // Partners calculation
         if (filterType == AnalysisEventType.solo) {
           // Solo implies 0 partners
         } else if (filterType == AnalysisEventType.couple) {
           totalPartners += 1;
         } else {
-          // Group: estimate based on participants.
-          // We don't have easy access to "Me" ID here, but we can count unique participants.
-          // Assuming 1 is "Me", partners = count - 1.
           final uniqueParticipants = <String>{};
           for (final act in event.activities) {
             for (final p in act.participants) {
@@ -87,8 +91,9 @@ class EventAveragesSection extends StatelessWidget {
           .toStringAsFixed(1);
       activitiesPerEvent = (count > 0 ? totalActivities / count : 0)
           .toStringAsFixed(1);
-      sexualActivitiesPerEvent = (count > 0 ? totalSexualActivities / count : 0)
+      actionablePerEvent = (count > 0 ? totalActionable / count : 0)
           .toStringAsFixed(1);
+      gearPerEvent = (count > 0 ? totalGear / count : 0).toStringAsFixed(1);
     }
 
     return Card(
@@ -117,7 +122,7 @@ class EventAveragesSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Event Averages
+            // Events per week / month
             Row(
               children: [
                 Expanded(
@@ -140,7 +145,7 @@ class EventAveragesSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Category Averages
+            // Categories per week / month
             Row(
               children: [
                 Expanded(
@@ -163,7 +168,7 @@ class EventAveragesSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Per-Event Averages
+            // Partners + categories per event
             Row(
               children: [
                 Expanded(
@@ -186,11 +191,27 @@ class EventAveragesSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _buildAverageItem(
-              context,
-              label: 'Activities/Event',
-              value: sexualActivitiesPerEvent,
-              icon: Icons.label,
+            // Activities/Event (actionable only) + Items/Event (gear only)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildAverageItem(
+                    context,
+                    label: 'Activities/Event',
+                    value: actionablePerEvent,
+                    icon: Icons.sports_martial_arts,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildAverageItem(
+                    context,
+                    label: 'Items/Event',
+                    value: gearPerEvent,
+                    icon: Icons.hardware,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -978,19 +978,19 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
   }
 
   Future<void> _showActivityPicker() async {
-    // Build hierarchy of Category -> Activities
+    // Build a map of categoryId -> Set<compositeKey> using the count's own
+    // categoryReference so activities are grouped under their actual owning
+    // category (which may be a subcategory).
     final categoryActivities = <String, Set<String>>{};
 
     for (final event in widget.data.events) {
       for (final activity in event.activities) {
-        final catId = activity.category.reference;
         for (final participant in activity.participants) {
           for (final count in participant.activityCounts) {
-            // Use categoryReference + activityName as the activity identifier
             final catRef = count.categoryReference.reference;
             final actName = count.activityName;
             final actId = '$catRef:$actName';
-            categoryActivities.putIfAbsent(catId, () => {}).add(actId);
+            categoryActivities.putIfAbsent(catRef, () => {}).add(actId);
           }
         }
       }
@@ -1006,7 +1006,6 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
           setState(() {
             _selectedPropertyIds.clear();
             _selectedPropertyIds.addAll(newSelection);
-            // Add new selections to visible properties if not present
             final visibleSet = {..._topProperties, ..._selectedPropertyIds};
             _visibleProperties = visibleSet.toList();
           });
@@ -1016,8 +1015,12 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
   }
 }
 
+// ── Activity Picker Dialog ─────────────────────────────────────────────────
+
 class _ActivityPickerDialog extends StatefulWidget {
   final ActivityBreakdownData data;
+
+  /// catId -> set of composite keys ("catId:activityName") seen in events.
   final Map<String, Set<String>> categoryActivities;
   final Set<String> selectedIds;
   final ValueChanged<Set<String>> onSelectionChanged;
@@ -1036,6 +1039,108 @@ class _ActivityPickerDialog extends StatefulWidget {
 class _ActivityPickerDialogState extends State<_ActivityPickerDialog> {
   late Set<String> _tempSelectedIds;
 
+  // ── Hierarchy helpers ──────────────────────────────────────────────────
+
+  Set<String> get _subcategoryIds {
+    final ids = <String>{};
+    for (final cat in widget.data.allCategoriesMap.values) {
+      for (final ref in cat.subCategories) {
+        if (ref.reference.isNotEmpty) ids.add(ref.reference);
+      }
+    }
+    return ids;
+  }
+
+  List<SexualActivityCategory> _topLevel(Set<String> subcatIds) {
+    // Only include top-level categories that have activity data (directly or
+    // via subcategories).
+    return widget.data.allCategoriesMap.values.where((c) {
+      if (subcatIds.contains(c.id)) return false;
+      if (widget.categoryActivities.containsKey(c.id)) return true;
+      // Check if any subcategory has data.
+      for (final ref in c.subCategories) {
+        if (widget.categoryActivities.containsKey(ref.reference)) {
+          return true;
+        }
+      }
+      return false;
+    }).toList()..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  }
+
+  List<SexualActivityCategory> _subsOf(SexualActivityCategory parent) {
+    return parent.subCategories
+        .where((r) => r.reference.isNotEmpty)
+        .map((r) => widget.data.allCategoriesMap[r.reference])
+        .whereType<SexualActivityCategory>()
+        .where((s) => widget.categoryActivities.containsKey(s.id))
+        .toList();
+  }
+
+  /// Activities in [cat] sorted by their user-defined sortOrder.
+  List<MapEntry<String, String>> _sortedActivitiesFor(
+    SexualActivityCategory cat,
+  ) {
+    final actIds = widget.categoryActivities[cat.id] ?? {};
+    // Build a sortable list: each entry is (compositeKey, activityName)
+    final entries = actIds.map((id) {
+      final activity = widget.data.sexualActivities[id];
+      return MapEntry(id, activity?.name ?? '');
+    }).toList();
+
+    // Sort by sortOrder from the category's own activities list if available,
+    // falling back to alphabetical by name.
+    final catActivities = cat.activities;
+    final orderMap = <String, int>{};
+    for (int i = 0; i < catActivities.length; i++) {
+      orderMap[catActivities[i].name] = catActivities[i].sortOrder;
+    }
+
+    entries.sort((a, b) {
+      final orderA = orderMap[a.value] ?? 9999;
+      final orderB = orderMap[b.value] ?? 9999;
+      if (orderA != orderB) return orderA.compareTo(orderB);
+      return a.value.compareTo(b.value);
+    });
+
+    return entries;
+  }
+
+  // ── Selection helpers ──────────────────────────────────────────────────
+
+  Set<String> _allKeysFor(SexualActivityCategory cat) {
+    final keys = <String>{};
+    for (final id in widget.categoryActivities[cat.id] ?? {}) {
+      keys.add(id);
+    }
+    for (final sub in _subsOf(cat)) {
+      for (final id in widget.categoryActivities[sub.id] ?? {}) {
+        keys.add(id);
+      }
+    }
+    return keys;
+  }
+
+  bool _allSelectedFor(SexualActivityCategory cat) {
+    final keys = _allKeysFor(cat);
+    return keys.isNotEmpty && keys.every((k) => _tempSelectedIds.contains(k));
+  }
+
+  bool _anySelectedFor(SexualActivityCategory cat) =>
+      _allKeysFor(cat).any((k) => _tempSelectedIds.contains(k));
+
+  Set<String> _subKeys(SexualActivityCategory sub) =>
+      (widget.categoryActivities[sub.id] ?? {}).toSet();
+
+  bool _allSubSelected(SexualActivityCategory sub) {
+    final keys = _subKeys(sub);
+    return keys.isNotEmpty && keys.every((k) => _tempSelectedIds.contains(k));
+  }
+
+  bool _anySubSelected(SexualActivityCategory sub) =>
+      _subKeys(sub).any((k) => _tempSelectedIds.contains(k));
+
+  // ── Build ──────────────────────────────────────────────────────────────
+
   @override
   void initState() {
     super.initState();
@@ -1044,75 +1149,28 @@ class _ActivityPickerDialogState extends State<_ActivityPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final sortedCategories = widget.categoryActivities.keys.toList()
-      ..sort((a, b) {
-        final nameA = widget.data.activityCategories[a]?.name ?? '';
-        final nameB = widget.data.activityCategories[b]?.name ?? '';
-        return nameA.compareTo(nameB);
-      });
+    final subcatIds = _subcategoryIds;
+    final topLevel = _topLevel(subcatIds);
 
     return AlertDialog(
       title: const Text('Select Activities'),
+      contentPadding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: sortedCategories.length,
-          itemBuilder: (context, index) {
-            final catId = sortedCategories[index];
-            final category = widget.data.activityCategories[catId];
-            final catName = category?.name ?? 'Unknown';
-            final catChar = category?.displayCharacter;
-            final catLabel = catChar != null && catChar.isNotEmpty
-                ? '$catChar $catName'
-                : catName;
-
-            final activityIds = widget.categoryActivities[catId]!.toList()
-              ..sort((a, b) {
-                final nameA = widget.data.sexualActivities[a]?.name ?? '';
-                final nameB = widget.data.sexualActivities[b]?.name ?? '';
-                return nameA.compareTo(nameB);
-              });
-
-            return ExpansionTile(
-              title: Text(catLabel),
-              initiallyExpanded: activityIds.any(
-                (id) => _tempSelectedIds.contains(id),
-              ),
-              children: activityIds.map((actId) {
-                final activity = widget.data.sexualActivities[actId];
-                final actName = activity?.name ?? 'Unknown';
-                final actChar = activity?.displayCharacter;
-                final actLabel =
-                    actChar != null && actChar.isNotEmpty && actChar != '❔'
-                    ? '$actChar $actName'
-                    : actName;
-                final isSelected = _tempSelectedIds.contains(actId);
-
-                return CheckboxListTile(
-                  title: Text(actLabel),
-                  value: isSelected,
-                  onChanged: (val) {
-                    setState(() {
-                      if (val == true) {
-                        _tempSelectedIds.add(actId);
-                      } else {
-                        _tempSelectedIds.remove(actId);
-                      }
-                    });
-                  },
-                  dense: true,
-                  contentPadding: const EdgeInsets.only(left: 16, right: 8),
-                );
-              }).toList(),
-            );
-          },
+          itemCount: topLevel.length,
+          itemBuilder: (context, i) => _buildParentSection(topLevel[i]),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => setState(() => _tempSelectedIds.clear()),
+          child: const Text('Clear'),
         ),
         FilledButton(
           onPressed: () {
@@ -1122,6 +1180,242 @@ class _ActivityPickerDialogState extends State<_ActivityPickerDialog> {
           child: const Text('Apply'),
         ),
       ],
+    );
+  }
+
+  Widget _buildParentSection(SexualActivityCategory cat) {
+    final subs = _subsOf(cat);
+    final directActivities = _sortedActivitiesFor(cat);
+    final allSel = _allSelectedFor(cat);
+    final anySel = _anySelectedFor(cat);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Parent header row
+        InkWell(
+          onTap: () {
+            final all = _allKeysFor(cat);
+            setState(() {
+              if (allSel) {
+                _tempSelectedIds.removeAll(all);
+              } else {
+                _tempSelectedIds.addAll(all);
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: allSel ? true : (anySel ? null : false),
+                    tristate: true,
+                    visualDensity: VisualDensity.compact,
+                    onChanged: (_) {
+                      final all = _allKeysFor(cat);
+                      setState(() {
+                        if (allSel) {
+                          _tempSelectedIds.removeAll(all);
+                        } else {
+                          _tempSelectedIds.addAll(all);
+                        }
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  cat.displayCharacter ?? '❔',
+                  style: const TextStyle(fontSize: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    cat.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                if (subs.isNotEmpty)
+                  Icon(
+                    Icons.account_tree_outlined,
+                    size: 14,
+                    color: scheme.outline,
+                  ),
+              ],
+            ),
+          ),
+        ),
+
+        // Direct activities (indented)
+        if (directActivities.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 40),
+            child: Column(
+              children: directActivities
+                  .map((e) => _buildActivityTile(e.key))
+                  .toList(),
+            ),
+          ),
+
+        // Subcategory sections (indented)
+        ...subs.map((sub) => _buildSubSection(sub)),
+
+        const Divider(height: 1),
+      ],
+    );
+  }
+
+  Widget _buildSubSection(SexualActivityCategory sub) {
+    final activities = _sortedActivitiesFor(sub);
+    final allSel = _allSubSelected(sub);
+    final anySel = _anySubSelected(sub);
+    final subKeys = _subKeys(sub);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Sub-category header
+          InkWell(
+            onTap: () {
+              setState(() {
+                if (allSel) {
+                  _tempSelectedIds.removeAll(subKeys);
+                } else {
+                  _tempSelectedIds.addAll(subKeys);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Checkbox(
+                      value: allSel ? true : (anySel ? null : false),
+                      tristate: true,
+                      visualDensity: VisualDensity.compact,
+                      onChanged: (_) {
+                        setState(() {
+                          if (allSel) {
+                            _tempSelectedIds.removeAll(subKeys);
+                          } else {
+                            _tempSelectedIds.addAll(subKeys);
+                          }
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    sub.displayCharacter ?? '❔',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      sub.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Activities under this sub
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: Column(
+              children: activities
+                  .map((e) => _buildActivityTile(e.key))
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityTile(String actId) {
+    final activity = widget.data.sexualActivities[actId];
+    final actName = activity?.name ?? 'Unknown';
+    final actChar = activity?.displayCharacter ?? '';
+    final isSelected = _tempSelectedIds.contains(actId);
+    final scheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: () => setState(() {
+        if (isSelected) {
+          _tempSelectedIds.remove(actId);
+        } else {
+          _tempSelectedIds.add(actId);
+        }
+      }),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: Checkbox(
+                value: isSelected,
+                visualDensity: VisualDensity.compact,
+                onChanged: (_) => setState(() {
+                  if (isSelected) {
+                    _tempSelectedIds.remove(actId);
+                  } else {
+                    _tempSelectedIds.add(actId);
+                  }
+                }),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(actChar, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                actName,
+                style: TextStyle(fontSize: 13, color: scheme.onSurface),
+              ),
+            ),
+            if (activity?.stiRisk ?? false)
+              Tooltip(
+                message: 'STI Risk',
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  size: 14,
+                  color: Colors.purple.shade700,
+                ),
+              )
+            else if (activity?.healthRisk ?? false)
+              Tooltip(
+                message: 'Health Risk',
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  size: 14,
+                  color: Colors.orange.shade700,
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

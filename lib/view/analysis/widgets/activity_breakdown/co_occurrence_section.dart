@@ -118,8 +118,10 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
         for (final activity in event.activities) {
           for (final participant in activity.participants) {
             for (final count in participant.activityCounts) {
-              // Use categoryReference as the activity identifier
-              ids.add(count.categoryReference.reference);
+              // Use composite key: categoryReference:activityName
+              final catRef = count.categoryReference.reference;
+              final actName = count.activityName;
+              ids.add('$catRef:$actName');
             }
           }
         }
@@ -140,10 +142,12 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
       final id2 = parts[1];
       final name1 = categories
           ? (widget.data.activityCategories[id1]?.name ?? 'Unknown')
-          : (widget.data.sexualActivities[id1]?.name ?? 'Unknown');
+          : (widget.data.sexualActivities[id1]?.name ??
+                (id1.contains(':') ? id1.split(':').last : 'Unknown'));
       final name2 = categories
           ? (widget.data.activityCategories[id2]?.name ?? 'Unknown')
-          : (widget.data.sexualActivities[id2]?.name ?? 'Unknown');
+          : (widget.data.sexualActivities[id2]?.name ??
+                (id2.contains(':') ? id2.split(':').last : 'Unknown'));
 
       return CoOccurrencePair(
         id1: id1,

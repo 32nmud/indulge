@@ -11,6 +11,8 @@ class AveragesResult {
   final double averagePartnersPerEvent;
   final double averageActivitiesPerEvent;
   final double averageSexualActivitiesPerEvent;
+  final double averageActionableActivitiesPerEvent;
+  final double averageGearPerEvent;
   final Map<int, double> averageEventsPerDayOfWeek;
   final Map<AnalysisEventType, Map<int, double>> averageDayOfWeekCountsByType;
 
@@ -22,6 +24,8 @@ class AveragesResult {
     required this.averagePartnersPerEvent,
     required this.averageActivitiesPerEvent,
     required this.averageSexualActivitiesPerEvent,
+    required this.averageActionableActivitiesPerEvent,
+    required this.averageGearPerEvent,
     required this.averageEventsPerDayOfWeek,
     required this.averageDayOfWeekCountsByType,
   });
@@ -50,6 +54,8 @@ class AveragesCalculator {
     required Map<AnalysisEventType, Map<int, int>> dayOfWeekCountsByType,
     required Set<int> eventPartnerCounts,
     required Set<int> eventPropertyCounts,
+    required Set<int> eventActionablePropertyCounts,
+    required Set<int> eventGearPropertyCounts,
     required Set<int> eventActivityCounts,
     required DateTime thisYearStart,
   }) {
@@ -204,6 +210,17 @@ class AveragesCalculator {
               eventPropertyCounts.length
         : 0.0;
 
+    final averageActionableActivitiesPerEvent =
+        eventActionablePropertyCounts.isNotEmpty
+        ? eventActionablePropertyCounts.reduce((a, b) => a + b) /
+              eventActionablePropertyCounts.length
+        : 0.0;
+
+    final averageGearPerEvent = eventGearPropertyCounts.isNotEmpty
+        ? eventGearPropertyCounts.reduce((a, b) => a + b) /
+              eventGearPropertyCounts.length
+        : 0.0;
+
     // --- Average events per weekday (total) using calendar weekday occurrences ---
     final averageEventsPerDayOfWeekMap = <int, double>{};
     for (int d = 1; d <= 7; d++) {
@@ -221,6 +238,8 @@ class AveragesCalculator {
       averagePartnersPerEvent: averagePartnersPerEvent,
       averageActivitiesPerEvent: averageActivitiesPerEvent,
       averageSexualActivitiesPerEvent: averageSexualActivitiesPerEvent,
+      averageActionableActivitiesPerEvent: averageActionableActivitiesPerEvent,
+      averageGearPerEvent: averageGearPerEvent,
       averageEventsPerDayOfWeek: averageEventsPerDayOfWeekMap,
       averageDayOfWeekCountsByType: averageDayOfWeekCountsByType,
     );

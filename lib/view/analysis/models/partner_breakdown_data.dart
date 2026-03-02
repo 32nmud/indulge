@@ -1,6 +1,9 @@
 import 'package:indulge/data/models.dart';
 
 class PartnerBreakdownData {
+  /// Full map of all categories from the store (including subcategories).
+  /// Used by widgets that need to show the nested category hierarchy.
+  final Map<String, SexualActivityCategory> allCategoriesMap;
   final Map<String, int> personCounts;
   final Map<String, int> personEventCounts;
   final Map<String, List<SexualEvent>> personEvents;
@@ -22,6 +25,7 @@ class PartnerBreakdownData {
   final List<SexualEvent> events;
 
   const PartnerBreakdownData({
+    required this.allCategoriesMap,
     required this.personCounts,
     required this.personEventCounts,
     required this.personEvents,
@@ -45,6 +49,7 @@ class PartnerBreakdownData {
 
   factory PartnerBreakdownData.empty() {
     return const PartnerBreakdownData(
+      allCategoriesMap: {},
       personCounts: {},
       personEventCounts: {},
       personEvents: {},

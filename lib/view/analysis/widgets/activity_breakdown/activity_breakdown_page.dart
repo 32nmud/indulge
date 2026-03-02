@@ -37,7 +37,22 @@ class ActivityBreakdownPage extends StatelessWidget {
         CoOccurrenceSection(data: data, filterType: selectedType),
         const SizedBox(height: 16),
         ActivityTypeDistribution(data: data, filterType: selectedType),
-        PropertiesByActivitySection(data: data, filterType: selectedType),
+        PropertiesByActivitySection(
+          data: data,
+          filterType: selectedType,
+          showActionable: true,
+          title: 'Activities',
+          subtitle: 'Things you did — grouped by category',
+          icon: Icons.sports_martial_arts,
+        ),
+        PropertiesByActivitySection(
+          data: data,
+          filterType: selectedType,
+          showActionable: false,
+          title: 'Gear & Items',
+          subtitle: 'Things you used — grouped by category',
+          icon: Icons.hardware,
+        ),
         CategoryTrendsChart(
           data: data,
           filterType: selectedType,

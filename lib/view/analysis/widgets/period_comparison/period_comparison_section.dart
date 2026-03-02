@@ -251,21 +251,71 @@ class PeriodComparisonSection extends StatelessWidget {
                 secondPeriodStats.uniqueParticipants,
                 Icons.people,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              // Activities block
+              Text(
+                'Activities',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
               _buildStatComparison(
                 context,
                 'Total Activities',
                 firstPeriodStats.totalActivities,
                 secondPeriodStats.totalActivities,
-                Icons.list_alt,
+                Icons.sports_martial_arts,
               ),
               const SizedBox(height: 12),
               _buildStatComparison(
                 context,
                 'Unique Activities',
-                firstPeriodStats.uniqueProperties,
-                secondPeriodStats.uniqueProperties,
+                firstPeriodStats.uniqueActivities,
+                secondPeriodStats.uniqueActivities,
                 Icons.label,
+              ),
+              const SizedBox(height: 12),
+              _buildAverageComparison(
+                context,
+                'Avg Activities/Event',
+                firstPeriodStats.averageActivitiesPerEvent,
+                secondPeriodStats.averageActivitiesPerEvent,
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              // Items / gear block
+              Text(
+                'Gear & Items',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              _buildStatComparison(
+                context,
+                'Total Items Used',
+                firstPeriodStats.totalItems,
+                secondPeriodStats.totalItems,
+                Icons.hardware,
+              ),
+              const SizedBox(height: 12),
+              _buildStatComparison(
+                context,
+                'Unique Items',
+                firstPeriodStats.uniqueItems,
+                secondPeriodStats.uniqueItems,
+                Icons.label_outline,
+              ),
+              const SizedBox(height: 12),
+              _buildAverageComparison(
+                context,
+                'Avg Items/Event',
+                firstPeriodStats.averageItemsPerEvent,
+                secondPeriodStats.averageItemsPerEvent,
               ),
               const SizedBox(height: 16),
               const Divider(),
@@ -282,14 +332,6 @@ class PeriodComparisonSection extends StatelessWidget {
                 context,
                 firstPeriodStats,
                 secondPeriodStats,
-              ),
-              const SizedBox(height: 16),
-              // Average activities per event
-              _buildAverageComparison(
-                context,
-                'Avg Activities/Event',
-                firstPeriodStats.averageActivitiesPerEvent,
-                secondPeriodStats.averageActivitiesPerEvent,
               ),
             ],
           ],
@@ -883,7 +925,6 @@ class PeriodComparisonSection extends StatelessWidget {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           final id = participant.participant.reference;
-          // Only include IDs present in personCounts (excludes "Me")
           if (id.isNotEmpty && data.personCounts.containsKey(id)) {
             participantIds.add(id);
           }
@@ -892,27 +933,33 @@ class PeriodComparisonSection extends StatelessWidget {
     }
     final uniqueParticipants = participantIds.length;
 
-    // Count total activities
-    final totalActivities = periodEvents.fold<int>(
-      0,
-      (sum, e) => sum + e.activities.length,
-    );
+    // Count activity instances and unique types, split by actionable vs gear.
+    int totalActivities = 0;
+    int totalItems = 0;
+    final uniqueActivityKeys = <String>{};
+    final uniqueItemKeys = <String>{};
 
-    // Count unique properties (activity types)
-    final propertyIds = <String>{};
     for (final event in periodEvents) {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
-          for (final count in participant.activityCounts) {
-            // Use categoryReference as the activity identifier
-            if (count.categoryReference.reference.isNotEmpty) {
-              propertyIds.add(count.categoryReference.reference);
+          for (final ac in participant.activityCounts) {
+            final compositeKey =
+                '${ac.categoryReference.reference}:${ac.activityName}';
+            final sexualActivity = data.sexualActivities[compositeKey];
+            // Default to actionable when metadata is missing so nothing is lost.
+            final isActionable = sexualActivity?.isActionable ?? true;
+
+            if (isActionable) {
+              totalActivities += ac.count;
+              uniqueActivityKeys.add(compositeKey);
+            } else {
+              totalItems += ac.count;
+              uniqueItemKeys.add(compositeKey);
             }
           }
         }
       }
     }
-    final uniqueProperties = propertyIds.length;
 
     // Count event types (solo, couple, group)
     bool isInRange(DateTime date) {
@@ -932,20 +979,18 @@ class PeriodComparisonSection extends StatelessWidget {
         .where((e) => isInRange(e.date))
         .length;
 
-    // Calculate average activities per event
-    final averageActivitiesPerEvent = events > 0
-        ? totalActivities / events
-        : 0.0;
-
     return _PeriodStats(
       events: events,
       uniqueParticipants: uniqueParticipants,
       totalActivities: totalActivities,
-      uniqueProperties: uniqueProperties,
+      uniqueActivities: uniqueActivityKeys.length,
+      totalItems: totalItems,
+      uniqueItems: uniqueItemKeys.length,
       soloEvents: soloEvents,
       coupleEvents: coupleEvents,
       groupEvents: groupEvents,
-      averageActivitiesPerEvent: averageActivitiesPerEvent,
+      averageActivitiesPerEvent: events > 0 ? totalActivities / events : 0.0,
+      averageItemsPerEvent: events > 0 ? totalItems / events : 0.0,
     );
   }
 }
@@ -953,21 +998,35 @@ class PeriodComparisonSection extends StatelessWidget {
 class _PeriodStats {
   final int events;
   final int uniqueParticipants;
+
+  /// Total actionable activity instances (excludes gear/items).
   final int totalActivities;
-  final int uniqueProperties;
+
+  /// Unique actionable activity types (excludes gear/items).
+  final int uniqueActivities;
+
+  /// Total inactionable (gear/item) instances.
+  final int totalItems;
+
+  /// Unique inactionable (gear/item) types.
+  final int uniqueItems;
   final int soloEvents;
   final int coupleEvents;
   final int groupEvents;
   final double averageActivitiesPerEvent;
+  final double averageItemsPerEvent;
 
   _PeriodStats({
     required this.events,
     required this.uniqueParticipants,
     required this.totalActivities,
-    required this.uniqueProperties,
+    required this.uniqueActivities,
+    required this.totalItems,
+    required this.uniqueItems,
     required this.soloEvents,
     required this.coupleEvents,
     required this.groupEvents,
     required this.averageActivitiesPerEvent,
+    required this.averageItemsPerEvent,
   });
 }

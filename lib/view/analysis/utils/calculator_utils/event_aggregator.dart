@@ -47,6 +47,12 @@ class EventAggregationResult {
   /// Number of sexual activity instances per event (unordered collection).
   final Set<int> eventPropertyCounts;
 
+  /// Number of actionable (non-gear) sexual activity instances per event.
+  final Set<int> eventActionablePropertyCounts;
+
+  /// Number of inactionable (gear/items) sexual activity instances per event.
+  final Set<int> eventGearPropertyCounts;
+
   /// Number of activity categories per event (unordered collection).
   final Set<int> eventActivityCounts;
 
@@ -107,6 +113,8 @@ class EventAggregationResult {
     required this.weeklyCounts,
     required this.eventPartnerCounts,
     required this.eventPropertyCounts,
+    required this.eventActionablePropertyCounts,
+    required this.eventGearPropertyCounts,
     required this.eventActivityCounts,
     // Period-scoped
     required this.eventsThisMonth,
@@ -208,6 +216,8 @@ class EventAggregator {
     final weeklyCounts = <String, int>{};
     final eventPartnerCounts = <int>{};
     final eventPropertyCounts = <int>{};
+    final eventActionablePropertyCounts = <int>{};
+    final eventGearPropertyCounts = <int>{};
     final eventActivityCounts = <int>{};
 
     // ---------- period-scoped accumulators ----------
@@ -276,6 +286,8 @@ class EventAggregator {
 
       // Track activities and sexual activities for this event
       int eventProperties = 0;
+      int eventActionableProperties = 0;
+      int eventGearProperties = 0;
       int eventActivitiesCount = 0;
       final eventActivityCategoryIds = <String, int>{};
       final eventSexualActivityIds = <String, int>{};
@@ -387,6 +399,16 @@ class EventAggregator {
               }
             }
             eventProperties += count;
+            if (sexualActivity != null) {
+              if (sexualActivity.isActionable) {
+                eventActionableProperties += count;
+              } else {
+                eventGearProperties += count;
+              }
+            } else {
+              // Unknown activity — treat as actionable so it isn't lost
+              eventActionableProperties += count;
+            }
 
             if (!isMe) {
               // Track sexual activities per partner
@@ -412,14 +434,16 @@ class EventAggregator {
                   personId,
                 );
 
-                // Track unique partners per sexual activity within each category
+                // Track unique partners per sexual activity within each category.
+                // Use composite key (catId:activityName) as the inner key so
+                // callers can look up SexualActivity metadata and group by sub.
                 categoryActivityPartnerCountsThisYear.putIfAbsent(
                   activityCategoryId,
                   () => {},
                 );
                 categoryActivityPartnerCountsThisYear[activityCategoryId]!
-                    .putIfAbsent(sexualActivityId, () => {});
-                categoryActivityPartnerCountsThisYear[activityCategoryId]![sexualActivityId]!
+                    .putIfAbsent(compositeKey, () => {});
+                categoryActivityPartnerCountsThisYear[activityCategoryId]![compositeKey]!
                     .add(personId);
               }
             }
@@ -475,6 +499,8 @@ class EventAggregator {
       // Record partners, properties, and activities for this event
       eventPartnerCounts.add(eventPartners.length);
       eventPropertyCounts.add(eventProperties);
+      eventActionablePropertyCounts.add(eventActionableProperties);
+      eventGearPropertyCounts.add(eventGearProperties);
       eventActivityCounts.add(eventActivitiesCount);
 
       // Track events per partner
@@ -566,6 +592,8 @@ class EventAggregator {
       weeklyCounts: weeklyCounts,
       eventPartnerCounts: eventPartnerCounts,
       eventPropertyCounts: eventPropertyCounts,
+      eventActionablePropertyCounts: eventActionablePropertyCounts,
+      eventGearPropertyCounts: eventGearPropertyCounts,
       eventActivityCounts: eventActivityCounts,
       // Period-scoped
       eventsThisMonth: eventsThisMonth,

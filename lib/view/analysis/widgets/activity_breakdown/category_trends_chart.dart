@@ -29,6 +29,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
   final Set<String> _selectedCategoryIds = {};
   bool _showPattern = false;
   List<String> _topCategories = [];
+  List<String> _visibleCategories = [];
   final List<Color> _colors = [
     Colors.blue,
     Colors.red,
@@ -82,6 +83,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     // Take top 5
     setState(() {
       _topCategories = sortedIds.take(5).toList();
+      // Rebuild visible list, keeping any previously-selected extras.
+      final visibleSet = {..._topCategories, ..._selectedCategoryIds};
+      _visibleCategories = visibleSet.toList();
     });
   }
 
@@ -128,11 +132,17 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
           _selectedCategoryIds
             ..clear()
             ..addAll(ids);
+          final visibleSet = {..._topCategories, ..._selectedCategoryIds};
+          _visibleCategories = visibleSet.toList();
         });
       } else {
         _selectedCategoryIds
           ..clear()
           ..addAll(ids);
+        _visibleCategories = {
+          ..._topCategories,
+          ..._selectedCategoryIds,
+        }.toList();
       }
 
       // Keep in sync with future preference changes.
@@ -143,11 +153,19 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
             _selectedCategoryIds
               ..clear()
               ..addAll(newIds);
+            _visibleCategories = {
+              ..._topCategories,
+              ..._selectedCategoryIds,
+            }.toList();
           });
         } else {
           _selectedCategoryIds
             ..clear()
             ..addAll(newIds);
+          _visibleCategories = {
+            ..._topCategories,
+            ..._selectedCategoryIds,
+          }.toList();
         }
       });
     } catch (_) {
@@ -277,18 +295,18 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       child: ActionChip(
                         avatar: const Icon(Icons.clear_all, size: 16),
                         label: const Text('Clear'),
-                        onPressed: () {
+                        onPressed: () async {
                           setState(() {
                             _selectedCategoryIds.clear();
+                            _visibleCategories = _topCategories.toList();
                           });
-                          // Persist the cleared selection (best-effort).
-                          _persistSelectedCategories();
+                          await _persistSelectedCategories();
                         },
                         padding: EdgeInsets.zero,
                         labelPadding: const EdgeInsets.only(right: 8),
                       ),
                     ),
-                  ..._topCategories.asMap().entries.map((entry) {
+                  ..._visibleCategories.asMap().entries.map((entry) {
                     final index = entry.key;
                     final id = entry.value;
                     final category = widget.data.activityCategories[id];
@@ -305,7 +323,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       child: FilterChip(
                         label: Text(label),
                         selected: isSelected,
-                        onSelected: (selected) {
+                        onSelected: (selected) async {
                           setState(() {
                             if (selected) {
                               _selectedCategoryIds.add(id);
@@ -313,8 +331,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                               _selectedCategoryIds.remove(id);
                             }
                           });
-                          // Persist changes to the selected categories immediately.
-                          _persistSelectedCategories();
+                          await _persistSelectedCategories();
                         },
                         showCheckmark: false,
                         selectedColor: color.withOpacity(0.2),
@@ -329,6 +346,16 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       ),
                     );
                   }),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.add, size: 16),
+                      label: const Text('Add'),
+                      onPressed: _showCategoryPicker,
+                      padding: EdgeInsets.zero,
+                      labelPadding: const EdgeInsets.only(right: 8),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -359,6 +386,47 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
+  }
+
+  Future<void> _showCategoryPicker() async {
+    // Build the set of category IDs that have events in the current data.
+    final availableCatIds = <String>{};
+    for (final event in widget.data.events) {
+      for (final activity in event.activities) {
+        availableCatIds.add(activity.category.reference);
+      }
+    }
+
+    // Use allCategoriesMap for hierarchy; fall back to activityCategories for
+    // data that may have been computed before allCategoriesMap was added.
+    final fullMap = widget.data.allCategoriesMap.isNotEmpty
+        ? widget.data.allCategoriesMap
+        : widget.data.activityCategories;
+
+    // Filter to only categories that have data.
+    final filteredMap = Map.fromEntries(
+      fullMap.entries.where((e) => availableCatIds.contains(e.key)),
+    );
+
+    if (!mounted) return;
+
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (ctx) => _CategoryPickerDialog(
+        categoriesMap: filteredMap,
+        selectedIds: _selectedCategoryIds,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedCategoryIds.clear();
+        _selectedCategoryIds.addAll(result);
+        final visibleSet = {..._topCategories, ..._selectedCategoryIds};
+        _visibleCategories = visibleSet.toList();
+      });
+      await _persistSelectedCategories();
+    }
   }
 
   Widget _buildChart(BuildContext context) {
@@ -605,9 +673,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
           final stackItems = <BarChartRodStackItem>[];
           final barValues = <MapEntry<Color, double>>[];
 
-          // Collect values
-          for (int i = 0; i < _topCategories.length; i++) {
-            final id = _topCategories[i];
+          // Collect values — use _visibleCategories so colors match the chips.
+          for (int i = 0; i < _visibleCategories.length; i++) {
+            final id = _visibleCategories[i];
             if (!_selectedCategoryIds.contains(id)) continue;
 
             final rawCount = categories[id] ?? 0;
@@ -847,9 +915,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
           final stackItems = <BarChartRodStackItem>[];
           final barValues = <MapEntry<Color, double>>[];
 
-          // Process in order of top categories
-          for (int i = 0; i < _topCategories.length; i++) {
-            final id = _topCategories[i];
+          // Process in order of visible categories so colors match the chips.
+          for (int i = 0; i < _visibleCategories.length; i++) {
+            final id = _visibleCategories[i];
             if (!_selectedCategoryIds.contains(id)) continue;
 
             final count = (categories[id] ?? 0).toDouble();
@@ -924,5 +992,233 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     if (rawInterval <= 2) return 2.0;
     if (rawInterval <= 5) return 5.0;
     return ((rawInterval / 5).ceil() * 5).toDouble();
+  }
+}
+
+// ── Category Picker Dialog ─────────────────────────────────────────────────
+
+class _CategoryPickerDialog extends StatefulWidget {
+  final Map<String, SexualActivityCategory> categoriesMap;
+  final Set<String> selectedIds;
+
+  const _CategoryPickerDialog({
+    required this.categoriesMap,
+    required this.selectedIds,
+  });
+
+  @override
+  State<_CategoryPickerDialog> createState() => _CategoryPickerDialogState();
+}
+
+class _CategoryPickerDialogState extends State<_CategoryPickerDialog> {
+  late Set<String> _tempSelectedIds;
+
+  Set<String> get _subcategoryIds {
+    final ids = <String>{};
+    for (final cat in widget.categoriesMap.values) {
+      for (final ref in cat.subCategories) {
+        if (ref.reference.isNotEmpty) ids.add(ref.reference);
+      }
+    }
+    return ids;
+  }
+
+  List<SexualActivityCategory> _topLevel(Set<String> subcatIds) {
+    return widget.categoriesMap.values
+        .where((c) => !subcatIds.contains(c.id))
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  }
+
+  List<SexualActivityCategory> _subsOf(SexualActivityCategory parent) {
+    return parent.subCategories
+        .where((r) => r.reference.isNotEmpty)
+        .map((r) => widget.categoriesMap[r.reference])
+        .whereType<SexualActivityCategory>()
+        .toList();
+  }
+
+  Set<String> _coveredIds(SexualActivityCategory cat) {
+    final ids = {cat.id};
+    for (final sub in _subsOf(cat)) {
+      ids.add(sub.id);
+    }
+    return ids;
+  }
+
+  bool _allSelected(SexualActivityCategory cat) =>
+      _coveredIds(cat).every((id) => _tempSelectedIds.contains(id));
+
+  bool _anySelected(SexualActivityCategory cat) =>
+      _coveredIds(cat).any((id) => _tempSelectedIds.contains(id));
+
+  @override
+  void initState() {
+    super.initState();
+    _tempSelectedIds = Set.from(widget.selectedIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final subcatIds = _subcategoryIds;
+    final topLevel = _topLevel(subcatIds);
+
+    return AlertDialog(
+      title: const Text('Select Categories'),
+      contentPadding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: topLevel.length,
+          itemBuilder: (context, i) => _buildParentTile(topLevel[i]),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => setState(() => _tempSelectedIds.clear()),
+          child: const Text('Clear'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _tempSelectedIds),
+          child: const Text('Apply'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildParentTile(SexualActivityCategory cat) {
+    final subs = _subsOf(cat);
+    final allSel = _allSelected(cat);
+    final anySel = _anySelected(cat);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () {
+            final covered = _coveredIds(cat);
+            setState(() {
+              if (allSel) {
+                _tempSelectedIds.removeAll(covered);
+              } else {
+                _tempSelectedIds.addAll(covered);
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: allSel ? true : (anySel ? null : false),
+                    tristate: true,
+                    visualDensity: VisualDensity.compact,
+                    onChanged: (_) {
+                      final covered = _coveredIds(cat);
+                      setState(() {
+                        if (allSel) {
+                          _tempSelectedIds.removeAll(covered);
+                        } else {
+                          _tempSelectedIds.addAll(covered);
+                        }
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  cat.displayCharacter ?? '❔',
+                  style: const TextStyle(fontSize: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    cat.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                if (subs.isNotEmpty)
+                  Icon(
+                    Icons.account_tree_outlined,
+                    size: 14,
+                    color: scheme.outline,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (subs.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 40),
+            child: Column(
+              children: subs.map((sub) {
+                final isSelected = _tempSelectedIds.contains(sub.id);
+                return InkWell(
+                  onTap: () => setState(() {
+                    if (isSelected) {
+                      _tempSelectedIds.remove(sub.id);
+                    } else {
+                      _tempSelectedIds.add(sub.id);
+                    }
+                  }),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Checkbox(
+                            value: isSelected,
+                            visualDensity: VisualDensity.compact,
+                            onChanged: (_) => setState(() {
+                              if (isSelected) {
+                                _tempSelectedIds.remove(sub.id);
+                              } else {
+                                _tempSelectedIds.add(sub.id);
+                              }
+                            }),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          sub.displayCharacter ?? '❔',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            sub.name,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        const Divider(height: 1),
+      ],
+    );
   }
 }

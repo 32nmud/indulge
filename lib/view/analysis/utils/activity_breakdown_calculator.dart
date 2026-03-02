@@ -58,6 +58,8 @@ class ActivityBreakdownCalculator {
       dayOfWeekCountsByType: agg.dayOfWeekCountsByType,
       eventPartnerCounts: agg.eventPartnerCounts,
       eventPropertyCounts: agg.eventPropertyCounts,
+      eventActionablePropertyCounts: agg.eventActionablePropertyCounts,
+      eventGearPropertyCounts: agg.eventGearPropertyCounts,
       eventActivityCounts: agg.eventActivityCounts,
       thisYearStart: thisYearStart,
     );
@@ -78,6 +80,7 @@ class ActivityBreakdownCalculator {
     }
 
     return ActivityBreakdownData(
+      allCategoriesMap: stateSnapshot.sexualActivityCategories ?? {},
       totalActivities: agg.totalActivities,
       activityCounts: agg.activityCounts,
       activityCountsThisYear: agg.activityCountsThisYear,
@@ -101,6 +104,9 @@ class ActivityBreakdownCalculator {
       averagePartnersPerEvent: averages.averagePartnersPerEvent,
       averageActivitiesPerEvent: averages.averageActivitiesPerEvent,
       averageSexualActivitiesPerEvent: averages.averageSexualActivitiesPerEvent,
+      averageActionableActivitiesPerEvent:
+          averages.averageActionableActivitiesPerEvent,
+      averageGearPerEvent: averages.averageGearPerEvent,
       averageEventsPerDayOfWeek: averages.averageEventsPerDayOfWeek,
       topActivityPairs: coOccurrence.topActivityPairs,
       topCategoryPairs: coOccurrence.topCategoryPairs,

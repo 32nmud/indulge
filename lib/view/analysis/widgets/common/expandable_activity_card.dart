@@ -147,7 +147,6 @@ class _ExpandableActivityCardState extends State<ExpandableActivityCard>
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
                         child: Row(
                           children: [
-                            // Risky indicator
                             SizedBox(
                               width: 20,
                               child:
@@ -163,7 +162,6 @@ class _ExpandableActivityCardState extends State<ExpandableActivityCard>
                                   : null,
                             ),
                             const SizedBox(width: 4),
-                            // Property name
                             Expanded(
                               child: Text(
                                 activity?.name ?? 'Unknown',
@@ -172,7 +170,6 @@ class _ExpandableActivityCardState extends State<ExpandableActivityCard>
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // Count badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
