@@ -248,7 +248,11 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
     });
   }
 
-  void _toggleMyselfForProperty(int activityIndex, String activityId) {
+  void _toggleMyselfForProperty(
+    int activityIndex,
+    String activityName, {
+    String? categoryId,
+  }) {
     final myself = context.read<EventStateStore>().state.myself;
     if (myself == null) return;
 
@@ -257,52 +261,73 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
         _workingEvent,
         activityIndex,
         myself.id,
-        activityId,
+        activityName: activityName,
+        categoryId: categoryId,
       );
     });
   }
 
+  /// Get subcategories for a given parent category ID
+  List<SexualActivityCategory> _getSubcategories(String parentId) {
+    final parent = _availableActivityCategories[parentId];
+    if (parent == null) return [];
+
+    // Preserve the order the user set in settings — subCategories list is
+    // already ordered by the user via the editor's up/down controls.
+    return parent.subCategories
+        .where((ref) => ref.reference.isNotEmpty)
+        .map((ref) => _availableActivityCategories[ref.reference])
+        .whereType<SexualActivityCategory>()
+        .toList();
+  }
+
   void _toggleParticipantForProperty(
     int activityIndex,
-    String activityId,
-    String personId,
-  ) {
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
     setState(() {
       _workingEvent = toggleParticipantForProperty(
         _workingEvent,
         activityIndex,
-        activityId,
+        activityName,
         personId,
+        categoryId: categoryId,
       );
     });
   }
 
   void _incrementPropertyCount(
     int activityIndex,
-    String activityId,
-    String personId,
-  ) {
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
     setState(() {
       _workingEvent = incrementPropertyCount(
         _workingEvent,
         activityIndex,
-        activityId,
+        activityName,
         personId,
+        categoryId: categoryId,
       );
     });
   }
 
   void _decrementPropertyCount(
     int activityIndex,
-    String activityId,
-    String personId,
-  ) {
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
     setState(() {
       _workingEvent = decrementPropertyCount(
         _workingEvent,
         activityIndex,
-        activityId,
+        activityName,
         personId,
+        categoryId: categoryId,
       );
     });
   }
@@ -568,6 +593,7 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
   Widget _buildActivityCard(int activityIndex, EventActivity activity) {
     final myself = context.read<EventStateStore>().state.myself;
     final isExpanded = _expandedActivities.contains(activityIndex);
+    final subcategories = _getSubcategories(activity.category.reference);
 
     return ActivityCard(
       activityIndex: activityIndex,
@@ -577,6 +603,7 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
       availablePersons: _availablePersons,
       myself: myself,
       isExpanded: isExpanded,
+      subcategories: subcategories,
       onToggleExpanded: () {
         setState(() {
           if (isExpanded) {

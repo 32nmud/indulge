@@ -11,7 +11,8 @@ abstract class ActivityCount with _$ActivityCount {
   const ActivityCount._();
 
   const factory ActivityCount({
-    @Default(Reference()) Reference activityReference,
+    @Default(Reference()) Reference categoryReference,
+    @Default("") String activityName,
     @Default(1) int count,
   }) = _ActivityCount;
 

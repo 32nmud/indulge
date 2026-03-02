@@ -100,21 +100,29 @@ SexualEvent removeParticipant(
   return event.copyWith(activities: updatedActivities);
 }
 
-/// Toggle the given [activityId] on behalf of [myselfId] for the activity at
-/// [activityIndex]. If the "me" participant does not exist, it is created.
-/// If removing the last activity for "me", the participant entry is removed.
+/// Toggle the given activity (identified by [activityName]) on behalf of
+/// [myselfId] for the activity at [activityIndex]. If the "me" participant
+/// does not exist, it is created. If removing the last activity for "me",
+/// the participant entry is removed.
+///
+/// [categoryId] should be the subcategory ID when the activity comes from a
+/// subcategory, otherwise the parent EventActivity category ID. This ensures
+/// activities with the same name in different (sub)categories are stored
+/// distinctly.
 SexualEvent toggleMyselfForProperty(
   SexualEvent event,
   int activityIndex,
-  String myselfId,
-  String activityId,
-) {
+  String myselfId, {
+  String activityName = '',
+  String? categoryId,
+}) {
   if (activityIndex < 0 || activityIndex >= event.activities.length) {
     return event;
   }
 
   final updatedActivities = List<EventActivity>.from(event.activities);
   final activity = updatedActivities[activityIndex];
+  final resolvedCategoryId = categoryId ?? activity.category.reference;
 
   final meIndex = activity.participants.indexWhere(
     (p) => p.participant.reference == myselfId,
@@ -127,10 +135,11 @@ SexualEvent toggleMyselfForProperty(
       participant: Reference(reference: myselfId, resourceType: 'Person'),
       activityCounts: [
         ActivityCount(
-          activityReference: Reference(
-            reference: activityId,
-            resourceType: 'SexualActivity',
+          categoryReference: Reference(
+            reference: resolvedCategoryId,
+            resourceType: 'SexualActivityCategory',
           ),
+          activityName: activityName,
           count: 1,
         ),
       ],
@@ -139,22 +148,29 @@ SexualEvent toggleMyselfForProperty(
   } else {
     final meParticipant = activity.participants[meIndex];
     final hasActivity = meParticipant.activityCounts.any(
-      (ac) => ac.activityReference.reference == activityId,
+      (ac) =>
+          ac.activityName == activityName &&
+          ac.categoryReference.reference == resolvedCategoryId,
     );
 
     List<ActivityCount> newCounts;
     if (hasActivity) {
       newCounts = meParticipant.activityCounts
-          .where((ac) => ac.activityReference.reference != activityId)
+          .where(
+            (ac) =>
+                !(ac.activityName == activityName &&
+                    ac.categoryReference.reference == resolvedCategoryId),
+          )
           .toList();
     } else {
       newCounts = [
         ...meParticipant.activityCounts,
         ActivityCount(
-          activityReference: Reference(
-            reference: activityId,
-            resourceType: 'SexualActivity',
+          categoryReference: Reference(
+            reference: resolvedCategoryId,
+            resourceType: 'SexualActivityCategory',
           ),
+          activityName: activityName,
           count: 1,
         ),
       ];
@@ -180,18 +196,23 @@ SexualEvent toggleMyselfForProperty(
 
 /// Toggle the property for an existing participant (identified by [personId]).
 /// If the participant doesn't exist, returns the original event.
+///
+/// [categoryId] should be the subcategory ID when the activity comes from a
+/// subcategory, otherwise the parent EventActivity category ID.
 SexualEvent toggleParticipantForProperty(
   SexualEvent event,
   int activityIndex,
-  String activityId,
-  String personId,
-) {
+  String activityName,
+  String personId, {
+  String? categoryId,
+}) {
   if (activityIndex < 0 || activityIndex >= event.activities.length) {
     return event;
   }
 
   final updatedActivities = List<EventActivity>.from(event.activities);
   final activity = updatedActivities[activityIndex];
+  final resolvedCategoryId = categoryId ?? activity.category.reference;
 
   final updatedParticipants = <ActivityParticipant>[];
 
@@ -202,22 +223,29 @@ SexualEvent toggleParticipantForProperty(
     }
 
     final hasActivity = participant.activityCounts.any(
-      (ac) => ac.activityReference.reference == activityId,
+      (ac) =>
+          ac.activityName == activityName &&
+          ac.categoryReference.reference == resolvedCategoryId,
     );
 
     List<ActivityCount> newCounts;
     if (hasActivity) {
       newCounts = participant.activityCounts
-          .where((ac) => ac.activityReference.reference != activityId)
+          .where(
+            (ac) =>
+                !(ac.activityName == activityName &&
+                    ac.categoryReference.reference == resolvedCategoryId),
+          )
           .toList();
     } else {
       newCounts = [
         ...participant.activityCounts,
         ActivityCount(
-          activityReference: Reference(
-            reference: activityId,
-            resourceType: 'SexualActivity',
+          categoryReference: Reference(
+            reference: resolvedCategoryId,
+            resourceType: 'SexualActivityCategory',
           ),
+          activityName: activityName,
           count: 1,
         ),
       ];
@@ -233,18 +261,22 @@ SexualEvent toggleParticipantForProperty(
   return event.copyWith(activities: updatedActivities);
 }
 
+/// [categoryId] should be the subcategory ID when the activity comes from a
+/// subcategory, otherwise the parent EventActivity category ID.
 SexualEvent incrementPropertyCount(
   SexualEvent event,
   int activityIndex,
-  String activityId,
-  String personId,
-) {
+  String activityName,
+  String personId, {
+  String? categoryId,
+}) {
   if (activityIndex < 0 || activityIndex >= event.activities.length) {
     return event;
   }
 
   final updatedActivities = List<EventActivity>.from(event.activities);
   final activity = updatedActivities[activityIndex];
+  final resolvedCategoryId = categoryId ?? activity.category.reference;
 
   final updatedParticipants = <ActivityParticipant>[];
 
@@ -255,7 +287,8 @@ SexualEvent incrementPropertyCount(
     }
 
     final updatedActivityCounts = participant.activityCounts.map((ac) {
-      if (ac.activityReference.reference == activityId) {
+      if (ac.activityName == activityName &&
+          ac.categoryReference.reference == resolvedCategoryId) {
         return ac.copyWith(count: ac.count + 1);
       }
       return ac;
@@ -273,18 +306,22 @@ SexualEvent incrementPropertyCount(
   return event.copyWith(activities: updatedActivities);
 }
 
+/// [categoryId] should be the subcategory ID when the activity comes from a
+/// subcategory, otherwise the parent EventActivity category ID.
 SexualEvent decrementPropertyCount(
   SexualEvent event,
   int activityIndex,
-  String activityId,
-  String personId,
-) {
+  String activityName,
+  String personId, {
+  String? categoryId,
+}) {
   if (activityIndex < 0 || activityIndex >= event.activities.length) {
     return event;
   }
 
   final updatedActivities = List<EventActivity>.from(event.activities);
   final activity = updatedActivities[activityIndex];
+  final resolvedCategoryId = categoryId ?? activity.category.reference;
 
   final updatedParticipants = <ActivityParticipant>[];
 
@@ -296,7 +333,8 @@ SexualEvent decrementPropertyCount(
 
     final newCounts = <ActivityCount>[];
     for (var ac in participant.activityCounts) {
-      if (ac.activityReference.reference == activityId) {
+      if (ac.activityName == activityName &&
+          ac.categoryReference.reference == resolvedCategoryId) {
         if (ac.count > 1) {
           newCounts.add(ac.copyWith(count: ac.count - 1));
         }

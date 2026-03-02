@@ -344,7 +344,6 @@ class _AnalysisPageState extends State<AnalysisPage>
         allEvents: allEvents,
         clinicalProvider: clinicalProvider,
         stateSnapshot: store.state,
-        sexualActivities: store.state.sexualActivities ?? {},
         activityCategories: store.state.sexualActivityCategories ?? {},
         selectedTestIndex: selectedTestIndex,
       );
@@ -729,7 +728,6 @@ class _AnalysisPageState extends State<AnalysisPage>
       allEvents: allEvents,
       clinicalProvider: clinicalProvider,
       stateSnapshot: store.state,
-      sexualActivities: store.state.sexualActivities ?? {},
       activityCategories: store.state.sexualActivityCategories ?? {},
       selectedTestIndex: testIndex,
     );

@@ -5,8 +5,15 @@ import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:indulge/view/migration/migration_check.dart';
-// import 'package:indulge/view/common/navigation_helper.dart'; // Phase 1: disabled
+import 'package:indulge/view/common/navigation_helper.dart';
 import 'package:indulge/view/security/pin_entry_screen.dart';
+import 'package:indulge/view/home/daily_event_view.dart';
+import 'package:indulge/view/search/search_page.dart';
+import 'package:indulge/view/analysis/analysis_page.dart';
+import 'package:indulge/view/contacts/contact_list_page.dart';
+import 'package:indulge/view/settings/settings_page.dart';
+import 'package:indulge/view/common/speed_dial_fab.dart';
+import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
 import 'dart:io';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:indulge/domain/database/database_engine.dart';
@@ -250,8 +257,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // Phase 1: All pages disabled - working on data layer
-  // Navigation methods will be restored in later phases
+  int _currentPageIndex = 0;
 
   @override
   void initState() {
@@ -262,9 +268,25 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return const EventViewPage();
+      case 1:
+        return const SearchPage();
+      case 2:
+        return const AnalysisPage();
+      case 3:
+        return const ContactListPage();
+      case 4:
+        return const SettingsPage();
+      default:
+        return const EventViewPage();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Phase 1: Navigation disabled - pages re-enabled in later phases
     return Scaffold(
       body: FutureBuilder<String>(
         future: context.read<SexualEventsProvider>().ready,
@@ -298,33 +320,102 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           }
 
-          // Phase 1: All pages disabled - working on data layer
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.construction, size: 64, color: Colors.orange),
-                SizedBox(height: 16),
-                Text(
-                  'Phase 1: Data Layer Updates',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Text('Re-enabling pages in later phases'),
-              ],
-            ),
+          return NavigationHelper(
+            navigateToSearchWithPartner: (String partnerId) {
+              setState(() => _currentPageIndex = 1);
+            },
+            navigateToSearchWithEventType: (String eventType) {
+              setState(() => _currentPageIndex = 1);
+            },
+            navigateToSearchWithCategory: (String categoryId) {
+              setState(() => _currentPageIndex = 1);
+            },
+            navigateToSearchWithDateRange: (DateTimeRange range) {
+              setState(() => _currentPageIndex = 1);
+            },
+            navigateToSearch:
+                ({
+                  DateTimeRange? dateRange,
+                  String? eventType,
+                  String? partnerId,
+                  String? categoryId,
+                  bool sinceLastStiTest = false,
+                }) {
+                  setState(() => _currentPageIndex = 1);
+                },
+            child: _buildPageWithFab(_currentPageIndex),
           );
         },
       ),
-      // Phase 1: Bottom navigation disabled
-      // bottomNavigationBar: BottomNavBar(currentPageIndex, (int index) {
-      //   setState(() {
-      //     currentPageIndex = index;
-      //   });
-      // }),
-      // floatingActionButton: _buildFloatingActionButton(),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentPageIndex,
+        onDestinationSelected: (int index) {
+          setState(() {
+            _currentPageIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            selectedIcon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.search),
+            icon: Icon(Icons.search_outlined),
+            label: 'Search',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.bar_chart),
+            icon: Icon(Icons.bar_chart_outlined),
+            label: 'Analysis',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.contacts),
+            icon: Icon(Icons.contacts_outlined),
+            label: 'Contacts',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.settings),
+            icon: Icon(Icons.settings_outlined),
+            label: 'Settings',
+          ),
+        ],
+      ),
     );
   }
 
-  // Phase 1: FAB disabled - will be restored in later phases
+  Widget _buildPageWithFab(int index) {
+    return Scaffold(
+      body: _buildPage(index),
+      floatingActionButton: index == 0
+          ? SpeedDialFab(
+              items: [
+                SpeedDialItem(
+                  icon: const Icon(Icons.edit),
+                  label: 'Log Event',
+                  onPressed: () => _openEventEditor(null),
+                ),
+                SpeedDialItem(
+                  icon: const Icon(Icons.medical_services),
+                  label: 'Log Test Result',
+                  onPressed: () => _openClinicalEventEditor(null),
+                ),
+              ],
+            )
+          : null,
+    );
+  }
+
+  void _openEventEditor(DateTime? initialDate) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SexualEventEditorPage(initialDate: initialDate),
+      ),
+    );
+  }
+
+  void _openClinicalEventEditor(DateTime? initialDate) {
+    // TODO: Add clinical event editor when available
+  }
 }

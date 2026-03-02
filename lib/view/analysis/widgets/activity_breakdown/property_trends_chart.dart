@@ -185,7 +185,10 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           for (final count in participant.activityCounts) {
-            final id = count.activityReference.reference;
+            // Use categoryReference + activityName as the activity identifier
+            final catRef = count.categoryReference.reference;
+            final actName = count.activityName;
+            final id = '$catRef:$actName';
             if (seenInEvent.add(id)) {
               counts[id] = (counts[id] ?? 0) + 1;
             }
@@ -444,7 +447,10 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           for (final count in participant.activityCounts) {
-            final id = count.activityReference.reference;
+            // Use categoryReference + activityName as the activity identifier
+            final catRef = count.categoryReference.reference;
+            final actName = count.activityName;
+            final id = '$catRef:$actName';
             if (_selectedPropertyIds.contains(id)) {
               eventActivities.add(id);
             }
@@ -723,7 +729,10 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           for (final count in participant.activityCounts) {
-            final id = count.activityReference.reference;
+            // Use categoryReference + activityName as the activity identifier
+            final catRef = count.categoryReference.reference;
+            final actName = count.activityName;
+            final id = '$catRef:$actName';
             if (_selectedPropertyIds.contains(id)) {
               monthlyCounts[monthKey]![id] =
                   (monthlyCounts[monthKey]![id] ?? 0) + count.count;
@@ -977,7 +986,10 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
         final catId = activity.category.reference;
         for (final participant in activity.participants) {
           for (final count in participant.activityCounts) {
-            final actId = count.activityReference.reference;
+            // Use categoryReference + activityName as the activity identifier
+            final catRef = count.categoryReference.reference;
+            final actName = count.activityName;
+            final actId = '$catRef:$actName';
             categoryActivities.putIfAbsent(catId, () => {}).add(actId);
           }
         }

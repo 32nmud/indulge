@@ -213,18 +213,23 @@ class SexualEventsProvider extends ChangeNotifier {
     List<SexualActivity> activities = [];
     for (ActivityParticipant activityParticipant in activity.participants) {
       for (var activityCount in activityParticipant.activityCounts) {
-        if (activityCount.activityReference.resourceType == "SexualActivity" &&
-            activityParticipant.participant.resourceType == "Person" &&
-            activityParticipant.participant.reference == person.id &&
-            _stateStore.state.sexualActivities != null &&
-            _stateStore.state.sexualActivities!.containsKey(
-              activityCount.activityReference.reference,
-            )) {
-          activities.add(
-            _stateStore.state.sexualActivities![activityCount
-                .activityReference
-                .reference]!,
-          );
+        if (activityParticipant.participant.resourceType == "Person" &&
+            activityParticipant.participant.reference == person.id) {
+          // Look up activity by category + name
+          final categoryRef = activityCount.categoryReference.reference;
+          final activityName = activityCount.activityName;
+          if (categoryRef.isEmpty || activityName.isEmpty) continue;
+
+          final category =
+              _stateStore.state.sexualActivityCategories?[categoryRef];
+          if (category != null) {
+            for (final activity in category.activities) {
+              if (activity.name == activityName) {
+                activities.add(activity);
+                break;
+              }
+            }
+          }
         }
       }
     }
@@ -366,8 +371,11 @@ class SexualEventsProvider extends ChangeNotifier {
     return await _repository.getEventCountForActivityCategory(id);
   }
 
-  Future<void> saveSexualActivity(SexualActivity activity) async {
-    await _repository.saveSexualActivity(activity);
+  Future<void> saveSexualActivity(
+    SexualActivity activity, {
+    required String categoryId,
+  }) async {
+    await _repository.saveSexualActivity(activity, categoryId: categoryId);
 
     // Refresh sexual activities in state
     final activities = await _loadSexualActivities();
@@ -375,8 +383,14 @@ class SexualEventsProvider extends ChangeNotifier {
     _stateStore.markDataDirty();
   }
 
-  Future<void> deleteSexualActivity(String id) async {
-    await _repository.deleteSexualActivity(id);
+  Future<void> deleteSexualActivity({
+    required String categoryId,
+    required String activityName,
+  }) async {
+    await _repository.deleteSexualActivity(
+      categoryId: categoryId,
+      activityName: activityName,
+    );
 
     // Refresh both sexual activities and activity categories (categories may have changed)
     final activities = await _loadSexualActivities();
@@ -386,12 +400,18 @@ class SexualEventsProvider extends ChangeNotifier {
     _stateStore.markDataDirty();
   }
 
-  Future<bool> isSexualActivityUsed(String activityId) async {
-    return await _repository.isSexualActivityUsed(activityId);
+  Future<bool> isSexualActivityUsed({
+    required String categoryId,
+    required String activityName,
+  }) async {
+    return await _repository.isSexualActivityUsed(
+      categoryId: categoryId,
+      activityName: activityName,
+    );
   }
 
-  Future<int> getUsageCountForActivity(String id) async {
-    return await _repository.getEventCountForSexualActivity(id);
+  Future<int> getUsageCountForActivity(String categoryId) async {
+    return await _repository.getEventCountForActivityCategory(categoryId);
   }
 
   /* ########################
@@ -416,7 +436,7 @@ class SexualEventsProvider extends ChangeNotifier {
     );
     Map<String, SexualActivity> activityMap = {};
     for (var activity in activities) {
-      activityMap[activity.id] = activity;
+      activityMap[activity.name] = activity;
     }
     return activityMap;
   }
@@ -432,6 +452,9 @@ class SexualEventsProvider extends ChangeNotifier {
     for (var category in categories) {
       categoryMap[category.id] = category;
     }
+    debugPrint(
+      'DEBUG: _loadSexualActivityCategories returning ${categoryMap.length} categories: ${categoryMap.keys.join(', ')}',
+    );
     return categoryMap;
   }
 

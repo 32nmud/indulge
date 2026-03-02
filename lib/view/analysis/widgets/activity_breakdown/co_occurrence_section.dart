@@ -118,7 +118,8 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
         for (final activity in event.activities) {
           for (final participant in activity.participants) {
             for (final count in participant.activityCounts) {
-              ids.add(count.activityReference.reference);
+              // Use categoryReference as the activity identifier
+              ids.add(count.categoryReference.reference);
             }
           }
         }

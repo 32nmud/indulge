@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/data/models.dart';
+import 'package:indulge/view/common/reorder_buttons.dart';
 import 'package:uuid/uuid.dart';
 
 class ActivityTypeEditorPage extends StatefulWidget {
@@ -19,12 +20,27 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
   late TextEditingController _nameController;
   late TextEditingController _emojiController;
   late List<_ActivityRow> _activities;
+
+  // Subcategories stored as full objects so display never depends on a map
+  // lookup that might silently return null.
+  late List<SexualActivityCategory> _selectedSubcats;
+
   bool _isLoading = false;
   bool _requiresPartner = false;
+
+  // All categories available to be picked as subcategories.
+  // Excludes self. Also excludes categories that are already subcategories
+  // (only one level of nesting allowed).
+  List<SexualActivityCategory> _pickableCats = [];
+
+  // Whether the category being edited is itself used as a subcategory of
+  // another category. If so, the subcategory section is hidden entirely.
+  bool _isSubcategoryItself = false;
 
   @override
   void initState() {
     super.initState();
+
     _nameController = TextEditingController(
       text: widget.activityCategory?.name ?? '',
     );
@@ -33,42 +49,84 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     );
     _requiresPartner = widget.activityCategory?.requiresPartner ?? false;
 
-    // Load existing activities or start with empty list
+    // ── Activities ─────────────────────────────────────────────────
     _activities = [];
     if (widget.activityCategory != null) {
-      final store = context.read<EventStateStore>();
+      for (final act in widget.activityCategory!.activities) {
+        _activities.add(
+          _ActivityRow(
+            nameController: TextEditingController(text: act.name),
+            emojiController: TextEditingController(text: act.displayCharacter),
+            stiRisk: act.stiRisk,
+            healthRisk: act.healthRisk,
+            requiresPartner: act.requiresPartner,
+            canHaveMultipleParticipants: act.canHaveMultipleParticipants,
+            isActionable: act.isActionable,
+            sortOrder: act.sortOrder,
+          ),
+        );
+      }
+      _activities.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }
 
-      for (var ref in widget.activityCategory!.activities) {
-        final activity = store.state.sexualActivities?[ref.id];
-        if (activity != null) {
-          _activities.add(
-            _ActivityRow(
-              id: activity.id,
-              nameController: TextEditingController(text: activity.name),
-              emojiController: TextEditingController(
-                text: activity.displayCharacter,
-              ),
-              stiRisk: activity.stiRisk,
-              healthRisk: activity.healthRisk,
-              requiresPartner: activity.requiresPartner,
-              canHaveMultipleParticipants: activity.canHaveMultipleParticipants,
-            ),
-          );
-        }
+    // ── Subcategories ──────────────────────────────────────────────
+    final store = context.read<EventStateStore>();
+    final allCats = Map<String, SexualActivityCategory>.from(
+      store.state.sexualActivityCategories ?? {},
+    );
+
+    // Collect all IDs that are already used as a subcategory somewhere.
+    final usedAsSubcatIds = <String>{};
+    for (final cat in allCats.values) {
+      for (final ref in cat.subCategories) {
+        if (ref.reference.isNotEmpty) usedAsSubcatIds.add(ref.reference);
       }
     }
+
+    // Is the category being edited itself a subcategory of something?
+    _isSubcategoryItself =
+        widget.activityCategory != null &&
+        usedAsSubcatIds.contains(widget.activityCategory!.id);
+
+    // Resolve currently selected subcats from the saved references.
+    _selectedSubcats = [];
+    if (widget.activityCategory != null) {
+      for (final ref in widget.activityCategory!.subCategories) {
+        if (ref.reference.isEmpty) continue;
+        final cat = allCats[ref.reference];
+        if (cat != null) _selectedSubcats.add(cat);
+      }
+    }
+
+    // Pickable = exists in store, not self, not already a subcategory of
+    // anything (so we only allow one nesting level), and not already selected.
+    final selfId = widget.activityCategory?.id;
+    _pickableCats =
+        allCats.values
+            .where(
+              (c) =>
+                  c.id != selfId &&
+                  !usedAsSubcatIds.contains(c.id) &&
+                  !_selectedSubcats.any((s) => s.id == c.id),
+            )
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emojiController.dispose();
-    for (var activity in _activities) {
-      activity.nameController.dispose();
-      activity.emojiController.dispose();
+    for (final row in _activities) {
+      row.nameController.dispose();
+      row.emojiController.dispose();
     }
     super.dispose();
   }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Build
+  // ───────────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -82,251 +140,30 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
           if (!_isLoading)
             IconButton(
               icon: const Icon(Icons.save),
+              tooltip: 'Save',
               onPressed: _saveActivityCategory,
             ),
         ],
       ),
-      floatingActionButton: _isLoading
-          ? null
-          : FloatingActionButton(
-              onPressed: _addActivity,
-              child: const Icon(Icons.add),
-            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Emoji field
-                        SizedBox(
-                          width: 80,
-                          child: TextFormField(
-                            controller: _emojiController,
-                            decoration: const InputDecoration(
-                              labelText: 'Emoji',
-                              border: OutlineInputBorder(),
-                            ),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 32),
-                            maxLength: 1,
-                            keyboardType: TextInputType.text,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Name field
-                        Expanded(
-                          child: TextFormField(
-                            controller: _nameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Category Name *',
-                              hintText: 'e.g., Oral, Vaginal, Manual, etc.',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Name is required';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Activity-level requiresPartner checkbox (category-level)
-                    CheckboxListTile(
-                      title: const Text('Requires Partner'),
-                      subtitle: const Text(
-                        'When enabled, this category cannot be performed alone (requires at least one other person)',
-                      ),
-                      value: _requiresPartner,
-                      onChanged: (value) {
-                        setState(() {
-                          _requiresPartner = value ?? false;
-                        });
-                      },
-                      controlAffinity: ListTileControlAffinity.leading,
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Activities',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    _buildCategoryHeader(context),
                     const SizedBox(height: 8),
-                    if (_activities.isEmpty)
-                      const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(
-                            child: Text(
-                              'No activities added yet',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      ..._activities.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final activity = entry.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                children: [
-                                  // Activity emoji
-                                  SizedBox(
-                                    width: 60,
-                                    child: TextFormField(
-                                      controller: activity.emojiController,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 8,
-                                        ),
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(fontSize: 24),
-                                      maxLength: 1,
-                                      keyboardType: TextInputType.text,
-                                      validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
-                                          return '!';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Activity name
-                                  Expanded(
-                                    child: Column(
-                                      children: [
-                                        TextFormField(
-                                          controller: activity.nameController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Activity Name',
-                                            hintText: 'e.g., Giving, Receiving',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.trim().isEmpty) {
-                                              return 'Name required';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                        const SizedBox(height: 8),
-                                        // Replace checkboxes with selectable chips
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Wrap(
-                                            spacing: 8,
-                                            runSpacing: 4,
-                                            children: [
-                                              FilterChip(
-                                                label: const Text(
-                                                  'STI risk',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                selected: activity.stiRisk,
-                                                onSelected: (selected) {
-                                                  setState(() {
-                                                    activity.stiRisk = selected;
-                                                  });
-                                                },
-                                              ),
-                                              FilterChip(
-                                                label: const Text(
-                                                  'Health risk',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                selected: activity.healthRisk,
-                                                onSelected: (selected) {
-                                                  setState(() {
-                                                    activity.healthRisk =
-                                                        selected;
-                                                  });
-                                                },
-                                              ),
-                                              FilterChip(
-                                                label: const Text(
-                                                  'Needs partner',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                selected:
-                                                    activity.requiresPartner,
-                                                onSelected: (selected) {
-                                                  setState(() {
-                                                    activity.requiresPartner =
-                                                        selected;
-                                                  });
-                                                },
-                                              ),
-                                              FilterChip(
-                                                label: const Text(
-                                                  'Multiple participants',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                selected: activity
-                                                    .canHaveMultipleParticipants,
-                                                onSelected: (selected) {
-                                                  setState(() {
-                                                    activity.canHaveMultipleParticipants =
-                                                        selected;
-                                                  });
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  // Delete button
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () => _removeActivity(index),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
+                    _buildCategoryOptions(context),
+                    // Only top-level categories can have subcategories.
+                    if (!_isSubcategoryItself) ...[
+                      const SizedBox(height: 24),
+                      _buildSubcategoriesSection(context),
+                    ],
+                    const SizedBox(height: 24),
+                    _buildActivitiesSection(context),
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
@@ -348,17 +185,527 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
     );
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Section builders
+  // ───────────────────────────────────────────────────────────────────────────
+
+  Widget _buildCategoryHeader(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: TextFormField(
+            controller: _emojiController,
+            decoration: const InputDecoration(
+              labelText: 'Emoji',
+              border: OutlineInputBorder(),
+            ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 32),
+            maxLength: 2,
+            keyboardType: TextInputType.text,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return 'Required';
+              return null;
+            },
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: TextFormField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Category Name *',
+              hintText: 'e.g., Oral, Vaginal, Manual…',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Name is required';
+              }
+              return null;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryOptions(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Requires Partner',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    'Activities in this category involve another person',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: _requiresPartner,
+              onChanged: (v) => setState(() => _requiresPartner = v),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubcategoriesSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Header row ──────────────────────────────────────────────
+        Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Subcategories',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Group related categories under this one',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+              onPressed: () => _addSubcategory(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // ── Empty state ──────────────────────────────────────────────
+        if (_selectedSubcats.isEmpty)
+          Card(
+            margin: EdgeInsets.zero,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: Text(
+                  'No subcategories — tap Add to attach existing categories',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          )
+        else
+          // ── Subcategory rows ────────────────────────────────────────
+          Column(
+            children: [
+              for (var i = 0; i < _selectedSubcats.length; i++)
+                _buildSubcatRow(context, i),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSubcatRow(BuildContext context, int index) {
+    final cat = _selectedSubcats[index];
+    final isFirst = index == 0;
+    final isLast = index == _selectedSubcats.length - 1;
+
+    return Card(
+      key: ValueKey(cat.id),
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          children: [
+            ReorderButtons(
+              isFirst: isFirst,
+              isLast: isLast,
+              onUp: () => setState(() {
+                final item = _selectedSubcats.removeAt(index);
+                _selectedSubcats.insert(index - 1, item);
+              }),
+              onDown: () => setState(() {
+                final item = _selectedSubcats.removeAt(index);
+                _selectedSubcats.insert(index + 1, item);
+              }),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              cat.displayCharacter ?? '❔',
+              style: const TextStyle(fontSize: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cat.name,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  if (cat.activities.isNotEmpty)
+                    Text(
+                      '${cat.activities.length} '
+                      '${cat.activities.length == 1 ? 'activity' : 'activities'}',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+              tooltip: 'Remove subcategory',
+              visualDensity: VisualDensity.compact,
+              onPressed: () {
+                setState(() {
+                  // Put it back in the pickable list.
+                  _pickableCats.add(cat);
+                  _pickableCats.sort((a, b) => a.name.compareTo(b.name));
+                  _selectedSubcats.removeAt(index);
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivitiesSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Activities',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Specific actions within this category',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add'),
+              onPressed: _addActivity,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_activities.isEmpty)
+          Card(
+            margin: EdgeInsets.zero,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: Text(
+                  'No activities yet — tap Add to create one',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          )
+        else
+          Column(
+            children: [
+              for (var i = 0; i < _activities.length; i++)
+                _buildActivityRow(context, i, _activities[i]),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildActivityRow(
+    BuildContext context,
+    int index,
+    _ActivityRow activity,
+  ) {
+    final isFirst = index == 0;
+    final isLast = index == _activities.length - 1;
+
+    return Card(
+      key: ValueKey(index),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ReorderButtons(
+                  isFirst: isFirst,
+                  isLast: isLast,
+                  onUp: () => _moveActivity(index, index - 1),
+                  onDown: () => _moveActivity(index, index + 1),
+                ),
+                const SizedBox(width: 4),
+                SizedBox(
+                  width: 64,
+                  child: TextFormField(
+                    controller: activity.emojiController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 10,
+                      ),
+                    ),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 22),
+                    maxLength: 2,
+                    keyboardType: TextInputType.text,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) return '!';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: activity.nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Activity Name',
+                      hintText: 'e.g., Giving, Receiving…',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Name required';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  tooltip: 'Remove activity',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _removeActivity(index),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                FilterChip(
+                  label: const Text(
+                    'Actionable',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  tooltip:
+                      'Appears as a selectable activity in the event editor',
+                  selected: activity.isActionable,
+                  onSelected: (v) => setState(() => activity.isActionable = v),
+                ),
+                FilterChip(
+                  label: Text(
+                    'STI Risk',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: activity.stiRisk ? Colors.white : null,
+                    ),
+                  ),
+                  selected: activity.stiRisk,
+                  selectedColor: Colors.purple.shade700,
+                  onSelected: (v) => setState(() => activity.stiRisk = v),
+                ),
+                FilterChip(
+                  label: Text(
+                    'Health Risk',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: activity.healthRisk ? Colors.white : null,
+                    ),
+                  ),
+                  selected: activity.healthRisk,
+                  selectedColor: Colors.orange.shade700,
+                  onSelected: (v) => setState(() => activity.healthRisk = v),
+                ),
+                FilterChip(
+                  label: const Text(
+                    'Needs Partner',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  selected: activity.requiresPartner,
+                  onSelected: (v) =>
+                      setState(() => activity.requiresPartner = v),
+                ),
+                FilterChip(
+                  label: const Text(
+                    'Multi-participant',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  selected: activity.canHaveMultipleParticipants,
+                  onSelected: (v) =>
+                      setState(() => activity.canHaveMultipleParticipants = v),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Add subcategory (creates a new category and attaches it)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  Future<void> _addSubcategory(BuildContext context) async {
+    final nameController = TextEditingController();
+    final emojiController = TextEditingController(text: '❔');
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Subcategory'),
+        content: Form(
+          key: formKey,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 64,
+                child: TextFormField(
+                  controller: emojiController,
+                  decoration: const InputDecoration(
+                    labelText: 'Icon',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 12,
+                    ),
+                  ),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 22),
+                  maxLength: 2,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Name *',
+                    hintText: 'e.g., Giving, Receiving…',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(ctx).pop(true);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final newCat = SexualActivityCategory(
+      id: const Uuid().v4(),
+      name: nameController.text.trim(),
+      displayCharacter: emojiController.text.trim(),
+    );
+
+    // Save the new category to the store first.
+    final provider = context.read<SexualEventsProvider>();
+    await provider.saveActivityCategory(newCat);
+
+    // Dispose controllers after the async gap so the dialog's TextFields
+    // have fully detached before we release the controllers.
+    nameController.dispose();
+    emojiController.dispose();
+
+    if (!mounted) return;
+
+    setState(() {
+      _selectedSubcats.add(newCat);
+    });
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Mutations
+  // ───────────────────────────────────────────────────────────────────────────
+
+  void _moveActivity(int from, int to) {
+    if (from == to) return;
+    setState(() {
+      final row = _activities.removeAt(from);
+      _activities.insert(to, row);
+      for (var i = 0; i < _activities.length; i++) {
+        _activities[i].sortOrder = i;
+      }
+    });
+  }
+
   void _addActivity() {
     setState(() {
       _activities.add(
         _ActivityRow(
-          id: const Uuid().v4(),
           nameController: TextEditingController(),
           emojiController: TextEditingController(text: '❔'),
           stiRisk: false,
           healthRisk: false,
           requiresPartner: false,
           canHaveMultipleParticipants: true,
+          isActionable: true,
+          sortOrder: _activities.length,
         ),
       );
     });
@@ -366,25 +713,31 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
 
   Future<void> _removeActivity(int index) async {
     final activityRow = _activities[index];
-    final id = activityRow.id;
+    final activityName = activityRow.nameController.text.trim();
+    final categoryId = widget.activityCategory?.id ?? '';
+
     final isExisting =
-        widget.activityCategory?.activities.any((ref) => ref.id == id) ??
+        widget.activityCategory?.activities.any(
+          (a) => a.name == activityName,
+        ) ??
         false;
 
-    if (isExisting) {
+    if (isExisting && categoryId.isNotEmpty) {
       final provider = context.read<SexualEventsProvider>();
-      final count = await provider.getUsageCountForActivity(id);
+      final count = await provider.getUsageCountForActivity(categoryId);
 
       if (!mounted) return;
 
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Delete Activity?'),
+          title: const Text('Remove Activity?'),
           content: Text(
             count > 0
-                ? 'This activity is used in $count existing event${count == 1 ? '' : 's'}. Deleting it will remove it from all of them.'
-                : 'Are you sure you want to delete this activity?',
+                ? '"$activityName" is recorded in $count existing '
+                      'event${count == 1 ? '' : 's'}. Removing it will '
+                      'delete those records.'
+                : 'Remove "$activityName" from this category?',
           ),
           actions: [
             TextButton(
@@ -394,7 +747,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              child: const Text('Remove'),
             ),
           ],
         ),
@@ -402,7 +755,10 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
 
       if (confirm != true) return;
 
-      await provider.deleteSexualActivity(id);
+      await provider.deleteSexualActivity(
+        categoryId: categoryId,
+        activityName: activityName,
+      );
     }
 
     if (!mounted) return;
@@ -411,54 +767,59 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
       _activities[index].nameController.dispose();
       _activities[index].emojiController.dispose();
       _activities.removeAt(index);
+      for (var i = 0; i < _activities.length; i++) {
+        _activities[i].sortOrder = i;
+      }
     });
   }
 
   Future<void> _saveActivityCategory() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final provider = context.read<SexualEventsProvider>();
 
-      // Save all activities first
-      final activityReferences = <Reference>[];
-      for (var activity in _activities) {
-        final act = SexualActivity(
-          id: activity.id,
-          name: activity.nameController.text.trim(),
-          displayCharacter: activity.emojiController.text.trim(),
-          // Updated model: use explicit stiRisk and healthRisk instead of a single isRisky
-          stiRisk: activity.stiRisk,
-          healthRisk: activity.healthRisk,
-          requiresPartner: activity.requiresPartner,
-          canHaveMultipleParticipants: activity.canHaveMultipleParticipants,
-        );
-        await provider.saveSexualActivity(act);
-        activityReferences.add(
-          Reference(reference: act.id, resourceType: 'SexualActivity'),
+      final embeddedActivities = <SexualActivity>[];
+      for (var i = 0; i < _activities.length; i++) {
+        final row = _activities[i];
+        embeddedActivities.add(
+          SexualActivity(
+            name: row.nameController.text.trim(),
+            displayCharacter: row.emojiController.text.trim(),
+            stiRisk: row.stiRisk,
+            healthRisk: row.healthRisk,
+            requiresPartner: row.requiresPartner,
+            canHaveMultipleParticipants: row.canHaveMultipleParticipants,
+            isActionable: row.isActionable,
+            sortOrder: i,
+          ),
         );
       }
 
-      // Save the activity category
+      final subCategoryRefs = _selectedSubcats
+          .map(
+            (cat) => Reference(
+              reference: cat.id,
+              resourceType: 'SexualActivityCategory',
+            ),
+          )
+          .toList();
+
       final activityCategory = SexualActivityCategory(
         id: widget.activityCategory?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
         displayCharacter: _emojiController.text.trim(),
-        activities: activityReferences,
+        activities: embeddedActivities,
         requiresPartner: _requiresPartner,
+        sortOrder: widget.activityCategory?.sortOrder ?? 0,
+        subCategories: subCategoryRefs,
       );
 
       await provider.saveActivityCategory(activityCategory);
 
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
+      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -467,30 +828,34 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
             backgroundColor: Colors.red,
           ),
         );
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// _ActivityRow  –  mutable state for one activity in the editor
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _ActivityRow {
-  final String id;
   final TextEditingController nameController;
   final TextEditingController emojiController;
   bool stiRisk;
   bool healthRisk;
   bool requiresPartner;
   bool canHaveMultipleParticipants;
+  bool isActionable;
+  int sortOrder;
 
   _ActivityRow({
-    required this.id,
     required this.nameController,
     required this.emojiController,
     required this.stiRisk,
     required this.healthRisk,
     required this.requiresPartner,
     required this.canHaveMultipleParticipants,
+    required this.isActionable,
+    required this.sortOrder,
   });
 }

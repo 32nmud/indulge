@@ -17,20 +17,42 @@ class ActivityCard extends StatelessWidget {
   final List<Person> availablePersons;
   final Person? myself;
 
+  // Subcategory data (resolved by parent)
+  final List<SexualActivityCategory> subcategories;
+
   // UI state / actions
   final bool isExpanded;
   final VoidCallback onToggleExpanded;
   final VoidCallback onRemove;
   final VoidCallback onShowPersonPicker;
 
-  // Property/participant interactions
-  final void Function(int activityIndex, String activityId)
+  // Property/participant interactions — updated signatures to include activityName and categoryId
+  final void Function(
+    int activityIndex,
+    String activityName, {
+    String? categoryId,
+  })
   toggleMyselfForProperty;
-  final void Function(int activityIndex, String activityId, String personId)
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId, {
+    String? categoryId,
+  })
   toggleParticipantForProperty;
-  final void Function(int activityIndex, String activityId, String personId)
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId, {
+    String? categoryId,
+  })
   incrementPropertyCount;
-  final void Function(int activityIndex, String activityId, String personId)
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId, {
+    String? categoryId,
+  })
   decrementPropertyCount;
   // Callback to request removal of a participant (activityIndex + participantIndex)
   final void Function(int activityIndex, int participantIndex)
@@ -44,6 +66,7 @@ class ActivityCard extends StatelessWidget {
     required this.availableActivities,
     required this.availablePersons,
     required this.myself,
+    required this.subcategories,
     required this.isExpanded,
     required this.onToggleExpanded,
     required this.onRemove,
@@ -62,18 +85,14 @@ class ActivityCard extends StatelessWidget {
     final emoji = activityCategory?.displayCharacter ?? '❔';
     final name = activityCategory?.name ?? 'Unknown';
 
-    // Get available properties for this activity type and sort alphabetically
+    // Activities are directly embedded in the category as List<SexualActivity>.
+    // When subcategories exist the flat list is intentionally left empty — each
+    // subcategory renders its own ExpansionTile instead.
     final availableSexualActivities = <SexualActivity>[];
-    if (activityCategory != null) {
-      for (var activityRef in activityCategory.activities) {
-        final sexualActivity = availableActivities[activityRef.reference];
-        if (sexualActivity != null) {
-          availableSexualActivities.add(sexualActivity);
-        }
-      }
-      // Sort alphabetically by name
+    if (subcategories.isEmpty && activityCategory != null) {
+      availableSexualActivities.addAll(activityCategory.activities);
       availableSexualActivities.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        (a, b) => a.sortOrder.compareTo(b.sortOrder),
       );
     }
 
@@ -183,7 +202,7 @@ class ActivityCard extends StatelessWidget {
                             child: Text(
                               activityCategory?.requiresPartner == true
                                   ? 'Add at least one partner to continue'
-                                  : 'Add other participants, or toggle properties below to track your own participation',
+                                  : 'Add other participants, or toggle activities below to track your own participation',
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontSize: 13,
@@ -195,7 +214,7 @@ class ActivityCard extends StatelessWidget {
                     )
                   else
                     _buildParticipantSection(context),
-                  // Properties section (show even with no participants for solo-capable activities)
+                  // Activities section — flat list when no subcategories exist
                   if (availableSexualActivities.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     const Text(
@@ -210,11 +229,105 @@ class ActivityCard extends StatelessWidget {
                       return _buildPropertyRow(context, sexualActivity);
                     }),
                   ],
+                  // Activities section — one ExpansionTile per subcategory
+                  if (subcategories.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ...subcategories.map(
+                      (sub) => _buildSubcategoryTile(context, sub),
+                    ),
+                  ],
                 ],
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubcategoryTile(
+    BuildContext context,
+    SexualActivityCategory sub,
+  ) {
+    final subcategoryId = sub.id;
+    final activities = List<SexualActivity>.from(sub.activities)
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    // Count how many activities in this subcategory have any participation
+    final categoryRef = activity.category.reference;
+    final activeCount = activities.where((sexualActivity) {
+      return activity.participants.any((participant) {
+        return participant.activityCounts.any(
+          (ac) =>
+              ac.activityName == sexualActivity.name &&
+              ac.categoryReference.reference == categoryRef,
+        );
+      });
+    }).length;
+
+    final title = sub.displayCharacter != null
+        ? '${sub.displayCharacter}  ${sub.name}'
+        : sub.name;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: ExpansionTile(
+        initiallyExpanded: false,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (activeCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$activeCount',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        children: activities.isEmpty
+            ? [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'No activities in this category.',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ]
+            : activities
+                  .map(
+                    (sexualActivity) => _buildPropertyRow(
+                      context,
+                      sexualActivity,
+                      categoryId: subcategoryId,
+                    ),
+                  )
+                  .toList(),
       ),
     );
   }
@@ -245,7 +358,7 @@ class ActivityCard extends StatelessWidget {
           ),
           label: Text(
             personName,
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           onDeleted: () => onRemoveParticipant(activityIndex, participantIndex),
@@ -257,15 +370,19 @@ class ActivityCard extends StatelessWidget {
 
   Widget _buildPropertyRow(
     BuildContext context,
-    SexualActivity sexualActivity,
-  ) {
+    SexualActivity sexualActivity, {
+    String? categoryId,
+  }) {
     final activityCategory =
         availableActivityCategories[activity.category.reference];
 
     // Use the current working activity state (not from provider)
     final currentActivity = activity;
+    // Use the subcategory ID when provided so same-named activities in different
+    // (sub)categories are keyed distinctly in ActivityCount.
+    final categoryRef = categoryId ?? activity.category.reference;
 
-    // Check if "Me" has this property
+    // Check if "Me" has this activity — matching by activityName + categoryReference
     final meParticipant = currentActivity.participants.firstWhere(
       (p) => myself != null && p.participant.reference == myself!.id,
       orElse: () => ActivityParticipant(
@@ -274,12 +391,15 @@ class ActivityCard extends StatelessWidget {
       ),
     );
     final meActivityCount = meParticipant.activityCounts.firstWhere(
-      (ac) => ac.activityReference.reference == sexualActivity.id,
+      (ac) =>
+          ac.activityName == sexualActivity.name &&
+          ac.categoryReference.reference == categoryRef,
       orElse: () => ActivityCount(
-        activityReference: Reference(
-          reference: '',
-          resourceType: 'SexualActivity',
+        categoryReference: Reference(
+          reference: categoryRef,
+          resourceType: 'SexualActivityCategory',
         ),
+        activityName: sexualActivity.name,
         count: 0,
       ),
     );
@@ -290,19 +410,22 @@ class ActivityCard extends StatelessWidget {
     final propertyRequiresPartner = sexualActivity.requiresPartner;
     final showMeOption = !activityRequiresPartner && !propertyRequiresPartner;
 
-    // Get non-self participants who have this property
+    // Get non-self participants who have this activity
     final participantsWithProperty = <String>[];
     for (var participant in currentActivity.participants) {
       if (myself != null && participant.participant.reference == myself!.id) {
         continue; // Skip "Me"
       }
       final activityCount = participant.activityCounts.firstWhere(
-        (ac) => ac.activityReference.reference == sexualActivity.id,
+        (ac) =>
+            ac.activityName == sexualActivity.name &&
+            ac.categoryReference.reference == categoryRef,
         orElse: () => ActivityCount(
-          activityReference: Reference(
-            reference: '',
-            resourceType: 'SexualActivity',
+          categoryReference: Reference(
+            reference: categoryRef,
+            resourceType: 'SexualActivityCategory',
           ),
+          activityName: sexualActivity.name,
           count: 0,
         ),
       );
@@ -311,7 +434,7 @@ class ActivityCard extends StatelessWidget {
       }
     }
 
-    // Check if this activity has any participants with this property marked
+    // Check if this activity has any participants with this activity marked
     final hasParticipantsWithProperty =
         participantsWithProperty.isNotEmpty || meHasProperty;
 
@@ -368,7 +491,7 @@ class ActivityCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                // "Me" checkbox (only show if property doesn't require partner)
+                // "Me" toggle (only show if activity doesn't require partner)
                 if (myself != null && showMeOption)
                   Padding(
                     padding: const EdgeInsets.only(right: 8.0),
@@ -386,7 +509,8 @@ class ActivityCard extends StatelessWidget {
                           onTap: () {
                             toggleMyselfForProperty(
                               activityIndex,
-                              sexualActivity.id,
+                              sexualActivity.name,
+                              categoryId: categoryId,
                             );
                           },
                         ),
@@ -404,8 +528,9 @@ class ActivityCard extends StatelessWidget {
                                 constraints: const BoxConstraints(),
                                 onPressed: () => incrementPropertyCount(
                                   activityIndex,
-                                  sexualActivity.id,
+                                  sexualActivity.name,
                                   myself!.id,
+                                  categoryId: categoryId,
                                 ),
                                 tooltip: 'Increase count',
                               ),
@@ -418,8 +543,9 @@ class ActivityCard extends StatelessWidget {
                                 constraints: const BoxConstraints(),
                                 onPressed: () => decrementPropertyCount(
                                   activityIndex,
-                                  sexualActivity.id,
+                                  sexualActivity.name,
                                   myself!.id,
+                                  categoryId: categoryId,
                                 ),
                                 tooltip: 'Decrease count',
                               ),
@@ -451,13 +577,14 @@ class ActivityCard extends StatelessWidget {
                       final activityCount = participant.activityCounts
                           .firstWhere(
                             (ac) =>
-                                ac.activityReference.reference ==
-                                sexualActivity.id,
+                                ac.activityName == sexualActivity.name &&
+                                ac.categoryReference.reference == categoryRef,
                             orElse: () => ActivityCount(
-                              activityReference: Reference(
-                                reference: '',
-                                resourceType: 'SexualActivity',
+                              categoryReference: Reference(
+                                reference: categoryRef,
+                                resourceType: 'SexualActivityCategory',
                               ),
+                              activityName: sexualActivity.name,
                               count: 0,
                             ),
                           );
@@ -480,8 +607,9 @@ class ActivityCard extends StatelessWidget {
                               onTap: () {
                                 toggleParticipantForProperty(
                                   activityIndex,
-                                  sexualActivity.id,
+                                  sexualActivity.name,
                                   personId,
+                                  categoryId: categoryId,
                                 );
                               },
                             ),
@@ -499,8 +627,9 @@ class ActivityCard extends StatelessWidget {
                                     constraints: const BoxConstraints(),
                                     onPressed: () => incrementPropertyCount(
                                       activityIndex,
-                                      sexualActivity.id,
+                                      sexualActivity.name,
                                       personId,
+                                      categoryId: categoryId,
                                     ),
                                     tooltip: 'Increase count',
                                   ),
@@ -513,8 +642,9 @@ class ActivityCard extends StatelessWidget {
                                     constraints: const BoxConstraints(),
                                     onPressed: () => decrementPropertyCount(
                                       activityIndex,
-                                      sexualActivity.id,
+                                      sexualActivity.name,
                                       personId,
+                                      categoryId: categoryId,
                                     ),
                                     tooltip: 'Decrease count',
                                   ),

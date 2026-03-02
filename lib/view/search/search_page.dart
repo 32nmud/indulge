@@ -240,6 +240,8 @@ class SearchPageState extends State<SearchPage>
       final myId = store.state.myself?.id;
 
       // Use the pure filter function from search_utils to get filtered & sorted events
+      final categoriesMap = store.state.sexualActivityCategories ?? {};
+
       final filteredEvents = filterSexualEvents(
         allEvents,
         dateRange: _dateRange,
@@ -247,6 +249,7 @@ class SearchPageState extends State<SearchPage>
         eventType: _selectedEventType,
         partnerIds: _selectedPartnerIds,
         categoryIds: _selectedCategoryIds,
+        categoriesMap: categoriesMap,
         activityKeys: _selectedActivityKeys,
         myselfId: myId,
       );
@@ -314,21 +317,15 @@ class SearchPageState extends State<SearchPage>
   }
 
   Future<void> _showCategoryFilter() async {
-    final categories =
-        context
-            .read<EventStateStore>()
-            .state
-            .sexualActivityCategories
-            ?.values
-            .toList() ??
-        [];
+    final categoriesMap =
+        context.read<EventStateStore>().state.sexualActivityCategories ?? {};
 
     if (!mounted) return;
 
     final result = await showDialog<Set<String>>(
       context: context,
       builder: (context) => CategoryFilterDialog(
-        categories: categories,
+        categoriesMap: categoriesMap,
         selectedIds: _selectedCategoryIds,
       ),
     );
@@ -342,24 +339,15 @@ class SearchPageState extends State<SearchPage>
   }
 
   Future<void> _showActivityFilter() async {
-    final categories =
-        context
-            .read<EventStateStore>()
-            .state
-            .sexualActivityCategories
-            ?.values
-            .toList() ??
-        [];
-    final activities =
-        context.read<EventStateStore>().state.sexualActivities ?? {};
+    final categoriesMap =
+        context.read<EventStateStore>().state.sexualActivityCategories ?? {};
 
     if (!mounted) return;
 
     final result = await showDialog<Set<String>>(
       context: context,
       builder: (context) => ActivityFilterDialog(
-        categories: categories,
-        activitiesMap: activities,
+        categoriesMap: categoriesMap,
         selectedKeys: _selectedActivityKeys,
       ),
     );

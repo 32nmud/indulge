@@ -13,7 +13,6 @@ class SexualHealthCalculator {
     required List<SexualEvent> allEvents,
     required ClinicalEventsProvider clinicalProvider,
     required EventState stateSnapshot,
-    required Map<String, SexualActivity> sexualActivities,
     required Map<String, SexualActivityCategory> activityCategories,
     int selectedTestIndex = 0,
   }) async {
@@ -99,26 +98,43 @@ class SexualHealthCalculator {
         categoryActivityCounts.putIfAbsent(categoryId, () => {});
         for (final participant in activity.participants) {
           for (final actCount in participant.activityCounts) {
-            final actId = actCount.activityReference.reference;
-            categoryActivityCounts[categoryId]![actId] =
-                (categoryActivityCounts[categoryId]![actId] ?? 0) +
+            // Use categoryReference as activity identifier (activities don't have IDs)
+            final actId = actCount.categoryReference.reference;
+            final actName = actCount.activityName;
+            final compositeKey = '$actId:$actName';
+
+            categoryActivityCounts[categoryId]![compositeKey] =
+                (categoryActivityCounts[categoryId]![compositeKey] ?? 0) +
                 actCount.count;
 
             // Track risky activities by category (combined STI + health risk)
-            final act = sexualActivities[actId];
+            // Look up activity by category + name from activityCategories
+            SexualActivity? act;
+            if (actId.isNotEmpty) {
+              final category = activityCategories?[actId];
+              if (category != null) {
+                for (final a in category.activities) {
+                  if (a.name == actName) {
+                    act = a;
+                    break;
+                  }
+                }
+              }
+            }
             if (act != null && (act.stiRisk || act.healthRisk)) {
               riskyActivityCountsByCategory.putIfAbsent(categoryId, () => {});
-              riskyActivityCountsByCategory[categoryId]![actId] =
-                  (riskyActivityCountsByCategory[categoryId]![actId] ?? 0) +
+              riskyActivityCountsByCategory[categoryId]![compositeKey] =
+                  (riskyActivityCountsByCategory[categoryId]![compositeKey] ??
+                      0) +
                   actCount.count;
             }
           }
         }
 
-        final sexualActivity = sexualActivities[categoryId];
-        if (sexualActivity != null) {
-          sexualActivityCounts[sexualActivity.name] =
-              (sexualActivityCounts[sexualActivity.name] ?? 0) + 1;
+        final category = activityCategories?[categoryId];
+        if (category != null) {
+          sexualActivityCounts[category.name] =
+              (sexualActivityCounts[category.name] ?? 0) + 1;
         }
 
         // Determine if this activity has any STI or health risky sexual activities
@@ -126,8 +142,21 @@ class SexualHealthCalculator {
         bool hasHealthRiskInActivity = false;
         for (final participant in activity.participants) {
           for (final activityCount in participant.activityCounts) {
-            final actId = activityCount.activityReference.reference;
-            final act = sexualActivities[actId];
+            // Look up activity by category + name from activityCategories
+            final catRef = activityCount.categoryReference.reference;
+            final actName = activityCount.activityName;
+            SexualActivity? act;
+            if (catRef.isNotEmpty) {
+              final category = activityCategories?[catRef];
+              if (category != null) {
+                for (final a in category.activities) {
+                  if (a.name == actName) {
+                    act = a;
+                    break;
+                  }
+                }
+              }
+            }
             if (act != null) {
               if (act.stiRisk) {
                 hasStiRiskInActivity = true;
@@ -203,7 +232,7 @@ class SexualHealthCalculator {
             eventsInPeriod: eventsInPeriod,
             partnerEventCounts: partnerEventCounts,
             stateSnapshot: stateSnapshot,
-            sexualActivities: sexualActivities,
+            activityCategories: activityCategories,
           )
         : <PartnerNotificationInfo>[];
 
@@ -250,7 +279,6 @@ class SexualHealthCalculator {
       partnerMap: partnerMap,
       nextRecommendedTestDate: nextRecommendedTestDate,
       activityCategories: activityCategories,
-      sexualActivities: sexualActivities,
     );
   }
 
@@ -320,7 +348,7 @@ class SexualHealthCalculator {
     required List<SexualEvent> eventsInPeriod,
     required Map<String, int> partnerEventCounts,
     required EventState stateSnapshot,
-    required Map<String, SexualActivity> sexualActivities,
+    required Map<String, SexualActivityCategory> activityCategories,
   }) {
     final Map<String, PartnerNotificationInfo> partnerInfoMap = {};
 
@@ -338,9 +366,9 @@ class SexualHealthCalculator {
           final person = personMap[partnerId];
           final existing = partnerInfoMap[partnerId];
 
-          final activityId = activity.category.reference;
-          final sexualActivity = sexualActivities[activityId];
-          final activityName = sexualActivity?.name ?? activityId;
+          final categoryId = activity.category.reference;
+          final category = activityCategories[categoryId];
+          final activityName = category?.name ?? categoryId;
 
           if (existing != null) {
             final updatedActivityTypes = List<String>.from(

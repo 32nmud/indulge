@@ -904,8 +904,9 @@ class PeriodComparisonSection extends StatelessWidget {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           for (final count in participant.activityCounts) {
-            if (count.activityReference.reference.isNotEmpty) {
-              propertyIds.add(count.activityReference.reference);
+            // Use categoryReference as the activity identifier
+            if (count.categoryReference.reference.isNotEmpty) {
+              propertyIds.add(count.categoryReference.reference);
             }
           }
         }

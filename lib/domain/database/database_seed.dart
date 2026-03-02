@@ -27,8 +27,16 @@ class DatabaseSeed {
           final content = utf8.decode(file.content as List<int>);
           final json = jsonDecode(content) as Map<String, dynamic>;
 
-          if (file.name.contains('categories/')) {
-            await _seedSexualActivityCategory(txn, 'sexual_activities', json);
+          if (file.name.contains('sexual_activities/')) {
+            // Check if it's a category (has subCategories or activities) or standalone activity
+            // Categories have either subCategories OR activities (but not both in seed files)
+            // If it has activities, it's a category with embedded activities
+            if (json.containsKey('subCategories') ||
+                json.containsKey('activities')) {
+              await _seedSexualActivityCategory(txn, 'sexual_activities', json);
+            } else {
+              await _seedSexualActivity(txn, 'sexual_activities', json);
+            }
           } else if (file.name.contains('activities/')) {
             await _seedSexualActivity(txn, 'sexual_activities', json);
           } else if (file.name.contains('persons/')) {

@@ -349,21 +349,39 @@ class EventAggregator {
 
           // Count sexual activities (for everyone, including me)
           for (final activityCount in participant.activityCounts) {
-            final sexualActivityId = activityCount.activityReference.reference;
+            // Use categoryReference as the activity identifier (since activities don't have IDs)
+            final sexualActivityId = activityCount.categoryReference.reference;
+            final activityName = activityCount.activityName;
             final count = activityCount.count;
 
-            sexualActivityCountsTotal[sexualActivityId] =
-                (sexualActivityCountsTotal[sexualActivityId] ?? 0) + count;
-            eventSexualActivityIds[sexualActivityId] =
-                (eventSexualActivityIds[sexualActivityId] ?? 0) + count;
-            final sexualActivity = sexualActivitiesMap?[sexualActivityId];
+            // Use composite key: categoryId:activityName
+            final compositeKey = '$sexualActivityId:$activityName';
+            sexualActivityCountsTotal[compositeKey] =
+                (sexualActivityCountsTotal[compositeKey] ?? 0) + count;
+            eventSexualActivityIds[compositeKey] =
+                (eventSexualActivityIds[compositeKey] ?? 0) + count;
+
+            // Look up activity by category + name from sexualActivityCategories
+            SexualActivity? sexualActivity;
+            if (sexualActivityId.isNotEmpty) {
+              final category = sexualActivityCategories?[sexualActivityId];
+              if (category != null) {
+                for (final activity in category.activities) {
+                  if (activity.name == activityName) {
+                    sexualActivity = activity;
+                    break;
+                  }
+                }
+              }
+            }
+
             if (sexualActivity != null) {
-              sexualActivities[sexualActivityId] = sexualActivity;
+              sexualActivities[compositeKey] = sexualActivity;
 
               // Check if this sexual activity is risky
               if (sexualActivity.stiRisk || sexualActivity.healthRisk) {
                 _logger.fine(
-                  'Found risky sexual activity: ${sexualActivity.name} (${sexualActivity.id})',
+                  'Found risky sexual activity: ${sexualActivity.name}',
                 );
                 hasRiskyProperty = true;
               }

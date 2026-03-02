@@ -1,71 +1,71 @@
 {
   "id": "f2b66dcf-fc5d-431e-a847-2351d663bd6a",
   "name": "Gear",
-  "displayCharacter": "",
+  "displayCharacter": "👕",
   "activities": [
     {
       "name": "Leather",
-      "displayCharacter": "",
+      "displayCharacter": "🥋",
       "isActionable": false
     },
     {
       "name": "Rubber/latex",
-      "displayCharacter": "",
+      "displayCharacter": "🫧",
       "isActionable": false
     },
     {
       "name": "Neoprene",
-      "displayCharacter": "",
+      "displayCharacter": "🏊",
       "isActionable": false
     },
     {
       "name": "Athletic/sportswear",
-      "displayCharacter": "",
+      "displayCharacter": "🏃",
       "isActionable": false
     },
     {
       "name": "Sneakers/boots",
-      "displayCharacter": "",
+      "displayCharacter": "👟",
       "isActionable": false
     },
     {
       "name": "Socks",
-      "displayCharacter": "",
+      "displayCharacter": "🧦",
       "isActionable": false
     },
     {
       "name": "Underwear",
-      "displayCharacter": "",
+      "displayCharacter": "🩲",
       "isActionable": false
     },
     {
       "name": "Miltac",
-      "displayCharacter": "",
+      "displayCharacter": "🪖",
       "isActionable": false
     },
     {
       "name": "Uniforms (cop, medic, etc)",
-      "displayCharacter": "",
+      "displayCharacter": "👮",
       "isActionable": false
     },
     {
       "name": "Formalwear",
-      "displayCharacter": "",
+      "displayCharacter": "🤵",
       "isActionable": false
     },
     {
       "name": "Pet play gear",
-      "displayCharacter": "",
+      "displayCharacter": "🐾",
       "isActionable": false
     },
     {
       "name": "Harnesses",
-      "displayCharacter": "",
+      "displayCharacter": "🔗",
       "isActionable": false
     },
     {
       "name": "Masks/hoods",
-      "displayCharacter": "",
+      "displayCharacter": "🎭",
       "isActionable": false
     }
   ]

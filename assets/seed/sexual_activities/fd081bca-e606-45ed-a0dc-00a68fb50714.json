@@ -1,23 +1,30 @@
 {
   "id": "fd081bca-e606-45ed-a0dc-00a68fb50714",
   "name": "Topping",
-  "displayCharacter": "",
+  "displayCharacter": "⬆️",
   "activities": [
     {
-      "reference": "d84e40cb-a814-44ce-a3e4-61ee32d55d91",
-      "resourceType": "SexualActivity"
+      "name": "Bareback",
+      "displayCharacter": "🚫",
+      "requiresPartner": true,
+      "stiRisk": true
     },
     {
-      "reference": "7c779da0-b66c-431e-af27-eda5623bd58e",
-      "resourceType": "SexualActivity"
+      "name": "Condom",
+      "displayCharacter": "🛡️",
+      "requiresPartner": true
     },
     {
-      "reference": "6b753839-b9a3-4cc1-9a8d-6ac03a77099d",
-      "resourceType": "SexualActivity"
+      "name": "Broken condom",
+      "displayCharacter": "⚠️",
+      "requiresPartner": true,
+      "stiRisk": true
     },
     {
-      "reference": "a3a61d66-01e7-4e0c-b12b-b956babc9980",
-      "resourceType": "SexualActivity"
+      "name": "They came inside",
+      "displayCharacter": "💧",
+      "requiresPartner": true,
+      "stiRisk": true
     }
   ]
 }

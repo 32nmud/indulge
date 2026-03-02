@@ -393,102 +393,17 @@ class BackupService {
         }
       }
 
-      // -- Activities --
-      yield 'Importing activities...';
+      // -- Activities (legacy) --
+      // Standalone SexualActivity records are no longer supported. Activities
+      // are now embedded directly inside their SexualActivityCategory JSON blob
+      // and are imported as part of the categories step below. Any legacy
+      // /activities directory in an older backup is intentionally skipped.
       final activitiesDir = Directory(p.join(extractionDir.path, 'activities'));
       if (await activitiesDir.exists()) {
-        await for (final file in activitiesDir.list()) {
-          if (file is File && file.path.endsWith('.json')) {
-            try {
-              final content = await file.readAsString();
-              var json = jsonDecode(content) as Map<String, dynamic>;
-              // Unwrap envelope if the JSON uses an outer envelope shape.
-              json = _unwrapJsonEnvelope(json);
-              final resourceType =
-                  (json['resourceType'] as String?) ?? 'SexualActivity';
-
-              // Short-circuit inline migration for legacy v2 shape:
-              // If an old export included `isRisky` but not the new flags,
-              // mirror it into both `stiRisk` and `healthRisk` and persist
-              // immediately, avoiding a full migrator roundtrip in the common case.
-              if (resourceType == 'SexualActivity' &&
-                  json.containsKey('isRisky') &&
-                  !json.containsKey('stiRisk') &&
-                  !json.containsKey('healthRisk')) {
-                final isRiskyVal = json['isRisky'];
-                final boolFlag = isRiskyVal == true || isRiskyVal == 1;
-                json['stiRisk'] = boolFlag;
-                json['healthRisk'] = boolFlag;
-                json.remove('isRisky');
-                json['version'] = ModelVersionMigration.currentVersion;
-
-                final item = SexualActivity.fromJson(json);
-                await sexualRepo.saveSexualActivity(item);
-                importedCount++;
-                // Continue to next file - we've handled this record.
-                continue;
-              }
-
-              try {
-                // Fallback: use MigrationService to migrate to current model version if needed
-                final migrated =
-                    await MigrationService.migrateIfNeeded<dynamic>(
-                      json,
-                      resourceType,
-                    );
-
-                if (migrated is SexualActivity) {
-                  await sexualRepo.saveSexualActivity(migrated);
-                } else if (migrated is Map<String, dynamic>) {
-                  final item = SexualActivity.fromJson(migrated);
-                  await sexualRepo.saveSexualActivity(item);
-                } else {
-                  await sexualRepo.saveSexualActivity(
-                    migrated as SexualActivity,
-                  );
-                }
-
-                importedCount++;
-              } catch (e, st) {
-                // If migration failed for any reason, attempt to salvage directly
-                // from the JSON payload. This helps when a specific v2->v3 migrator
-                // is missing or a migration step otherwise errors.
-                _logger.warning(
-                  'Migration failed for activity ${file.path}, attempting fallback: $e',
-                  e,
-                  st,
-                );
-                try {
-                  // Ensure legacy single-flag compatibility is handled if present.
-                  if (!json.containsKey('stiRisk') &&
-                      !json.containsKey('healthRisk') &&
-                      json.containsKey('isRisky')) {
-                    final isRiskyVal = json['isRisky'];
-                    final boolFlag = isRiskyVal == true || isRiskyVal == 1;
-                    json['stiRisk'] = boolFlag;
-                    json['healthRisk'] = boolFlag;
-                    json.remove('isRisky');
-                  }
-                  json['version'] = ModelVersionMigration.currentVersion;
-                  final fallback = SexualActivity.fromJson(json);
-                  await sexualRepo.saveSexualActivity(fallback);
-                  importedCount++;
-                } catch (e2, st2) {
-                  final msg =
-                      'Failed to import activity file ${file.path} even after fallback: $e2';
-                  _logger.warning(msg, e2, st2);
-                  importErrors.add(msg);
-                  failedCount++;
-                }
-              }
-            } catch (e, st) {
-              final msg = 'Failed to import activity file ${file.path}: $e';
-              _logger.warning(msg, e, st);
-              importErrors.add(msg);
-              failedCount++;
-            }
-          }
-        }
+        _logger.info(
+          'Skipping legacy activities directory — activities are now embedded '
+          'in categories and will be imported with them.',
+        );
       }
 
       // -- Persons --

@@ -176,12 +176,12 @@ class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
     PreferencesService prefs,
     Set<String> currentSelected,
   ) async {
-    final categories = widget.data.activityCategories.values.toList();
+    final categoriesMap = widget.data.activityCategories;
 
     final result = await showDialog<Set<String>>(
       context: context,
       builder: (context) => CategoryFilterDialog(
-        categories: categories,
+        categoriesMap: categoriesMap,
         selectedIds: currentSelected,
       ),
     );

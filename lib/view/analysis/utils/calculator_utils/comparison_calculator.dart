@@ -83,9 +83,22 @@ class ComparisonCalculator {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           for (final activityCount in participant.activityCounts) {
-            final sexualActivityId = activityCount.activityReference.reference;
-            final sexualActivity =
-                providerState.sexualActivities?[sexualActivityId];
+            // Look up activity by category + name
+            final categoryRef = activityCount.categoryReference.reference;
+            final activityName = activityCount.activityName;
+            if (categoryRef.isEmpty || activityName.isEmpty) continue;
+
+            final category =
+                providerState.sexualActivityCategories?[categoryRef];
+            SexualActivity? sexualActivity;
+            if (category != null) {
+              for (final activity in category.activities) {
+                if (activity.name == activityName) {
+                  sexualActivity = activity;
+                  break;
+                }
+              }
+            }
 
             if ((sexualActivity?.stiRisk ?? false) ||
                 (sexualActivity?.healthRisk ?? false)) {

@@ -102,7 +102,7 @@ void main() {
 
       test('setSexualActivities updates state', () {
         final activities = {
-          'giving': const SexualActivity(id: 'giving', name: 'Giving'),
+          'giving': const SexualActivity(name: 'Giving'),
         };
 
         store.setSexualActivities(activities);
@@ -196,7 +196,7 @@ void main() {
     group('sexual activity accessors', () {
       test('getActivityById returns activity when exists', () {
         final activities = {
-          'giving': const SexualActivity(id: 'giving', name: 'Giving'),
+          'giving': const SexualActivity(name: 'Giving'),
         };
         store.setSexualActivities(activities);
 

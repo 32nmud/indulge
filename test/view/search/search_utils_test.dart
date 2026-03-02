@@ -9,8 +9,12 @@ void main() {
     Reference ref(String id, String resourceType) =>
         Reference(reference: id, resourceType: resourceType);
 
-    ActivityCount activityCount(String activityId) => ActivityCount(
-      activityReference: ref(activityId, 'SexualActivity'),
+    ActivityCount activityCount(
+      String activityName, {
+      String categoryId = 'cat',
+    }) => ActivityCount(
+      categoryReference: ref(categoryId, 'SexualActivityCategory'),
+      activityName: activityName,
       count: 1,
     );
 
@@ -281,10 +285,11 @@ void main() {
     test('activity filter handles empty activityReference values', () {
       // activityCount with empty activityReference.reference
       final badActivityCount = ActivityCount(
-        activityReference: Reference(
+        categoryReference: Reference(
           reference: '',
-          resourceType: 'SexualActivity',
+          resourceType: 'SexualActivityCategory',
         ),
+        activityName: '',
         count: 1,
       );
 

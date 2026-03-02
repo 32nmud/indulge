@@ -35,10 +35,11 @@ void main() {
                   activityCounts: activityIds
                       .map(
                         (aId) => ActivityCount(
-                          activityReference: Reference(
-                            reference: aId,
-                            resourceType: 'SexualActivity',
+                          categoryReference: Reference(
+                            reference: 'category-sex',
+                            resourceType: 'SexualActivityCategory',
                           ),
+                          activityName: aId,
                           count: 1,
                         ),
                       )
@@ -232,8 +233,7 @@ void main() {
 
         final mockState = EventState(
           sexualActivities: {
-            'safe-activity': const SexualActivity(
-              id: 'safe-activity',
+            'Safe Activity': const SexualActivity(
               name: 'Safe Activity',
               stiRisk: false,
               healthRisk: false,
@@ -262,14 +262,12 @@ void main() {
 
         final mockState = EventState(
           sexualActivities: {
-            'risky-activity': const SexualActivity(
-              id: 'risky-activity',
+            'Risky Activity': const SexualActivity(
               name: 'Risky Activity',
               stiRisk: true,
               healthRisk: false,
             ),
-            'safe-activity': const SexualActivity(
-              id: 'safe-activity',
+            'Safe Activity': const SexualActivity(
               name: 'Safe Activity',
               stiRisk: false,
               healthRisk: false,
@@ -302,20 +300,17 @@ void main() {
 
         final mockState = EventState(
           sexualActivities: {
-            'risky-activity': const SexualActivity(
-              id: 'risky-activity',
+            'Risky Activity': const SexualActivity(
               name: 'Risky Activity',
               stiRisk: true,
               healthRisk: false,
             ),
-            'safe-activity': const SexualActivity(
-              id: 'safe-activity',
+            'Safe Activity': const SexualActivity(
               name: 'Safe Activity',
               stiRisk: false,
               healthRisk: false,
             ),
-            'another-safe': const SexualActivity(
-              id: 'another-safe',
+            'Another Safe': const SexualActivity(
               name: 'Another Safe',
               stiRisk: false,
               healthRisk: false,

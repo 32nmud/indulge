@@ -1,28 +1,28 @@
 {
   "id": "b11baab6-7ca5-4926-9231-a162f03fa6fe",
   "name": "Bottoming",
-  "displayCharacter": "",
+  "displayCharacter": "⬇️",
   "activities": [
     {
       "name": "Bareback",
-      "displayCharacter": "",
+      "displayCharacter": "🚫",
       "requiresPartner": true,
       "stiRisk": true
     },
     {
       "name": "Condom",
-      "displayCharacter": "",
+      "displayCharacter": "🛡️",
       "requiresPartner": true
     },
     {
       "name": "Broken condom",
-      "displayCharacter": "",
+      "displayCharacter": "⚠️",
       "requiresPartner": true,
       "stiRisk": true
     },
     {
       "name": "They came inside",
-      "displayCharacter": "",
+      "displayCharacter": "💧",
       "requiresPartner": true,
       "stiRisk": true
     }

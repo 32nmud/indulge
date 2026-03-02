@@ -6,15 +6,31 @@ class ActivityPickerDialog extends StatelessWidget {
 
   const ActivityPickerDialog({super.key, required this.availableCategories});
 
+  /// Check if a category is a subcategory of another category
+  bool _isSubcategory(SexualActivityCategory category) {
+    for (final other in availableCategories.values) {
+      for (final subRef in other.subCategories) {
+        if (subRef.reference == category.id) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Sort categories alphabetically by name
-    final sortedCategories = availableCategories.values.toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    // Filter to only show root parent categories
+    final parentCategories = availableCategories.values
+        .where((category) => !_isSubcategory(category))
+        .toList();
+
+    // Sort by user-defined order from Settings.
+    parentCategories.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     return SimpleDialog(
       title: const Text('Select Activity Category'),
-      children: sortedCategories.map((category) {
+      children: parentCategories.map((category) {
         return SimpleDialogOption(
           onPressed: () => Navigator.pop(context, category),
           child: Row(

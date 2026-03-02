@@ -277,7 +277,10 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
           for (final participant in activity.participants) {
             if (participant.participant.reference == partnerId) {
               for (final activityCount in participant.activityCounts) {
-                final activityId = activityCount.activityReference.reference;
+                // Use categoryReference + activityName as the activity identifier
+                final catRef = activityCount.categoryReference.reference;
+                final actName = activityCount.activityName;
+                final activityId = '$catRef:$actName';
                 activityTypePropertyCounts[typeId]![activityId] =
                     (activityTypePropertyCounts[typeId]![activityId] ?? 0) +
                     activityCount.count;

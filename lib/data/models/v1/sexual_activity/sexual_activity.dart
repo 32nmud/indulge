@@ -8,7 +8,6 @@ abstract class SexualActivity with _$SexualActivity {
   const SexualActivity._();
 
   const factory SexualActivity({
-    @Default("") String id,
     @Default("unknown") String name,
     @Default("❔") String displayCharacter,
     @Default(true) bool canHaveMultipleParticipants,

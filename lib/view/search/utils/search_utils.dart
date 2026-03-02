@@ -21,7 +21,9 @@ import 'package:indulge/data/models.dart';
 ///   partner references present in the event.
 /// - Partner filter: event must include at least one of the provided partner ids
 /// - Category filter: event must include at least one activity whose category
-///   reference is present in [categoryIds].
+///   reference is present in [categoryIds]. If a parent category ID is in
+///   [categoryIds], its subcategory IDs are automatically included so selecting
+///   a parent matches events from any of its subcategories too.
 /// - Activity filter: [activityKeys] contains composite keys "categoryId:activityId"
 ///   and an event matches if any of its participant activityCounts reference
 ///   one of those composite keys.
@@ -34,6 +36,7 @@ List<SexualEvent> filterSexualEvents(
   String? eventType, // 'Solo' | 'Couple' | 'Group'
   Set<String>? partnerIds,
   Set<String>? categoryIds,
+  Map<String, SexualActivityCategory>? categoriesMap,
   Set<String>? activityKeys, // composite keys: "categoryId:activityId"
   String? myselfId,
 }) {
@@ -82,13 +85,36 @@ List<SexualEvent> filterSexualEvents(
       if (!intersects) return false;
     }
 
-    // Category filter: require at least one activity category matches
+    // Category filter: require at least one activity category matches.
+    // Expand each selected parent ID to also cover its subcategory IDs.
     if (categoryIds != null && categoryIds.isNotEmpty) {
-      final eventCategoryIds = event.activities
-          .map((a) => a.category.reference)
-          .cast<String>()
-          .toSet();
-      final intersects = categoryIds.any((id) => eventCategoryIds.contains(id));
+      final expandedIds = <String>{};
+      for (final id in categoryIds) {
+        expandedIds.add(id);
+        if (categoriesMap != null) {
+          final cat = categoriesMap[id];
+          if (cat != null) {
+            for (final ref in cat.subCategories) {
+              if (ref.reference.isNotEmpty) expandedIds.add(ref.reference);
+            }
+          }
+        }
+      }
+      // Collect all category IDs referenced in this event — both the top-level
+      // EventActivity category and any subcategory IDs stored in each
+      // ActivityCount.categoryReference (which is where subcategory activities
+      // are actually recorded).
+      final eventCategoryIds = <String>{};
+      for (final activity in event.activities) {
+        eventCategoryIds.add(activity.category.reference);
+        for (final participant in activity.participants) {
+          for (final activityCount in participant.activityCounts) {
+            final ref = activityCount.categoryReference.reference;
+            if (ref.isNotEmpty) eventCategoryIds.add(ref);
+          }
+        }
+      }
+      final intersects = expandedIds.any((id) => eventCategoryIds.contains(id));
       if (!intersects) return false;
     }
 
@@ -99,8 +125,15 @@ List<SexualEvent> filterSexualEvents(
         final catId = activity.category.reference;
         for (final participant in activity.participants) {
           for (final activityCount in participant.activityCounts) {
-            final activityId = activityCount.activityReference.reference;
-            final composite = '$catId:$activityId';
+            final activityName = activityCount.activityName;
+            // Use the categoryReference from the ActivityCount itself — this
+            // stores the subcategory ID when the activity belongs to a
+            // subcategory, not the parent EventActivity category ID.
+            final actCountCatId =
+                activityCount.categoryReference.reference.isNotEmpty
+                ? activityCount.categoryReference.reference
+                : catId;
+            final composite = '$actCountCatId:$activityName';
             if (activityKeys.contains(composite)) {
               hasMatching = true;
               break;

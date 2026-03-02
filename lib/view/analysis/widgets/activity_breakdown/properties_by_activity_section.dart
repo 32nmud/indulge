@@ -224,7 +224,10 @@ class _PropertiesByActivitySectionState
         if (activity.category.reference == activityTypeId) {
           for (final participant in activity.participants) {
             for (final activityCount in participant.activityCounts) {
-              final activityId = activityCount.activityReference.reference;
+              // Use categoryReference + activityName as the activity identifier
+              final catRef = activityCount.categoryReference.reference;
+              final actName = activityCount.activityName;
+              final activityId = '$catRef:$actName';
               propertyCountsForActivity[activityId] =
                   (propertyCountsForActivity[activityId] ?? 0) +
                   activityCount.count;
@@ -246,12 +249,12 @@ class _PropertiesByActivitySectionState
     PreferencesService prefs,
     Set<String> currentSelected,
   ) async {
-    final categories = widget.data.activityCategories.values.toList();
+    final categoriesMap = widget.data.activityCategories;
 
     final result = await showDialog<Set<String>>(
       context: context,
       builder: (context) => CategoryFilterDialog(
-        categories: categories,
+        categoriesMap: categoriesMap,
         selectedIds: currentSelected,
       ),
     );

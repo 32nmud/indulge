@@ -27,7 +27,8 @@ class CoOccurrenceCalculator {
         eventCategoryIds.add(activity.category.reference);
         for (final participant in activity.participants) {
           for (final activityCount in participant.activityCounts) {
-            eventActivityIds.add(activityCount.activityReference.reference);
+            // Use categoryReference as the activity identifier (since activities don't have IDs)
+            eventActivityIds.add(activityCount.categoryReference.reference);
           }
         }
       }

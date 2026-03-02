@@ -26,8 +26,8 @@ class CalendarView extends StatefulWidget {
 }
 
 class _CalendarViewState extends State<CalendarView> {
-  DateTime _getEarliestEvent() => DateTime(2024, 1, 1);
-  DateTime _getLatestEvent() => DateTime(2026, 12, 31);
+  DateTime _getEarliestEvent() => DateTime(2000, 1, 1);
+  DateTime _getLatestEvent() => DateTime(2100, 12, 31);
 
   CalendarFormat get _calendarFormat =>
       widget.isMonthView ? CalendarFormat.month : CalendarFormat.week;

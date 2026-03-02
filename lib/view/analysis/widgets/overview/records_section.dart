@@ -77,7 +77,7 @@ class RecordsSection extends StatelessWidget {
     final activityCount = event.activities
         .expand((a) => a.participants)
         .expand((p) => p.activityCounts)
-        .map((ac) => ac.activityReference.reference)
+        .map((ac) => ac.categoryReference.reference)
         .toSet()
         .length;
 

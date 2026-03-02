@@ -71,10 +71,11 @@ void main() {
                   activityCounts: activityIds
                       .map(
                         (aId) => ActivityCount(
-                          activityReference: Reference(
-                            reference: aId,
-                            resourceType: 'SexualActivity',
+                          categoryReference: Reference(
+                            reference: 'category-sex',
+                            resourceType: 'SexualActivityCategory',
                           ),
+                          activityName: aId,
                           count: 1,
                         ),
                       )
@@ -253,8 +254,8 @@ void main() {
       test('tracks sexual activities correctly', () {
         final cache = PersonCache.fromList([]);
         final sexualActivities = {
-          'oral': SexualActivity(id: 'oral', name: 'Oral'),
-          'vaginal': SexualActivity(id: 'vaginal', name: 'Vaginal'),
+          'Oral': SexualActivity(name: 'Oral'),
+          'Vaginal': SexualActivity(name: 'Vaginal'),
         };
 
         final events = [
