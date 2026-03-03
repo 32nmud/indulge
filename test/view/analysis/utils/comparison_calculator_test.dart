@@ -260,17 +260,27 @@ void main() {
           ]),
         ];
 
+        // calculateDaysSinceLastRisky looks up via sexualActivityCategories
+        // using categoryReference + activityName, so we need a category entry
+        // whose activities include the risky/safe items by the names used in
+        // the event's activityCounts (the activityId strings passed above).
         final mockState = EventState(
-          sexualActivities: {
-            'Risky Activity': const SexualActivity(
-              name: 'Risky Activity',
-              stiRisk: true,
-              healthRisk: false,
-            ),
-            'Safe Activity': const SexualActivity(
-              name: 'Safe Activity',
-              stiRisk: false,
-              healthRisk: false,
+          sexualActivityCategories: {
+            'category-sex': SexualActivityCategory(
+              id: 'category-sex',
+              name: 'Sex',
+              activities: [
+                const SexualActivity(
+                  name: 'risky-activity',
+                  stiRisk: true,
+                  healthRisk: false,
+                ),
+                const SexualActivity(
+                  name: 'safe-activity',
+                  stiRisk: false,
+                  healthRisk: false,
+                ),
+              ],
             ),
           },
         );
@@ -299,21 +309,27 @@ void main() {
         ];
 
         final mockState = EventState(
-          sexualActivities: {
-            'Risky Activity': const SexualActivity(
-              name: 'Risky Activity',
-              stiRisk: true,
-              healthRisk: false,
-            ),
-            'Safe Activity': const SexualActivity(
-              name: 'Safe Activity',
-              stiRisk: false,
-              healthRisk: false,
-            ),
-            'Another Safe': const SexualActivity(
-              name: 'Another Safe',
-              stiRisk: false,
-              healthRisk: false,
+          sexualActivityCategories: {
+            'category-sex': SexualActivityCategory(
+              id: 'category-sex',
+              name: 'Sex',
+              activities: [
+                const SexualActivity(
+                  name: 'risky-activity',
+                  stiRisk: true,
+                  healthRisk: false,
+                ),
+                const SexualActivity(
+                  name: 'safe-activity',
+                  stiRisk: false,
+                  healthRisk: false,
+                ),
+                const SexualActivity(
+                  name: 'another-safe',
+                  stiRisk: false,
+                  healthRisk: false,
+                ),
+              ],
             ),
           },
         );

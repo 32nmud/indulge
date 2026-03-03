@@ -32,43 +32,42 @@ class _ContactListPageState extends State<ContactListPage>
   // Scroll controller used to detect when we should load more contacts.
   final ScrollController _scrollController = ScrollController();
 
+  // Cached store reference so dispose() never reads context after deactivation.
+  late EventStateStore _store;
+
   @override
   bool get wantKeepAlive => true;
-
-  // Static flag to prevent multiple loads - persists across hot reloads
-  static bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
-    // Use static flag to truly prevent multiple loads
-    if (_hasLoadedOnce) {
-      return;
-    }
-    _hasLoadedOnce = true;
 
-    // Defer loading to avoid triggering during widget tree build
+    // Cache the store reference once — safe to read context here.
+    _store = context.read<EventStateStore>();
+
+    // Defer loading to avoid triggering during widget tree build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadPersons();
+      if (mounted) _loadPersons();
     });
 
     // Listen for scrolls to implement load-more for the contacts list.
     _scrollController.addListener(_onScroll);
 
-    // Listen to store to refresh when persons change (not on date changes)
-    context.read<EventStateStore>().addListener(_onStoreChange);
+    // Listen to store to refresh when persons change (not on date changes).
+    _store.addListener(_onStoreChange);
   }
 
   void _onStoreChange() {
+    // Guard: never touch context or setState on a deactivated widget.
+    if (!mounted) return;
+
     // Only react to store changes if we've already loaded initial data
     // or if the store indicates a data refresh is needed.
-    // This prevents unnecessary loads during initialization
-    final store = context.read<EventStateStore>();
-    if (_persons.isEmpty || !store.needsDataRefresh) {
+    if (_persons.isEmpty || !_store.needsDataRefresh) {
       return;
     }
-    // Only reload if persons actually changed, not for date changes
-    final cachedPersons = store.state.allPersons;
+    // Only reload if persons actually changed, not for date changes.
+    final cachedPersons = _store.state.allPersons;
     if (cachedPersons != null) {
       final cachedIds = cachedPersons.map((p) => p.id).toSet();
       final currentIds = _persons.map((p) => p.id).toSet();
@@ -105,42 +104,51 @@ class _ContactListPageState extends State<ContactListPage>
 
   @override
   void dispose() {
-    // Remove store listener when widget is disposed
-    context.read<EventStateStore>().removeListener(_onStoreChange);
+    // Remove listener via the cached reference — never read context here,
+    // as the widget may already be deactivated.
+    _store.removeListener(_onStoreChange);
     _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _loadPersons({bool forceLoadEvents = false}) async {
-    final store = context.read<EventStateStore>();
-    // Skip if we already have counts AND data isn't dirty (no new events/persons added)
+    if (!mounted) return;
+
+    // Skip if we already have counts AND data isn't dirty (no new events/persons added).
     if (_personEventCounts.isNotEmpty &&
         !forceLoadEvents &&
-        !store.needsDataRefresh) {
+        !_store.needsDataRefresh) {
       return;
     }
 
     setState(() => _isLoading = true);
+
+    // Capture provider before the first await so we never read context
+    // on a potentially-deactivated widget after suspension.
     final provider = context.read<SexualEventsProvider>();
 
     // Prefer the cached list of persons from the centralized store when available
     // to avoid an extra DB call; fall back to the provider otherwise.
-    final persons = store.state.allPersons ?? await provider.getAllPersons();
+    final persons = _store.state.allPersons ?? await provider.getAllPersons();
+
+    if (!mounted) return;
 
     // Filter out the anonymous person early so event counting and pagination
     // operate only on visible contacts.
     final visiblePersons = persons.where((p) => p.id != 'anonymous').toList();
 
     // Fetch all events if data has changed, if force is specified, or on initial load
-    // (when we don't have cached event counts yet)
+    // (when we don't have cached event counts yet).
     List<SexualEvent> allEvents = [];
     final hasEventCounts = _personEventCounts.isNotEmpty;
-    if (forceLoadEvents || store.needsDataRefresh || !hasEventCounts) {
+    if (forceLoadEvents || _store.needsDataRefresh || !hasEventCounts) {
       allEvents = await provider.getAllEvents();
-      if (store.needsDataRefresh) {
-        store.clearDataDirty();
+      if (!mounted) return;
+      if (_store.needsDataRefresh) {
+        _store.clearDataDirty();
       }
     }
+
     _logger.info(
       'Counting events for ${visiblePersons.length} persons across ${allEvents.length} events',
     );
@@ -149,19 +157,15 @@ class _ContactListPageState extends State<ContactListPage>
     for (final person in visiblePersons) {
       int count = 0;
       for (final event in allEvents) {
-        // Check if this person participated in this event
-        // An event counts if the person appears in ANY activity
-        bool participated = event.activities.any(
+        // An event counts if the person appears in ANY activity.
+        final participated = event.activities.any(
           (activity) => activity.participants.any(
             (participant) =>
                 participant.participant.resourceType == 'Person' &&
                 participant.participant.reference == person.id,
           ),
         );
-
-        if (participated) {
-          count++;
-        }
+        if (participated) count++;
       }
       eventCounts[person.id] = count;
       _logger.info(
@@ -169,11 +173,11 @@ class _ContactListPageState extends State<ContactListPage>
       );
     }
 
+    if (!mounted) return;
+
     // Initialize pager with visible persons so the UI can show a paginated list.
     _pager.reset();
     _pager.loadInitial(visiblePersons);
-
-    // Note: _hasLoadedOnce is static, so we don't reset it here
 
     setState(() {
       _persons = visiblePersons;
@@ -189,8 +193,8 @@ class _ContactListPageState extends State<ContactListPage>
         builder: (context) => ContactEditorPage(person: person),
       ),
     );
-    // Refresh the list when returning from editor (force load events for accurate counts)
-    _loadPersons(forceLoadEvents: true);
+    // Refresh the list when returning from editor (force load events for accurate counts).
+    if (mounted) _loadPersons(forceLoadEvents: true);
   }
 
   Future<void> _deletePerson(Person person) async {

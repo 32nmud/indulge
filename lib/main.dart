@@ -14,6 +14,9 @@ import 'package:indulge/view/contacts/contact_list_page.dart';
 import 'package:indulge/view/settings/settings_page.dart';
 import 'package:indulge/view/common/speed_dial_fab.dart';
 import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
+import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
+import 'package:indulge/provider/clinical_event_provider.dart'
+    show ClinicalEventsProvider;
 import 'dart:io';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:indulge/domain/database/database_engine.dart';
@@ -258,6 +261,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentPageIndex = 0;
+  final GlobalKey<SearchPageState> _searchPageKey =
+      GlobalKey<SearchPageState>();
 
   @override
   void initState() {
@@ -273,7 +278,7 @@ class _MyHomePageState extends State<MyHomePage> {
       case 0:
         return const EventViewPage();
       case 1:
-        return const SearchPage();
+        return SearchPage(key: _searchPageKey);
       case 2:
         return const AnalysisPage();
       case 3:
@@ -323,15 +328,29 @@ class _MyHomePageState extends State<MyHomePage> {
           return NavigationHelper(
             navigateToSearchWithPartner: (String partnerId) {
               setState(() => _currentPageIndex = 1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(partnerId: partnerId);
+              });
             },
             navigateToSearchWithEventType: (String eventType) {
               setState(() => _currentPageIndex = 1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(eventType: eventType);
+              });
             },
             navigateToSearchWithCategory: (String categoryId) {
               setState(() => _currentPageIndex = 1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(
+                  categoryId: categoryId,
+                );
+              });
             },
             navigateToSearchWithDateRange: (DateTimeRange range) {
               setState(() => _currentPageIndex = 1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(dateRange: range);
+              });
             },
             navigateToSearch:
                 ({
@@ -342,6 +361,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   bool sinceLastStiTest = false,
                 }) {
                   setState(() => _currentPageIndex = 1);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _searchPageKey.currentState?.applyFilters(
+                      dateRange: dateRange,
+                      eventType: eventType,
+                      partnerId: partnerId,
+                      categoryId: categoryId,
+                      sinceLastStiTest: sinceLastStiTest,
+                    );
+                  });
                 },
             child: _buildPageWithFab(_currentPageIndex),
           );
@@ -408,14 +436,40 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _openEventEditor(DateTime? initialDate) {
+    // If no date was explicitly provided, use the currently selected date from
+    // the store (e.g. the user has navigated to a past day in the calendar).
+    // Fall back to today only when the store has no selection.
+    final selectedDate =
+        initialDate ??
+        context.read<EventStateStore>().state.selectedDate ??
+        DateTime.now();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => SexualEventEditorPage(initialDate: initialDate),
+        builder: (context) => SexualEventEditorPage(initialDate: selectedDate),
       ),
     );
   }
 
   void _openClinicalEventEditor(DateTime? initialDate) {
-    // TODO: Add clinical event editor when available
+    final selectedDate =
+        initialDate ??
+        context.read<EventStateStore>().state.selectedDate ??
+        DateTime.now();
+    final clinicalProvider = context.read<ClinicalEventsProvider>();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ClinicalEventEditorPage(
+          initialDate: selectedDate,
+          onSave: (event) async {
+            try {
+              await clinicalProvider.saveEvent(event);
+              return true;
+            } catch (_) {
+              return false;
+            }
+          },
+        ),
+      ),
+    );
   }
 }

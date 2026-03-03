@@ -98,6 +98,9 @@ class SearchPageState extends State<SearchPage>
   @override
   bool get wantKeepAlive => true;
 
+  // Cached store reference — must never call context.read in dispose().
+  late EventStateStore _store;
+
   @override
   void initState() {
     super.initState();
@@ -110,15 +113,17 @@ class SearchPageState extends State<SearchPage>
 
     _scrollController.addListener(_onScroll);
 
-    // Listen to centralized EventStateStore changes to refresh search results
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EventStateStore>().addListener(_onStoreChange);
-    });
+    // Cache the store and register the listener immediately — no need for a
+    // postFrameCallback here, and deferring it means dispose() can't safely
+    // call context.read to remove the listener.
+    _store = context.read<EventStateStore>();
+    _store.addListener(_onStoreChange);
   }
 
   @override
   void dispose() {
-    context.read<EventStateStore>().removeListener(_onStoreChange);
+    // Use the cached reference — context is invalid at this point.
+    _store.removeListener(_onStoreChange);
     _scrollController.dispose();
     _notesSearchController.dispose();
     super.dispose();
@@ -129,19 +134,17 @@ class SearchPageState extends State<SearchPage>
   void _onStoreChange() {
     if (!mounted) return;
 
-    final store = context.read<EventStateStore>();
-
     // Skip reload if only selectedDate changed - that's irrelevant for search
-    if (_lastSelectedDate != null && store.state.selectedDate != null) {
-      if (_lastSelectedDate != store.state.selectedDate) {
-        _lastSelectedDate = store.state.selectedDate;
+    if (_lastSelectedDate != null && _store.state.selectedDate != null) {
+      if (_lastSelectedDate != _store.state.selectedDate) {
+        _lastSelectedDate = _store.state.selectedDate;
         return;
       }
     }
-    _lastSelectedDate = store.state.selectedDate;
+    _lastSelectedDate = _store.state.selectedDate;
 
     // Only reload if data was explicitly marked dirty
-    if (store.needsDataRefresh) {
+    if (_store.needsDataRefresh) {
       Future.microtask(() => _performSearch());
     }
   }

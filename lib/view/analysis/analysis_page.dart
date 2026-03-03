@@ -45,6 +45,9 @@ class _AnalysisPageState extends State<AnalysisPage>
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // Cached EventStateStore so we don't access context in dispose().
+  late EventStateStore _store;
+
   // Page-specific data
   OverviewData? _overviewData;
   ActivityBreakdownData? _activityBreakdownData;
@@ -75,12 +78,14 @@ class _AnalysisPageState extends State<AnalysisPage>
   @override
   void initState() {
     super.initState();
-    // Listen to provider changes to reload when data changes and load persisted prefs
+    // Cache the centralized EventStateStore and register the listener immediately.
+    // We avoid reading context in dispose() by keeping this cached reference.
+    _store = context.read<EventStateStore>();
+    _store.addListener(_onStoreChange);
+
+    // Defer loading preferences until the first frame, but keep listener registered.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Attach centralized EventStateStore listener
-      context.read<EventStateStore>().addListener(_onStoreChange);
-      // Load persisted UI preferences (if any)
-      _loadPreferences();
+      if (mounted) _loadPreferences();
     });
   }
 
@@ -88,7 +93,9 @@ class _AnalysisPageState extends State<AnalysisPage>
   void dispose() {
     _debounceTimer?.cancel();
     _pageController.dispose();
-    context.read<EventStateStore>().removeListener(_onStoreChange);
+    // Remove listener using the cached store reference. Avoid calling
+    // context.read(...) here because the element may already be deactivated.
+    _store.removeListener(_onStoreChange);
     super.dispose();
   }
 
@@ -180,8 +187,7 @@ class _AnalysisPageState extends State<AnalysisPage>
 
     _logger.info('Loaded ${events.length} events');
 
-    // Get all events for available years calculation - prefer store cache if available
-    final store = context.read<EventStateStore>();
+    // Get all events for available years calculation - prefer the provided store snapshot
     final allEvents = store.state.currentEvents ?? events;
     if (allEvents.isNotEmpty) {
       final years = allEvents.map((e) => e.date.year).toSet().toList()..sort();

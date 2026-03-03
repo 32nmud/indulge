@@ -253,9 +253,19 @@ void main() {
 
       test('tracks sexual activities correctly', () {
         final cache = PersonCache.fromList([]);
-        final sexualActivities = {
-          'Oral': SexualActivity(name: 'Oral'),
-          'Vaginal': SexualActivity(name: 'Vaginal'),
+        // The aggregator looks up activities via sexualActivityCategories
+        // (3rd parameter), not the sexualActivitiesMap (4th parameter).
+        // Provide a category whose activities match the activityName values
+        // used in the event's activityCounts.
+        final categories = {
+          'category-sex': SexualActivityCategory(
+            id: 'category-sex',
+            name: 'Sex',
+            activities: [
+              const SexualActivity(name: 'oral'),
+              const SexualActivity(name: 'vaginal'),
+            ],
+          ),
         };
 
         final events = [
@@ -274,15 +284,22 @@ void main() {
         final result = EventAggregator.aggregate(
           events,
           cache,
+          categories,
           null,
-          sexualActivities,
         );
 
-        expect(result.sexualActivities['oral'], isNotNull);
-        expect(result.sexualActivities['vaginal'], isNotNull);
+        // Aggregator stores results under composite keys "categoryId:activityName"
+        expect(result.sexualActivities['category-sex:oral'], isNotNull);
+        expect(result.sexualActivities['category-sex:vaginal'], isNotNull);
         // Counts total activityCount across all participants
-        expect(result.sexualActivityCountsTotal['oral'], greaterThan(0));
-        expect(result.sexualActivityCountsTotal['vaginal'], greaterThan(0));
+        expect(
+          result.sexualActivityCountsTotal['category-sex:oral'],
+          greaterThan(0),
+        );
+        expect(
+          result.sexualActivityCountsTotal['category-sex:vaginal'],
+          greaterThan(0),
+        );
       });
 
       test('tracks anonymous partners correctly', () {

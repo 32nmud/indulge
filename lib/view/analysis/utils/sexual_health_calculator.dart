@@ -111,7 +111,7 @@ class SexualHealthCalculator {
             // Look up activity by category + name from activityCategories
             SexualActivity? act;
             if (actId.isNotEmpty) {
-              final category = activityCategories?[actId];
+              final category = activityCategories[actId];
               if (category != null) {
                 for (final a in category.activities) {
                   if (a.name == actName) {
@@ -131,7 +131,7 @@ class SexualHealthCalculator {
           }
         }
 
-        final category = activityCategories?[categoryId];
+        final category = activityCategories[categoryId];
         if (category != null) {
           sexualActivityCounts[category.name] =
               (sexualActivityCounts[category.name] ?? 0) + 1;
@@ -147,7 +147,7 @@ class SexualHealthCalculator {
             final actName = activityCount.activityName;
             SexualActivity? act;
             if (catRef.isNotEmpty) {
-              final category = activityCategories?[catRef];
+              final category = activityCategories[catRef];
               if (category != null) {
                 for (final a in category.activities) {
                   if (a.name == actName) {

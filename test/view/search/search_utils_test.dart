@@ -201,7 +201,10 @@ void main() {
         DateTime(2024, 6, 1),
         activities: [
           activity('cat1', [
-            participant('u1', counts: [activityCount('act1')]),
+            participant(
+              'u1',
+              counts: [activityCount('act1', categoryId: 'cat1')],
+            ),
           ]),
         ],
       );
@@ -244,7 +247,10 @@ void main() {
         notes: 'A special encounter',
         activities: [
           activity('catX', [
-            participant('me', counts: [activityCount('actX')]),
+            participant(
+              'me',
+              counts: [activityCount('actX', categoryId: 'catX')],
+            ),
             participant('pA'),
           ]),
         ],
