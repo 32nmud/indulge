@@ -68,7 +68,7 @@ class _PartnerCategoryBreakdown {
 /// Renders a single section card (either actionable "Activities" or inactionable
 /// "Gear & Items") of the partner diversity breakdown.  Render two instances —
 /// one for each type — so both sections are always visible.
-class PropertyPartnerSection extends StatefulWidget {
+class PartnerActivityDiversitySection extends StatefulWidget {
   final PartnerBreakdownData data;
 
   /// When true shows only actionable activities; when false shows only
@@ -79,7 +79,7 @@ class PropertyPartnerSection extends StatefulWidget {
   final String subtitle;
   final IconData icon;
 
-  const PropertyPartnerSection({
+  const PartnerActivityDiversitySection({
     super.key,
     required this.data,
     required this.showActionable,
@@ -89,10 +89,12 @@ class PropertyPartnerSection extends StatefulWidget {
   });
 
   @override
-  State<PropertyPartnerSection> createState() => _PropertyPartnerSectionState();
+  State<PartnerActivityDiversitySection> createState() =>
+      _PartnerActivityDiversitySectionState();
 }
 
-class _PropertyPartnerSectionState extends State<PropertyPartnerSection> {
+class _PartnerActivityDiversitySectionState
+    extends State<PartnerActivityDiversitySection> {
   // ── Hierarchy helpers ────────────────────────────────────────────────────
 
   Set<String> get _subcategoryIds {

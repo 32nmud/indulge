@@ -45,6 +45,27 @@ class _AnalysisPageState extends State<AnalysisPage>
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  // ── Page order configuration ──────────────────────────────────────
+  // Each entry is a page index (0–4): 0=Overview, 1=Activity, 2=Partner,
+  // 3=Period Comparison, 4=Sexual Health.
+  static const List<int> _defaultPageOrder = [0, 1, 2, 3, 4];
+  List<int> _pageOrder = List.of(_defaultPageOrder);
+
+  static const List<String> _pageLabels = [
+    'Overview',
+    'Activity',
+    'Partners',
+    'Comparison',
+    'Health',
+  ];
+  static const List<IconData> _pageIcons = [
+    Icons.dashboard,
+    Icons.list_alt,
+    Icons.people,
+    Icons.compare_arrows,
+    Icons.medical_services,
+  ];
+
   // Cached EventStateStore so we don't access context in dispose().
   late EventStateStore _store;
 
@@ -113,10 +134,18 @@ class _AnalysisPageState extends State<AnalysisPage>
       final timeWindowIndex = prefs.getAnalysisTimeWindowIndex();
       final specificYear = prefs.getAnalysisSpecificYear();
 
+      // Load page order
+      final savedOrder = prefs.getAnalysisPageOrder();
+      // Validate: must be a permutation of [0..4]
+      final isValid =
+          savedOrder.length == _defaultPageOrder.length &&
+          _defaultPageOrder.every((i) => savedOrder.contains(i));
+
       setState(() {
         // Apply loaded values if present
         _periodPreset = preset;
         _activityBreakdownFilterType = activityFilter;
+        if (isValid) _pageOrder = savedOrder;
 
         // Apply persisted analysis time window if present
         if (timeWindowIndex != null) {
@@ -398,12 +427,18 @@ class _AnalysisPageState extends State<AnalysisPage>
               ? _buildEmptyState()
               : Column(
                   children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text(
-                        'Analysis',
-                        style: Theme.of(context).textTheme.headlineMedium,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 4, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Analysis',
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                          ),
+                          _buildReorderButton(),
+                        ],
                       ),
                     ),
                     AnimatedSize(
@@ -441,19 +476,28 @@ class _AnalysisPageState extends State<AnalysisPage>
                                 _currentPage = index;
                               });
                             },
-                            children: [
-                              _buildOverviewPage(_overviewData!),
-                              _buildActivityBreakdownPage(
-                                _activityBreakdownData!,
-                              ),
-                              _buildPartnerBreakdownPage(
-                                _partnerBreakdownData!,
-                              ),
-                              _buildPeriodComparisonPage(
-                                _periodComparisonData!,
-                              ),
-                              _buildSexualHealthPage(),
-                            ],
+                            children: _pageOrder.map((pageIndex) {
+                              switch (pageIndex) {
+                                case 0:
+                                  return _buildOverviewPage(_overviewData!);
+                                case 1:
+                                  return _buildActivityBreakdownPage(
+                                    _activityBreakdownData!,
+                                  );
+                                case 2:
+                                  return _buildPartnerBreakdownPage(
+                                    _partnerBreakdownData!,
+                                  );
+                                case 3:
+                                  return _buildPeriodComparisonPage(
+                                    _periodComparisonData!,
+                                  );
+                                case 4:
+                                  return _buildSexualHealthPage();
+                                default:
+                                  return const SizedBox.shrink();
+                              }
+                            }).toList(),
                           ),
                         ),
                       ),
@@ -469,6 +513,33 @@ class _AnalysisPageState extends State<AnalysisPage>
         ],
       ),
     );
+  }
+
+  // ── Page reorder dialog ─────────────────────────────────────────────────
+
+  Future<void> _showPageReorderDialog() async {
+    final result = await showDialog<List<int>>(
+      context: context,
+      builder: (ctx) => _PageReorderDialog(
+        pageOrder: List.of(_pageOrder),
+        pageLabels: _pageLabels,
+        pageIcons: _pageIcons,
+      ),
+    );
+    if (result != null) {
+      setState(() {
+        _pageOrder = result;
+        // Jump to first page so the controller doesn't point to a stale page.
+        _currentPage = 0;
+        _pageController.jumpToPage(0);
+      });
+      try {
+        final prefs = Provider.of<PreferencesService>(context, listen: false);
+        await prefs.setAnalysisPageOrder(result);
+      } catch (e) {
+        _logger.warning('Failed to persist page order: $e');
+      }
+    }
   }
 
   Widget _buildTimeWindowSelector() {
@@ -746,27 +817,176 @@ class _AnalysisPageState extends State<AnalysisPage>
   }
 
   Widget _buildPageIndicator() {
+    final pageCount = _pageOrder.length;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(5, (index) {
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            height: 8,
-            width: _currentPage == index ? 24 : 8,
-            decoration: BoxDecoration(
-              color: _currentPage == index
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(4),
+        children: List.generate(pageCount, (index) {
+          final isActive = _currentPage == index;
+          final pageId = _pageOrder[index];
+          final label = _pageLabels[pageId];
+          final icon = _pageIcons[pageId];
+          return GestureDetector(
+            onTap: () {
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              clipBehavior: Clip.hardEdge,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 28,
+              width: isActive ? 96 : 28,
+              decoration: BoxDecoration(
+                color: isActive
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final showLabel = constraints.maxWidth > 80;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        icon,
+                        size: 13,
+                        color: isActive
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                      ),
+                      if (showLabel) ...[
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            label,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
             ),
           );
         }),
       ),
+    );
+  }
+
+  Widget _buildReorderButton() {
+    return IconButton(
+      icon: const Icon(Icons.reorder, size: 20),
+      tooltip: 'Reorder pages',
+      visualDensity: VisualDensity.compact,
+      onPressed: _showPageReorderDialog,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+  }
+}
+
+// ── Page reorder dialog ───────────────────────────────────────────────────────
+
+class _PageReorderDialog extends StatefulWidget {
+  final List<int> pageOrder;
+  final List<String> pageLabels;
+  final List<IconData> pageIcons;
+
+  const _PageReorderDialog({
+    required this.pageOrder,
+    required this.pageLabels,
+    required this.pageIcons,
+  });
+
+  @override
+  State<_PageReorderDialog> createState() => _PageReorderDialogState();
+}
+
+class _PageReorderDialogState extends State<_PageReorderDialog> {
+  late List<int> _order;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = List.of(widget.pageOrder);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.reorder, size: 20),
+          SizedBox(width: 8),
+          Text('Reorder Pages'),
+        ],
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ReorderableListView.builder(
+          shrinkWrap: true,
+          itemCount: _order.length,
+          onReorder: (oldIndex, newIndex) {
+            setState(() {
+              if (newIndex > oldIndex) newIndex--;
+              final item = _order.removeAt(oldIndex);
+              _order.insert(newIndex, item);
+            });
+          },
+          itemBuilder: (context, index) {
+            final pageId = _order[index];
+            final label = widget.pageLabels[pageId];
+            final icon = widget.pageIcons[pageId];
+            return ListTile(
+              key: ValueKey(pageId),
+              leading: Icon(icon, color: scheme.primary),
+              title: Text(label),
+              trailing: const Icon(Icons.drag_handle),
+              dense: true,
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _order = List.of(
+                List.generate(widget.pageLabels.length, (i) => i),
+              );
+            });
+          },
+          child: const Text('Reset'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_order),
+          child: const Text('Apply'),
+        ),
+      ],
     );
   }
 }

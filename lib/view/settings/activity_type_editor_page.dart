@@ -25,6 +25,11 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
   // lookup that might silently return null.
   late List<SexualActivityCategory> _selectedSubcats;
 
+  // IDs of subcategories that were created inline during this editing session
+  // and have NOT yet been persisted to the store.  They are saved as part of
+  // _saveActivityCategory so they never appear as orphan top-level categories.
+  final Set<String> _pendingNewSubcatIds = {};
+
   bool _isLoading = false;
   bool _requiresPartner = false;
 
@@ -657,24 +662,28 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
 
     if (confirmed != true || !mounted) return;
 
+    // Capture values before any disposal.
+    final name = nameController.text.trim();
+    final emoji = emojiController.text.trim();
+
+    // Defer disposal until after this frame so the dialog's TextFormField
+    // widgets have fully unmounted before the controllers are released.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      nameController.dispose();
+      emojiController.dispose();
+    });
+
     final newCat = SexualActivityCategory(
       id: const Uuid().v4(),
-      name: nameController.text.trim(),
-      displayCharacter: emojiController.text.trim(),
+      name: name,
+      displayCharacter: emoji,
     );
 
-    // Save the new category to the store first.
-    final provider = context.read<SexualEventsProvider>();
-    await provider.saveActivityCategory(newCat);
-
-    // Dispose controllers after the async gap so the dialog's TextFields
-    // have fully detached before we release the controllers.
-    nameController.dispose();
-    emojiController.dispose();
-
-    if (!mounted) return;
-
+    // Don't persist the new subcategory yet.  It will be saved together with
+    // the parent in _saveActivityCategory, preventing it from appearing as a
+    // spurious top-level category in the meantime.
     setState(() {
+      _pendingNewSubcatIds.add(newCat.id);
       _selectedSubcats.add(newCat);
     });
   }
@@ -797,6 +806,15 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
           ),
         );
       }
+
+      // Persist any subcategories that were created inline during this session
+      // before we write the parent (which references them by ID).
+      for (final sub in _selectedSubcats) {
+        if (_pendingNewSubcatIds.contains(sub.id)) {
+          await provider.saveActivityCategory(sub);
+        }
+      }
+      _pendingNewSubcatIds.clear();
 
       final subCategoryRefs = _selectedSubcats
           .map(

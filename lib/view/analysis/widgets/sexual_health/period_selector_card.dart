@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/sexual_health_analysis_data.dart';
 
 /// Widget for selecting which test period to view.
@@ -39,7 +40,28 @@ class PeriodSelectorCard extends StatelessWidget {
                     data.testDates.length,
                     (index) => DropdownMenuItem(
                       value: index,
-                      child: Text(_getTestPeriodLabel(index)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _getTestPeriodLabel(index),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            _getTestPeriodRange(index),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   onChanged: (value) {
@@ -59,6 +81,19 @@ class PeriodSelectorCard extends StatelessWidget {
   String _getTestPeriodLabel(int index) {
     if (index == 0) return 'Most Recent Test';
     if (index == 1) return '2nd Most Recent Test';
+    if (index == 2) return '3rd Most Recent Test';
     return '${index + 1}th Most Recent Test';
+  }
+
+  String _getTestPeriodRange(int index) {
+    final fmt = DateFormat('MMM d, yyyy');
+    final start = data.testDates[index];
+    final DateTime end;
+    if (index + 1 < data.testDates.length) {
+      end = data.testDates[index + 1];
+    } else {
+      end = DateTime.now();
+    }
+    return '${fmt.format(start)} – ${fmt.format(end)}';
   }
 }

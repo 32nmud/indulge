@@ -409,7 +409,7 @@ class PeriodComparisonSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Period 1',
+                  _firstPeriodLabel,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -450,7 +450,7 @@ class PeriodComparisonSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Period 2',
+                  _secondPeriodLabel,
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.secondary,
@@ -575,6 +575,42 @@ class PeriodComparisonSection extends StatelessWidget {
     }
   }
 
+  // ── Period label helpers ──────────────────────────────────────────
+
+  String get _firstPeriodLabel {
+    switch (selectedPreset) {
+      case PeriodPreset.lastMonthVsThisMonth:
+        return 'Last month';
+      case PeriodPreset.lastWeekVsThisWeek:
+        return 'Last week';
+      case PeriodPreset.lastYearVsThisYear:
+        return 'Last year';
+      case PeriodPreset.custom:
+        if (customFirstPeriod != null) {
+          final fmt = DateFormat('MMM d');
+          return '${fmt.format(customFirstPeriod!.start)} – ${fmt.format(customFirstPeriod!.end)}';
+        }
+        return 'Period 1';
+    }
+  }
+
+  String get _secondPeriodLabel {
+    switch (selectedPreset) {
+      case PeriodPreset.lastMonthVsThisMonth:
+        return 'This month';
+      case PeriodPreset.lastWeekVsThisWeek:
+        return 'This week';
+      case PeriodPreset.lastYearVsThisYear:
+        return 'This year';
+      case PeriodPreset.custom:
+        if (customSecondPeriod != null) {
+          final fmt = DateFormat('MMM d');
+          return '${fmt.format(customSecondPeriod!.start)} – ${fmt.format(customSecondPeriod!.end)}';
+        }
+        return 'Period 2';
+    }
+  }
+
   // ── Stat comparison row ───────────────────────────────────────────
 
   Widget _buildStatComparison(
@@ -633,11 +669,12 @@ class PeriodComparisonSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Period 1',
+                      _firstPeriodLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                         fontSize: 10,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -663,11 +700,13 @@ class PeriodComparisonSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Period 2',
+                      _secondPeriodLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                         fontSize: 10,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -729,7 +768,7 @@ class PeriodComparisonSection extends StatelessWidget {
         Expanded(
           child: _buildEventTypeColumn(
             context,
-            'Period 1',
+            _firstPeriodLabel,
             firstStats.soloEvents,
             firstStats.coupleEvents,
             firstStats.groupEvents,
@@ -740,7 +779,7 @@ class PeriodComparisonSection extends StatelessWidget {
         Expanded(
           child: _buildEventTypeColumn(
             context,
-            'Period 2',
+            _secondPeriodLabel,
             secondStats.soloEvents,
             secondStats.coupleEvents,
             secondStats.groupEvents,
@@ -854,11 +893,12 @@ class PeriodComparisonSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Period 1',
+                      _firstPeriodLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                         fontSize: 10,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       firstValue.toStringAsFixed(1),
@@ -883,11 +923,13 @@ class PeriodComparisonSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Period 2',
+                      _secondPeriodLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                         fontSize: 10,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
                     ),
                     Text(
                       secondValue.toStringAsFixed(1),

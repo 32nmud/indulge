@@ -261,6 +261,18 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentPageIndex = 0;
+
+  /// Set when navigation is triggered programmatically (e.g. "search this
+  /// partner") so the back button/gesture can return the user to where they
+  /// came from.  Cleared whenever the user taps a bottom-nav destination
+  /// themselves.
+  int? _previousPageIndex;
+
+  /// Pages that have been visited at least once.  The IndexedStack only builds
+  /// a page on first visit so we don't pay the cost of constructing all five
+  /// pages at startup.
+  final Set<int> _builtPages = {0};
+
   final GlobalKey<SearchPageState> _searchPageKey =
       GlobalKey<SearchPageState>();
 
@@ -270,6 +282,29 @@ class _MyHomePageState extends State<MyHomePage> {
     // Initialize theme provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ThemeProvider>().initialize();
+    });
+  }
+
+  /// Called when the user explicitly taps a bottom-nav destination.
+  /// Clears the back-history so the OS back button exits normally.
+  void _userNavigateTo(int index) {
+    if (index == _currentPageIndex) return;
+    setState(() {
+      _builtPages.add(index);
+      _previousPageIndex = null;
+      _currentPageIndex = index;
+    });
+  }
+
+  /// Called when code inside a page navigates to another tab (e.g. opening
+  /// Search from within Analysis).  Records the origin so the user can swipe /
+  /// press back to return there.
+  void _programmaticNavigateTo(int index) {
+    if (index == _currentPageIndex) return;
+    setState(() {
+      _builtPages.add(index);
+      _previousPageIndex = _currentPageIndex;
+      _currentPageIndex = index;
     });
   }
 
@@ -327,19 +362,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
           return NavigationHelper(
             navigateToSearchWithPartner: (String partnerId) {
-              setState(() => _currentPageIndex = 1);
+              _programmaticNavigateTo(1);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _searchPageKey.currentState?.applyFilters(partnerId: partnerId);
               });
             },
             navigateToSearchWithEventType: (String eventType) {
-              setState(() => _currentPageIndex = 1);
+              _programmaticNavigateTo(1);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _searchPageKey.currentState?.applyFilters(eventType: eventType);
               });
             },
             navigateToSearchWithCategory: (String categoryId) {
-              setState(() => _currentPageIndex = 1);
+              _programmaticNavigateTo(1);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _searchPageKey.currentState?.applyFilters(
                   categoryId: categoryId,
@@ -347,7 +382,7 @@ class _MyHomePageState extends State<MyHomePage> {
               });
             },
             navigateToSearchWithDateRange: (DateTimeRange range) {
-              setState(() => _currentPageIndex = 1);
+              _programmaticNavigateTo(1);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _searchPageKey.currentState?.applyFilters(dateRange: range);
               });
@@ -360,7 +395,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   String? categoryId,
                   bool sinceLastStiTest = false,
                 }) {
-                  setState(() => _currentPageIndex = 1);
+                  _programmaticNavigateTo(1);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _searchPageKey.currentState?.applyFilters(
                       dateRange: dateRange,
@@ -371,17 +406,38 @@ class _MyHomePageState extends State<MyHomePage> {
                     );
                   });
                 },
-            child: _buildPageWithFab(_currentPageIndex),
+            // IndexedStack keeps every visited page alive in the widget tree
+            // so state (scroll position, loaded data, page index, etc.) is
+            // preserved when the user switches tabs or is sent to Search
+            // programmatically.  Pages that haven't been visited yet are
+            // replaced with a cheap SizedBox so we don't pay build cost
+            // upfront for all five pages.
+            child: PopScope(
+              // Allow the OS back gesture/button only when there is nowhere to
+              // go back to (i.e. normal app-exit behaviour).
+              canPop: _previousPageIndex == null,
+              onPopInvokedWithResult: (didPop, _) {
+                if (!didPop && _previousPageIndex != null) {
+                  setState(() {
+                    _currentPageIndex = _previousPageIndex!;
+                    _previousPageIndex = null;
+                  });
+                }
+              },
+              child: IndexedStack(
+                index: _currentPageIndex,
+                children: List.generate(5, (i) {
+                  if (!_builtPages.contains(i)) return const SizedBox.shrink();
+                  return _buildPageWithFab(i);
+                }),
+              ),
+            ),
           );
         },
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentPageIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _currentPageIndex = index;
-          });
-        },
+        onDestinationSelected: _userNavigateTo,
         destinations: const [
           NavigationDestination(
             selectedIcon: Icon(Icons.home),

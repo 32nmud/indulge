@@ -77,9 +77,7 @@ class RecordsSection extends StatelessWidget {
     final activityCount = event.activities
         .expand((a) => a.participants)
         .expand((p) => p.activityCounts)
-        .map((ac) => ac.categoryReference.reference)
-        .toSet()
-        .length;
+        .fold<int>(0, (sum, ac) => sum + ac.count);
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),

@@ -37,6 +37,31 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
   /// Whether we've loaded persisted exclusions from PreferencesService yet.
   bool _prefsLoaded = false;
 
+  // ── Lazy pair caches ─────────────────────────────────────────────────────
+  // Pairs are expensive to recompute on every build (O(events²) in the worst
+  // case).  Instead, we compute them on demand and cache the result.  The
+  // cache is invalidated whenever any exclusion set or the grouping toggle
+  // changes so that the next build transparently recomputes.
+
+  List<CoOccurrencePair>? _cachedCategoryPairs;
+  List<CoOccurrencePair>? _cachedActivityPairs;
+
+  List<CoOccurrencePair> get _categoryPairs {
+    return _cachedCategoryPairs ??= _getPairs(true);
+  }
+
+  List<CoOccurrencePair> get _activityPairs {
+    return _cachedActivityPairs ??= _getPairs(false);
+  }
+
+  void _invalidatePairCache({
+    bool invalidateCategories = true,
+    bool invalidateActivities = true,
+  }) {
+    if (invalidateCategories) _cachedCategoryPairs = null;
+    if (invalidateActivities) _cachedActivityPairs = null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -93,6 +118,7 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
   }
 
   void _handleTabSelection() {
+    // No cache invalidation needed on tab switch — caches remain valid.
     setState(() {});
   }
 
@@ -275,6 +301,10 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
             ..clear()
             ..addAll(result);
         }
+        _invalidatePairCache(
+          invalidateCategories: true,
+          invalidateActivities: false,
+        );
       });
       _persistExclusions();
     }
@@ -300,6 +330,10 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
         _excludedActivityKeys
           ..clear()
           ..addAll(result);
+        _invalidatePairCache(
+          invalidateCategories: false,
+          invalidateActivities: true,
+        );
       });
       _persistExclusions();
     }
@@ -308,10 +342,23 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
+  void didUpdateWidget(covariant CoOccurrenceSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the underlying event data or filter type changed, all caches are stale.
+    if (oldWidget.data != widget.data ||
+        oldWidget.filterType != widget.filterType) {
+      _invalidatePairCache();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isCategoryTab = _tabController.index == 0;
-    final categoryPairs = _getPairs(true);
-    final activityPairs = _getPairs(false);
+
+    // Compute the active tab eagerly; compute the inactive tab lazily only
+    // to determine whether we should hide the whole section.
+    final categoryPairs = _categoryPairs;
+    final activityPairs = _activityPairs;
 
     if (categoryPairs.isEmpty && activityPairs.isEmpty) {
       return const SizedBox.shrink();
@@ -441,6 +488,11 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
                     if (v) {
                       setState(() {
                         _useSubcategories = false;
+                        // Grouping change affects which pairs are produced.
+                        _invalidatePairCache(
+                          invalidateCategories: true,
+                          invalidateActivities: false,
+                        );
                       });
                     }
                   },
@@ -464,6 +516,11 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
                     if (v) {
                       setState(() {
                         _useSubcategories = true;
+                        // Grouping change affects which pairs are produced.
+                        _invalidatePairCache(
+                          invalidateCategories: true,
+                          invalidateActivities: false,
+                        );
                       });
                     }
                   },
@@ -484,7 +541,7 @@ class _CoOccurrenceSectionState extends State<CoOccurrenceSection>
           ),
         const SizedBox(height: 8),
 
-        // Pair list for the active tab
+        // Pair list for the active tab only.
         isCategoryTab
             ? _buildPairList(categoryPairs, Colors.teal)
             : _buildPairList(activityPairs, Colors.orange),

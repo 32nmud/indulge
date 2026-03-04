@@ -356,44 +356,80 @@ void main() {
       });
 
       test(
-        'getCoOccurrenceExcludedCategoryIds returns empty list by default',
+        'getCoOccurrenceExcludedCategoryIdsParent returns empty list by default',
         () {
           expect(
-            preferencesService.getCoOccurrenceExcludedCategoryIds(),
+            preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
             isEmpty,
           );
         },
       );
 
       test(
-        'setCoOccurrenceExcludedCategoryIds updates value and notifies',
+        'getCoOccurrenceExcludedCategoryIdsSubcategory returns empty list by default',
+        () {
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsSubcategory(),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'setCoOccurrenceExcludedCategoryIdsParent updates value and notifies',
         () async {
           var notified = false;
-          preferencesService.coOccurrenceExcludedCategoryIdsNotifier
+          preferencesService.coOccurrenceExcludedCategoryIdsParentNotifier
               .addListener(() => notified = true);
 
-          await preferencesService.setCoOccurrenceExcludedCategoryIds([
+          await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([
             'bdsm',
             'fetish',
           ]);
 
           expect(
-            preferencesService.getCoOccurrenceExcludedCategoryIds(),
+            preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
             equals(['bdsm', 'fetish']),
           );
           expect(notified, isTrue);
         },
       );
 
-      test('setCoOccurrenceExcludedCategoryIds can clear the list', () async {
-        await preferencesService.setCoOccurrenceExcludedCategoryIds(['bdsm']);
-        await preferencesService.setCoOccurrenceExcludedCategoryIds([]);
+      test(
+        'setCoOccurrenceExcludedCategoryIdsSubcategory updates value and notifies',
+        () async {
+          var notified = false;
+          preferencesService.coOccurrenceExcludedCategoryIdsSubcategoryNotifier
+              .addListener(() => notified = true);
 
-        expect(
-          preferencesService.getCoOccurrenceExcludedCategoryIds(),
-          isEmpty,
-        );
-      });
+          await preferencesService
+              .setCoOccurrenceExcludedCategoryIdsSubcategory([
+                'bdsm_sub',
+                'fetish_sub',
+              ]);
+
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsSubcategory(),
+            equals(['bdsm_sub', 'fetish_sub']),
+          );
+          expect(notified, isTrue);
+        },
+      );
+
+      test(
+        'setCoOccurrenceExcludedCategoryIdsParent can clear the list',
+        () async {
+          await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([
+            'bdsm',
+          ]);
+          await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([]);
+
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
+            isEmpty,
+          );
+        },
+      );
 
       test('loads saved excluded activity keys on build', () async {
         SharedPreferences.setMockInitialValues({
@@ -408,17 +444,33 @@ void main() {
         );
       });
 
-      test('loads saved excluded category IDs on build', () async {
+      test('loads saved excluded category IDs (parent) on build', () async {
         SharedPreferences.setMockInitialValues({
-          'pref_co_occurrence_excluded_category_ids': '["bdsm","toys"]',
+          'pref_co_occurrence_excluded_category_ids_parent': '["bdsm","toys"]',
         });
         final service = await PreferencesService.build();
 
         expect(
-          service.getCoOccurrenceExcludedCategoryIds(),
+          service.getCoOccurrenceExcludedCategoryIdsParent(),
           equals(['bdsm', 'toys']),
         );
       });
+
+      test(
+        'loads saved excluded category IDs (subcategory) on build',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'pref_co_occurrence_excluded_category_ids_subcategory':
+                '["bdsm_sub","toys_sub"]',
+          });
+          final service = await PreferencesService.build();
+
+          expect(
+            service.getCoOccurrenceExcludedCategoryIdsSubcategory(),
+            equals(['bdsm_sub', 'toys_sub']),
+          );
+        },
+      );
     });
 
     group('clearAll', () {
@@ -435,7 +487,9 @@ void main() {
         await preferencesService.setCoOccurrenceExcludedActivityKeys([
           'cat1:act1',
         ]);
-        await preferencesService.setCoOccurrenceExcludedCategoryIds(['bdsm']);
+        await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([
+          'bdsm',
+        ]);
 
         // Clear all
         await preferencesService.clearAll();
@@ -453,7 +507,7 @@ void main() {
           isEmpty,
         );
         expect(
-          preferencesService.getCoOccurrenceExcludedCategoryIds(),
+          preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
           isEmpty,
         );
       });

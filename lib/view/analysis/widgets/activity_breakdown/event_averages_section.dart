@@ -2,99 +2,178 @@ import 'package:flutter/material.dart';
 import '../../models/analysis_event_type.dart';
 import '../../models/activity_breakdown_data.dart';
 
-class EventAveragesSection extends StatelessWidget {
+class EventAveragesSection extends StatefulWidget {
   final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
 
   const EventAveragesSection({super.key, required this.data, this.filterType});
 
   @override
-  Widget build(BuildContext context) {
-    String eventsPerWeek;
-    String eventsPerMonth;
-    String activitiesPerWeek;
-    String activitiesPerMonth;
-    String partnersPerEvent;
-    String activitiesPerEvent;
-    String actionablePerEvent;
-    String gearPerEvent;
+  State<EventAveragesSection> createState() => _EventAveragesSectionState();
+}
 
-    if (filterType == null) {
-      eventsPerWeek = data.averageEventsPerWeek.toStringAsFixed(1);
-      eventsPerMonth = data.averageEventsPerMonth.toStringAsFixed(1);
-      activitiesPerWeek = data.averageActivitiesPerWeek.toStringAsFixed(1);
-      activitiesPerMonth = data.averageActivitiesPerMonth.toStringAsFixed(1);
-      partnersPerEvent = data.averagePartnersPerEvent.toStringAsFixed(1);
-      activitiesPerEvent = data.averageActivitiesPerEvent.toStringAsFixed(1);
-      actionablePerEvent = data.averageActionableActivitiesPerEvent
-          .toStringAsFixed(1);
-      gearPerEvent = data.averageGearPerEvent.toStringAsFixed(1);
+/// Cached computed values so the heavy per-event loops only run when [data]
+/// or [filterType] actually changes, not on every build call.
+class _ComputedAverages {
+  final String eventsPerWeek;
+  final String eventsPerMonth;
+  final String activitiesPerWeek;
+  final String activitiesPerMonth;
+  final String partnersPerEvent;
+  final String activitiesPerEvent;
+  final String actionablePerEvent;
+  final String gearPerEvent;
+
+  const _ComputedAverages({
+    required this.eventsPerWeek,
+    required this.eventsPerMonth,
+    required this.activitiesPerWeek,
+    required this.activitiesPerMonth,
+    required this.partnersPerEvent,
+    required this.activitiesPerEvent,
+    required this.actionablePerEvent,
+    required this.gearPerEvent,
+  });
+
+  /// Compute averages from the overall data (no filter).
+  factory _ComputedAverages.fromOverall(ActivityBreakdownData data) {
+    return _ComputedAverages(
+      eventsPerWeek: data.averageEventsPerWeek.toStringAsFixed(1),
+      eventsPerMonth: data.averageEventsPerMonth.toStringAsFixed(1),
+      activitiesPerWeek: data.averageActivitiesPerWeek.toStringAsFixed(1),
+      activitiesPerMonth: data.averageActivitiesPerMonth.toStringAsFixed(1),
+      partnersPerEvent: data.averagePartnersPerEvent.toStringAsFixed(1),
+      activitiesPerEvent: data.averageActivitiesPerEvent.toStringAsFixed(1),
+      actionablePerEvent: data.averageActionableActivitiesPerEvent
+          .toStringAsFixed(1),
+      gearPerEvent: data.averageGearPerEvent.toStringAsFixed(1),
+    );
+  }
+
+  /// Compute averages for a specific event type filter.
+  factory _ComputedAverages.fromFiltered(
+    ActivityBreakdownData data,
+    AnalysisEventType filterType,
+  ) {
+    final events = data.eventsByType[filterType] ?? [];
+    final count = events.length;
+
+    // Compute the actual date span covered by the data window so that
+    // per-week and per-month rates are proportional to the real timeframe
+    // rather than being back-calculated from overall averages.
+    final double daySpan;
+    if (data.startDate != null && data.endDate != null) {
+      daySpan = data.endDate!.difference(data.startDate!).inDays.toDouble();
+    } else if (events.isNotEmpty) {
+      final earliest = events
+          .map((e) => e.date)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      final latest = events
+          .map((e) => e.date)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      daySpan = latest.difference(earliest).inDays.toDouble();
     } else {
-      final events = data.eventsByType[filterType!] ?? [];
-      final count = events.length;
+      daySpan = 365.0;
+    }
+    final weeks = daySpan > 0 ? daySpan / 7.0 : 1.0;
+    final months = daySpan > 0 ? daySpan / 30.4375 : 1.0;
 
-      final weeks = data.averageEventsPerWeek > 0
-          ? data.eventsThisYear / data.averageEventsPerWeek
-          : 1.0;
-      final months = data.averageEventsPerMonth > 0
-          ? data.eventsThisYear / data.averageEventsPerMonth
-          : 1.0;
+    int totalActivities = 0;
+    int totalActionable = 0;
+    int totalGear = 0;
+    int totalPartners = 0;
 
-      int totalActivities = 0;
-      int totalActionable = 0;
-      int totalGear = 0;
-      int totalPartners = 0;
+    for (final event in events) {
+      totalActivities += event.activities.length;
 
-      for (final event in events) {
-        totalActivities += event.activities.length;
-
-        for (final act in event.activities) {
-          for (final p in act.participants) {
-            for (final ac in p.activityCounts) {
-              final compositeKey =
-                  '${ac.categoryReference.reference}:${ac.activityName}';
-              final sexualActivity = data.sexualActivities[compositeKey];
-              final isActionable = sexualActivity?.isActionable ?? true;
-              if (isActionable) {
-                totalActionable += ac.count;
-              } else {
-                totalGear += ac.count;
-              }
+      for (final act in event.activities) {
+        for (final p in act.participants) {
+          for (final ac in p.activityCounts) {
+            final compositeKey =
+                '${ac.categoryReference.reference}:${ac.activityName}';
+            final sexualActivity = data.sexualActivities[compositeKey];
+            final isActionable = sexualActivity?.isActionable ?? true;
+            if (isActionable) {
+              totalActionable += ac.count;
+            } else {
+              totalGear += ac.count;
             }
-          }
-        }
-
-        if (filterType == AnalysisEventType.solo) {
-          // Solo implies 0 partners
-        } else if (filterType == AnalysisEventType.couple) {
-          totalPartners += 1;
-        } else {
-          final uniqueParticipants = <String>{};
-          for (final act in event.activities) {
-            for (final p in act.participants) {
-              uniqueParticipants.add(p.participant.reference);
-            }
-          }
-          if (uniqueParticipants.isNotEmpty) {
-            totalPartners += uniqueParticipants.length - 1;
           }
         }
       }
 
-      eventsPerWeek = (weeks > 0 ? count / weeks : 0).toStringAsFixed(1);
-      eventsPerMonth = (months > 0 ? count / months : 0).toStringAsFixed(1);
-      activitiesPerWeek = (weeks > 0 ? totalActivities / weeks : 0)
-          .toStringAsFixed(1);
-      activitiesPerMonth = (months > 0 ? totalActivities / months : 0)
-          .toStringAsFixed(1);
-      partnersPerEvent = (count > 0 ? totalPartners / count : 0)
-          .toStringAsFixed(1);
-      activitiesPerEvent = (count > 0 ? totalActivities / count : 0)
-          .toStringAsFixed(1);
-      actionablePerEvent = (count > 0 ? totalActionable / count : 0)
-          .toStringAsFixed(1);
-      gearPerEvent = (count > 0 ? totalGear / count : 0).toStringAsFixed(1);
+      if (filterType == AnalysisEventType.solo) {
+        // Solo implies 0 partners
+      } else if (filterType == AnalysisEventType.couple) {
+        totalPartners += 1;
+      } else {
+        final uniqueParticipants = <String>{};
+        for (final act in event.activities) {
+          for (final p in act.participants) {
+            uniqueParticipants.add(p.participant.reference);
+          }
+        }
+        if (uniqueParticipants.isNotEmpty) {
+          totalPartners += uniqueParticipants.length - 1;
+        }
+      }
     }
+
+    return _ComputedAverages(
+      eventsPerWeek: (count / weeks).toStringAsFixed(1),
+      eventsPerMonth: (count / months).toStringAsFixed(1),
+      activitiesPerWeek: (totalActivities / weeks).toStringAsFixed(1),
+      activitiesPerMonth: (totalActivities / months).toStringAsFixed(1),
+      partnersPerEvent: (count > 0 ? totalPartners / count : 0).toStringAsFixed(
+        1,
+      ),
+      activitiesPerEvent: (count > 0 ? totalActivities / count : 0)
+          .toStringAsFixed(1),
+      actionablePerEvent: (count > 0 ? totalActionable / count : 0)
+          .toStringAsFixed(1),
+      gearPerEvent: (count > 0 ? totalGear / count : 0).toStringAsFixed(1),
+    );
+  }
+}
+
+class _EventAveragesSectionState extends State<EventAveragesSection> {
+  late _ComputedAverages _averages;
+
+  @override
+  void initState() {
+    super.initState();
+    _averages = _compute(widget.data, widget.filterType);
+  }
+
+  @override
+  void didUpdateWidget(covariant EventAveragesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data ||
+        oldWidget.filterType != widget.filterType) {
+      _averages = _compute(widget.data, widget.filterType);
+    }
+  }
+
+  static _ComputedAverages _compute(
+    ActivityBreakdownData data,
+    AnalysisEventType? filterType,
+  ) {
+    if (filterType == null) {
+      return _ComputedAverages.fromOverall(data);
+    }
+    return _ComputedAverages.fromFiltered(data, filterType);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eventsPerWeek = _averages.eventsPerWeek;
+    final eventsPerMonth = _averages.eventsPerMonth;
+    final activitiesPerWeek = _averages.activitiesPerWeek;
+    final activitiesPerMonth = _averages.activitiesPerMonth;
+    final partnersPerEvent = _averages.partnersPerEvent;
+    final activitiesPerEvent = _averages.activitiesPerEvent;
+    final actionablePerEvent = _averages.actionablePerEvent;
+    final gearPerEvent = _averages.gearPerEvent;
 
     return Card(
       margin: const EdgeInsets.all(16.0),

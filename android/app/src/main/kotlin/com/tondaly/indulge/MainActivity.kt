@@ -1,4 +1,4 @@
-package com.example.indulge
+package com.tondaly.indulge
 
 import io.flutter.embedding.android.FlutterActivity
 

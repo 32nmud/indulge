@@ -70,7 +70,7 @@ class _CategoryBreakdown {
 /// Renders a single section card (either actionable "Activities" or inactionable
 /// "Gear & Items") depending on [showActionable].  Callers should render two
 /// instances – one for each type – so both sections are always visible.
-class PropertiesByActivitySection extends StatefulWidget {
+class ActivitySectionBreakdown extends StatefulWidget {
   final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
 
@@ -82,7 +82,7 @@ class PropertiesByActivitySection extends StatefulWidget {
   final String subtitle;
   final IconData icon;
 
-  const PropertiesByActivitySection({
+  const ActivitySectionBreakdown({
     super.key,
     required this.data,
     required this.showActionable,
@@ -93,12 +93,11 @@ class PropertiesByActivitySection extends StatefulWidget {
   });
 
   @override
-  State<PropertiesByActivitySection> createState() =>
-      _PropertiesByActivitySectionState();
+  State<ActivitySectionBreakdown> createState() =>
+      _ActivitySectionBreakdownState();
 }
 
-class _PropertiesByActivitySectionState
-    extends State<PropertiesByActivitySection> {
+class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
   // ── Hierarchy helpers ────────────────────────────────────────────────────
 
   Set<String> get _subcategoryIds {

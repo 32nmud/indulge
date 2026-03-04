@@ -7,12 +7,12 @@ import 'package:indulge/data/models.dart';
 import '../../models/analysis_event_type.dart';
 import '../../models/activity_breakdown_data.dart';
 
-class PropertyTrendsChart extends StatefulWidget {
+class ActivityTrendsChart extends StatefulWidget {
   final ActivityBreakdownData data;
   final AnalysisEventType? filterType;
   final bool showTypeFilter;
 
-  const PropertyTrendsChart({
+  const ActivityTrendsChart({
     super.key,
     required this.data,
     this.filterType,
@@ -20,10 +20,10 @@ class PropertyTrendsChart extends StatefulWidget {
   });
 
   @override
-  State<PropertyTrendsChart> createState() => _PropertyTrendsChartState();
+  State<ActivityTrendsChart> createState() => _ActivityTrendsChartState();
 }
 
-class _PropertyTrendsChartState extends State<PropertyTrendsChart>
+class _ActivityTrendsChartState extends State<ActivityTrendsChart>
     with AutomaticKeepAliveClientMixin {
   AnalysisEventType? _selectedType;
   final Set<String> _selectedPropertyIds = {};
@@ -55,7 +55,7 @@ class _PropertyTrendsChartState extends State<PropertyTrendsChart>
   bool get wantKeepAlive => true;
 
   @override
-  void didUpdateWidget(covariant PropertyTrendsChart oldWidget) {
+  void didUpdateWidget(covariant ActivityTrendsChart oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.data != widget.data) {
       _calculateTopProperties();

@@ -54,6 +54,10 @@ class PreferencesService {
   static const String _kCoOccurrenceExcludedCategoryIdsSubcategory =
       'pref_co_occurrence_excluded_category_ids_subcategory';
 
+  // Analysis page order: JSON-encoded list of page-index integers.
+  // Default order: [0, 1, 2, 3, 4] (overview, activity, partner, period, health)
+  static const String _kAnalysisPageOrder = 'pref_analysis_page_order';
+
   // Auto-add location setting
   static const String _kAutoAddLocation = 'pref_auto_add_location';
 
@@ -61,7 +65,7 @@ class PreferencesService {
   static const String _kCalendarViewMode = 'pref_calendar_view_mode';
 
   // Current preferences version. Increment when stored keys/shape change.
-  static const int _currentPreferencesVersion = 7;
+  static const int _currentPreferencesVersion = 8;
 
   // Default values
   static const PeriodPreset _defaultPreset = PeriodPreset.lastMonthVsThisMonth;
@@ -110,6 +114,11 @@ class PreferencesService {
   final ValueNotifier<List<String>>
   coOccurrenceExcludedCategoryIdsSubcategoryNotifier;
 
+  /// Page order for the Analysis screen.  Each entry is a page index (0-4).
+  /// The list length must equal the number of pages; a missing/invalid stored
+  /// value falls back to the default [0, 1, 2, 3, 4] order.
+  final ValueNotifier<List<int>> analysisPageOrderNotifier;
+
   PreferencesService._(
     this._prefs,
     this.periodPresetNotifier,
@@ -130,6 +139,7 @@ class PreferencesService {
     this.coOccurrenceExcludedActivityKeysNotifier,
     this.coOccurrenceExcludedCategoryIdsParentNotifier,
     this.coOccurrenceExcludedCategoryIdsSubcategoryNotifier,
+    this.analysisPageOrderNotifier,
   );
 
   /// Asynchronously build the singleton service.
@@ -234,6 +244,25 @@ class PreferencesService {
       prefs.getString(_kCoOccurrenceExcludedCategoryIdsSubcategory),
     );
 
+    // Load analysis page order (JSON-encoded list of ints). Fall back to the
+    // default order [0..4] if missing or malformed.
+    List<int> _parseIntList(String? jsonStr, List<int> defaultValue) {
+      if (jsonStr == null) return defaultValue;
+      try {
+        final decoded = jsonDecode(jsonStr) as List<dynamic>;
+        final ints = decoded.map((e) => (e as num).toInt()).toList();
+        return ints;
+      } catch (_) {
+        return defaultValue;
+      }
+    }
+
+    const defaultPageOrder = [0, 1, 2, 3, 4];
+    final analysisPageOrder = _parseIntList(
+      prefs.getString(_kAnalysisPageOrder),
+      defaultPageOrder,
+    );
+
     final categorySelectedJson = prefs.getString(_kCategorySelectedIds);
     final propertiesCategorySelectedJson = prefs.getString(
       _kPropertiesCategorySelectedIds,
@@ -271,6 +300,7 @@ class PreferencesService {
       ValueNotifier<List<String>>(coExcludedActivityKeys),
       ValueNotifier<List<String>>(coExcludedCategoryIdsParent),
       ValueNotifier<List<String>>(coExcludedCategoryIdsSubcategory),
+      ValueNotifier<List<int>>(analysisPageOrder),
     );
   }
 
@@ -579,6 +609,21 @@ class PreferencesService {
 
   /// Clears all persisted preferences managed by this service and resets
   /// in-memory notifiers to their default values.
+  // ── Analysis page order ───────────────────────────────────────────────────
+
+  static const List<int> _defaultPageOrder = [0, 1, 2, 3, 4];
+
+  List<int> getAnalysisPageOrder() => analysisPageOrderNotifier.value.isNotEmpty
+      ? analysisPageOrderNotifier.value
+      : _defaultPageOrder;
+
+  Future<void> setAnalysisPageOrder(List<int> order) async {
+    await _prefs.setString(_kAnalysisPageOrder, jsonEncode(order));
+    analysisPageOrderNotifier.value = order;
+  }
+
+  // ── Clear all ─────────────────────────────────────────────────────────────
+
   Future<void> clearAll() async {
     await _prefs.remove(_kPeriodPreset);
     await _prefs.remove(_kCustomFirst);
@@ -599,6 +644,7 @@ class PreferencesService {
     await _prefs.remove(_kCoOccurrenceExcludedCategoryIds);
     await _prefs.remove(_kCoOccurrenceExcludedCategoryIdsParent);
     await _prefs.remove(_kCoOccurrenceExcludedCategoryIdsSubcategory);
+    await _prefs.remove(_kAnalysisPageOrder);
 
     periodPresetNotifier.value = _defaultPreset;
     customFirstNotifier.value = null;
@@ -621,6 +667,7 @@ class PreferencesService {
     coOccurrenceExcludedActivityKeysNotifier.value = <String>[];
     coOccurrenceExcludedCategoryIdsParentNotifier.value = <String>[];
     coOccurrenceExcludedCategoryIdsSubcategoryNotifier.value = <String>[];
+    analysisPageOrderNotifier.value = _defaultPageOrder;
   }
 
   /// Migration hook - apply transformations from older stored preferences
@@ -739,6 +786,15 @@ class PreferencesService {
         );
       }
 
+      await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
+    }
+
+    if (fromVersion < 8) {
+      // Version 8: introduce analysis page order persistence.
+      // Default to the standard order [0,1,2,3,4] for existing installs.
+      if (!prefs.containsKey(_kAnalysisPageOrder)) {
+        await prefs.setString(_kAnalysisPageOrder, jsonEncode([0, 1, 2, 3, 4]));
+      }
       await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
     }
   }
