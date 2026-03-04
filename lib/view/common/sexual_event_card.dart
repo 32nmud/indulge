@@ -6,6 +6,7 @@ import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
+import 'package:indulge/view/common/share/event_share_bottom_sheet.dart';
 import 'location_map.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:provider/provider.dart';
@@ -211,7 +212,7 @@ class _SexualEventCardState extends State<SexualEventCard>
           ],
 
           const Divider(),
-          _buildButtonRow(context),
+          _buildButtonRow(context, persons, eventState),
         ],
       ),
     );
@@ -660,12 +661,28 @@ class _SexualEventCardState extends State<SexualEventCard>
     }).toList();
   }
 
-  Widget _buildButtonRow(BuildContext context) {
+  Widget _buildButtonRow(
+    BuildContext context,
+    List<Person> persons,
+    EventState eventState,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          TextButton.icon(
+            icon: const Icon(Icons.share_outlined, size: 18),
+            label: const Text('Share'),
+            onPressed: () {
+              EventShareBottomSheet.show(
+                context: context,
+                event: widget.event,
+                persons: persons,
+                categories: eventState.sexualActivityCategories ?? {},
+              );
+            },
+          ),
           TextButton.icon(
             icon: const Icon(Icons.edit, size: 18),
             label: const Text('Edit'),
