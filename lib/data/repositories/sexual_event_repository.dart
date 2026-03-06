@@ -622,6 +622,38 @@ class SexualEventRepository {
     return count;
   }
 
+  /// Returns the number of events that contain a specific activity identified
+  /// by both [categoryId] and [activityName].
+  Future<int> getEventCountForSpecificActivity({
+    required String categoryId,
+    required String activityName,
+  }) async {
+    final rows = await _db.query('sexual_event');
+    int count = 0;
+    for (final row in rows) {
+      final event = SexualEvent.fromJson(
+        jsonDecode(row['json'] as String) as Map<String, dynamic>,
+      );
+
+      bool found = false;
+      for (final activity in event.activities) {
+        for (final participant in activity.participants) {
+          if (participant.activityCounts.any(
+            (ac) =>
+                ac.categoryReference.reference == categoryId &&
+                ac.activityName == activityName,
+          )) {
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (found) count++;
+    }
+    return count;
+  }
+
   /// Deletes a sexual activity and removes it from all activity categories
   /// Uses categoryId and activityName to identify the activity
   Future<void> deleteSexualActivity({
@@ -666,12 +698,15 @@ class SexualEventRepository {
         final updatedParticipants = <ActivityParticipant>[];
 
         for (final participant in activity.participants) {
-          // Remove the activity reference from this participant
+          // Remove only the specific activity from this participant.
+          // Both the category AND the name must match to identify the exact
+          // activity — using || would incorrectly remove all activities that
+          // share either the category or the name.
           final updatedActivityCounts = participant.activityCounts
               .where(
                 (ac) =>
-                    ac.activityName != activityName &&
-                    ac.categoryReference.reference != categoryId,
+                    !(ac.activityName == activityName &&
+                        ac.categoryReference.reference == categoryId),
               )
               .toList();
 
@@ -687,9 +722,18 @@ class SexualEventRepository {
           }
         }
 
-        updatedActivities.add(
-          activity.copyWith(participants: updatedParticipants),
+        // Drop the entire EventActivity (category row) if every participant
+        // has no activity counts left after the removal.
+        final allEmpty = updatedParticipants.every(
+          (p) => p.activityCounts.isEmpty,
         );
+        if (!allEmpty) {
+          updatedActivities.add(
+            activity.copyWith(participants: updatedParticipants),
+          );
+        }
+        // If allEmpty, the category row is silently dropped (eventModified is
+        // already true because at least one activityCount was removed above).
       }
 
       if (eventModified) {

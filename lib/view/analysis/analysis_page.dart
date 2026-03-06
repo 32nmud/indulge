@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:indulge/view/common/share/analysis_export_bottom_sheet.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -437,6 +438,7 @@ class _AnalysisPageState extends State<AnalysisPage>
                               style: Theme.of(context).textTheme.headlineMedium,
                             ),
                           ),
+                          _buildShareButton(),
                           _buildReorderButton(),
                         ],
                       ),
@@ -900,6 +902,42 @@ class _AnalysisPageState extends State<AnalysisPage>
       onPressed: _showPageReorderDialog,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
+  }
+
+  Widget _buildShareButton() {
+    final canExport =
+        _overviewData != null &&
+        _activityBreakdownData != null &&
+        _partnerBreakdownData != null;
+
+    return IconButton(
+      icon: const Icon(Icons.ios_share, size: 20),
+      tooltip: canExport ? 'Export analysis' : 'Loading data…',
+      visualDensity: VisualDensity.compact,
+      onPressed: canExport
+          ? () {
+              AnalysisExportBottomSheet.show(
+                context: context,
+                timeWindowLabel: _timeWindowLabel(),
+                overviewData: _overviewData!,
+                activityData: _activityBreakdownData!,
+                partnerData: _partnerBreakdownData!,
+              );
+            }
+          : null,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+  }
+
+  String _timeWindowLabel() {
+    switch (_timeWindow) {
+      case TimeWindow.last12Months:
+        return 'Last 12 months';
+      case TimeWindow.allTime:
+        return 'All time';
+      case TimeWindow.specificYear:
+        return _selectedYear?.toString() ?? 'All time';
+    }
   }
 }
 

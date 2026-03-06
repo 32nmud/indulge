@@ -733,7 +733,10 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
 
     if (isExisting && categoryId.isNotEmpty) {
       final provider = context.read<SexualEventsProvider>();
-      final count = await provider.getUsageCountForActivity(categoryId);
+      final count = await provider.getUsageCountForActivity(
+        categoryId: categoryId,
+        activityName: activityName,
+      );
 
       if (!mounted) return;
 

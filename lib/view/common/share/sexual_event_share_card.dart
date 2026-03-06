@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
+import 'share_card_theme.dart';
 
 /// A self-contained, fixed-size widget designed to be captured as an image
 /// and shared via the platform share sheet.
@@ -24,8 +25,8 @@ class SexualEventShareCard extends StatelessWidget {
   /// When false, participant names are replaced with "Person 1", "Person 2", …
   final bool showPartnerNames;
 
-  /// When false, activity names are hidden; only their emojis are shown.
-  final bool showActivityNames;
+  /// When false, partner profile pictures are replaced with initials-only avatars.
+  final bool showProfilePictures;
 
   const SexualEventShareCard({
     super.key,
@@ -33,21 +34,21 @@ class SexualEventShareCard extends StatelessWidget {
     required this.persons,
     required this.categories,
     this.showPartnerNames = true,
-    this.showActivityNames = true,
+    this.showProfilePictures = true,
   });
 
-  // ── Palette ───────────────────────────────────────────────────────────────
+  // ── Palette (delegated to ShareCardTheme) ─────────────────────────────────
 
-  static const Color _bgTop = Color(0xFF1A1040);
-  static const Color _bgBottom = Color(0xFF0D0D1A);
-  static const Color _accentColor = Color(0xFF7C6FCD);
-  static const Color _surfaceColor = Color(0xFF252040);
+  static const Color _bgTop = ShareCardTheme.bgTop;
+  static const Color _bgBottom = ShareCardTheme.bgBottom;
+  static const Color _accentColor = ShareCardTheme.accent;
+  static const Color _surfaceColor = ShareCardTheme.surface;
 
-  static const Color _textPrimary = Color(0xFFF0EEFF);
-  static const Color _textSecondary = Color(0xFFADA8CC);
-  static const Color _dividerColor = Color(0xFF3A3460);
-  static const Color _subcategoryBg = Color(0xFF1E1B38);
-  static const Color _subcategoryBorder = Color(0xFF3A3460);
+  static const Color _textPrimary = ShareCardTheme.textPrimary;
+  static const Color _textSecondary = ShareCardTheme.textSecondary;
+  static const Color _dividerColor = ShareCardTheme.divider;
+  static const Color _subcategoryBg = ShareCardTheme.surfaceDeep;
+  static const Color _subcategoryBorder = ShareCardTheme.border;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -244,6 +245,8 @@ class SexualEventShareCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final activityCards = _buildActivityCards();
 
+    final bool showProfilePics = showProfilePictures;
+
     return SizedBox(
       width: cardWidth,
       child: ClipRRect(
@@ -311,8 +314,8 @@ class SexualEventShareCard extends StatelessWidget {
                           ...activityCards.map(
                             (card) => _ActivityCardWidget(
                               card: card,
-                              showActivityNames: showActivityNames,
                               showPartnerNames: showPartnerNames,
+                              showProfilePictures: showProfilePics,
                               personDisplayName: _personDisplayName,
                               allPersons: persons,
                             ),
@@ -441,15 +444,15 @@ class _Circle extends StatelessWidget {
 
 class _ActivityCardWidget extends StatelessWidget {
   final _ShareActivityCard card;
-  final bool showActivityNames;
   final bool showPartnerNames;
+  final bool showProfilePictures;
   final String Function(Person, int) personDisplayName;
   final List<Person> allPersons;
 
   const _ActivityCardWidget({
     required this.card,
-    required this.showActivityNames,
     required this.showPartnerNames,
+    required this.showProfilePictures,
     required this.personDisplayName,
     required this.allPersons,
   });
@@ -490,19 +493,16 @@ class _ActivityCardWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (showActivityNames)
-                        Text(
-                          card.name,
-                          style: const TextStyle(
-                            color: SexualEventShareCard._textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            height: 1.3,
-                          ),
+                      Text(
+                        card.name,
+                        style: const TextStyle(
+                          color: SexualEventShareCard._textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
                         ),
-                      if (showActivityNames &&
-                          card.isSubcategory &&
-                          card.parentCategoryName != null)
+                      ),
+                      if (card.isSubcategory && card.parentCategoryName != null)
                         Text(
                           'in ${card.parentCategoryName}',
                           style: const TextStyle(
@@ -548,6 +548,7 @@ class _ActivityCardWidget extends StatelessWidget {
                           e.key,
                           idx < 0 ? 0 : idx,
                         ),
+                        showProfilePicture: showProfilePictures,
                       );
                     }).toList(),
                   ),
@@ -586,16 +587,14 @@ class _ActivityCardWidget extends StatelessWidget {
                               top: Radius.circular(6),
                             ),
                           ),
-                          child: showActivityNames
-                              ? Text(
-                                  subcatLabel,
-                                  style: const TextStyle(
-                                    color: SexualEventShareCard._textSecondary,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
+                          child: Text(
+                            subcatLabel,
+                            style: const TextStyle(
+                              color: SexualEventShareCard._textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
@@ -605,7 +604,7 @@ class _ActivityCardWidget extends StatelessWidget {
                                 .map(
                                   (r) => _ActivityRowWidget(
                                     row: r,
-                                    showActivityNames: showActivityNames,
+                                    showProfilePictures: showProfilePictures,
                                     personDisplayName: personDisplayName,
                                     allPersons: allPersons,
                                   ),
@@ -624,7 +623,7 @@ class _ActivityCardWidget extends StatelessWidget {
                         .map(
                           (r) => _ActivityRowWidget(
                             row: r,
-                            showActivityNames: showActivityNames,
+                            showProfilePictures: showProfilePictures,
                             personDisplayName: personDisplayName,
                             allPersons: allPersons,
                           ),
@@ -643,13 +642,13 @@ class _ActivityCardWidget extends StatelessWidget {
 
 class _ActivityRowWidget extends StatelessWidget {
   final _ShareActivityRow row;
-  final bool showActivityNames;
+  final bool showProfilePictures;
   final String Function(Person, int) personDisplayName;
   final List<Person> allPersons;
 
   const _ActivityRowWidget({
     required this.row,
-    required this.showActivityNames,
+    required this.showProfilePictures,
     required this.personDisplayName,
     required this.allPersons,
   });
@@ -664,20 +663,18 @@ class _ActivityRowWidget extends StatelessWidget {
           Row(
             children: [
               Text(row.activityEmoji, style: const TextStyle(fontSize: 14)),
-              if (showActivityNames) ...[
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    row.activityName,
-                    style: const TextStyle(
-                      color: SexualEventShareCard._textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  row.activityName,
+                  style: const TextStyle(
+                    color: SexualEventShareCard._textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
+              ),
               if (row.isRisky)
                 const Padding(
                   padding: EdgeInsets.only(left: 4),
@@ -701,6 +698,7 @@ class _ActivityRowWidget extends StatelessWidget {
                   person: e.key,
                   displayName: personDisplayName(e.key, idx < 0 ? 0 : idx),
                   count: e.value > 1 ? e.value : null,
+                  showProfilePicture: showProfilePictures,
                 );
               }).toList(),
             ),
@@ -715,11 +713,13 @@ class _MiniAvatar extends StatelessWidget {
   final Person person;
   final String displayName;
   final int? count;
+  final bool showProfilePicture;
 
   const _MiniAvatar({
     required this.person,
     required this.displayName,
     this.count,
+    this.showProfilePicture = true,
   });
 
   Uint8List? _decodeAvatar() {
@@ -733,21 +733,35 @@ class _MiniAvatar extends StatelessWidget {
     }
   }
 
-  String _initials() {
-    final nick = person.name.nickname ?? '';
-    final given = person.name.given ?? '';
-    final family = person.name.family ?? '';
-    if (nick.isNotEmpty) return nick[0].toUpperCase();
-    if (given.isNotEmpty && family.isNotEmpty) {
-      return '${given[0]}${family[0]}'.toUpperCase();
+  /// Derives a short avatar label from [displayName] rather than the raw
+  /// person data, so the label stays consistent with whatever privacy mode
+  /// is active:
+  ///   "Person 1"  →  "1"
+  ///   "Alice"     →  "A"
+  ///   "Alice B."  →  "AB"
+  String _avatarLabel() {
+    final trimmed = displayName.trim();
+    if (trimmed.isEmpty) return '?';
+
+    // If the display name looks like "Person N", show just the number.
+    final personMatch = RegExp(r'^Person\s+(\d+)$').firstMatch(trimmed);
+    if (personMatch != null) return personMatch.group(1)!;
+
+    // Otherwise use initials from the display name words.
+    final words = trimmed.split(RegExp(r'\s+'));
+    if (words.length >= 2) {
+      return '${words.first[0]}${words.last[0]}'.toUpperCase();
     }
-    if (given.isNotEmpty) return given[0].toUpperCase();
-    return '?';
+    return trimmed[0].toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
     final avatarBytes = _decodeAvatar();
+
+    final imageProvider = showProfilePicture && avatarBytes != null
+        ? MemoryImage(avatarBytes) as ImageProvider
+        : null;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -760,12 +774,10 @@ class _MiniAvatar extends StatelessWidget {
               backgroundColor: SexualEventShareCard._accentColor.withOpacity(
                 0.35,
               ),
-              backgroundImage: avatarBytes != null
-                  ? MemoryImage(avatarBytes)
-                  : null,
-              child: avatarBytes == null
+              backgroundImage: imageProvider,
+              child: imageProvider == null
                   ? Text(
-                      _initials(),
+                      _avatarLabel(),
                       style: const TextStyle(
                         color: SexualEventShareCard._textPrimary,
                         fontSize: 7,

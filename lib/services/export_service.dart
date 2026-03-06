@@ -100,6 +100,7 @@ class ExportService {
     );
   }
 
+  // ── Private helpers ────────────────────────────────────────────────────────
   /// Captures the widget identified by [key] and opens the platform
   /// "save file" dialog so the user can choose where to store the JPEG.
   ///

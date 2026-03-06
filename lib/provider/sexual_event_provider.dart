@@ -410,8 +410,14 @@ class SexualEventsProvider extends ChangeNotifier {
     );
   }
 
-  Future<int> getUsageCountForActivity(String categoryId) async {
-    return await _repository.getEventCountForActivityCategory(categoryId);
+  Future<int> getUsageCountForActivity({
+    required String categoryId,
+    required String activityName,
+  }) async {
+    return await _repository.getEventCountForSpecificActivity(
+      categoryId: categoryId,
+      activityName: activityName,
+    );
   }
 
   /* ########################

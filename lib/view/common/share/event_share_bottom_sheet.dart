@@ -59,7 +59,7 @@ class _EventShareBottomSheetState extends State<EventShareBottomSheet> {
   static final Logger _logger = Logger('EventShareBottomSheet');
 
   bool _showPartnerNames = true;
-  bool _showActivityNames = true;
+  bool _showProfilePictures = true;
   bool _isSharing = false;
   bool _isSaving = false;
 
@@ -201,7 +201,7 @@ class _EventShareBottomSheetState extends State<EventShareBottomSheet> {
                           persons: widget.persons,
                           categories: widget.categories,
                           showPartnerNames: _showPartnerNames,
-                          showActivityNames: _showActivityNames,
+                          showProfilePictures: _showProfilePictures,
                         ),
                       ),
                     ),
@@ -229,12 +229,15 @@ class _EventShareBottomSheetState extends State<EventShareBottomSheet> {
                       onChanged: (v) => setState(() => _showPartnerNames = v),
                     ),
                     _ToggleTile(
-                      icon: Icons.list_alt_outlined,
-                      title: 'Show activity names',
-                      subtitle: 'Only emojis shown when off',
-                      value: _showActivityNames,
-                      enabled: widget.event.activities.isNotEmpty,
-                      onChanged: (v) => setState(() => _showActivityNames = v),
+                      icon: Icons.account_circle_outlined,
+                      title: 'Show profile pictures',
+                      subtitle: widget.persons.isEmpty
+                          ? 'No partners on this event'
+                          : 'Avatars will appear on the card',
+                      value: _showProfilePictures,
+                      enabled: widget.persons.isNotEmpty,
+                      onChanged: (v) =>
+                          setState(() => _showProfilePictures = v),
                     ),
 
                     const SizedBox(height: 8),

@@ -106,6 +106,11 @@ class MockSexualEventRepository implements SexualEventRepository {
   @override
   Future<int> getEventCountForSexualActivity(String id) async => 0;
   @override
+  Future<int> getEventCountForSpecificActivity({
+    required String categoryId,
+    required String activityName,
+  }) async => 0;
+  @override
   Future<bool> isActivityCategoryUsed(String id) async => false;
   @override
   Future<bool> isSexualActivityUsed({
