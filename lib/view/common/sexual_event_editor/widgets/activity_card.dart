@@ -495,7 +495,8 @@ class ActivityCard extends StatelessWidget {
                       color: Colors.orange.shade700,
                     ),
                   ),
-                if (!sexualActivity.requiresPartner)
+                if (!sexualActivity.requiresPartner &&
+                    sexualActivity.isActionable)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -524,6 +525,142 @@ class ActivityCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  // Myself (if logged in) - only for non-actionable activities
+                  if (myself != null && !sexualActivity.isActionable) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PersonAvatar(
+                                person: myself!,
+                                radius: 20,
+                                showName: true,
+                                isSelected: myselfActivityCount.count > 0,
+                                onTap: () {
+                                  if (myselfActivityCount.count > 0) {
+                                    // Toggle OFF - remove the activity
+                                    toggleParticipantForProperty(
+                                      activityIndex,
+                                      sexualActivity.name,
+                                      myself!.id,
+                                      categoryId: categoryId,
+                                    );
+                                  } else if (sexualActivity.isActionable) {
+                                    // Toggle ON - show role picker for actionable activities
+                                    _showRolePicker(
+                                      context,
+                                      activityIndex,
+                                      sexualActivity.name,
+                                      myself!.id,
+                                      myselfActivityCount.role,
+                                      categoryId: categoryId,
+                                    );
+                                  } else {
+                                    // Toggle ON - just enable for non-actionable (no role needed)
+                                    toggleParticipantForProperty(
+                                      activityIndex,
+                                      sexualActivity.name,
+                                      myself!.id,
+                                      categoryId: categoryId,
+                                    );
+                                  }
+                                },
+                              ),
+                              if (myselfActivityCount.count > 0 &&
+                                  sexualActivity.isActionable) ...[
+                                const SizedBox(height: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    _roleLabel(myselfActivityCount.role),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSecondaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (myselfActivityCount.count > 0) ...[
+                            const SizedBox(width: 4),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.add_circle_outline,
+                                    size: 16,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => incrementPropertyCount(
+                                    activityIndex,
+                                    sexualActivity.name,
+                                    myself!.id,
+                                    categoryId: categoryId,
+                                  ),
+                                  tooltip: 'Increase count',
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '${myselfActivityCount.count}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    size: 16,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () => decrementPropertyCount(
+                                    activityIndex,
+                                    sexualActivity.name,
+                                    myself!.id,
+                                    categoryId: categoryId,
+                                  ),
+                                  tooltip: 'Decrease count',
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                   // Other participants (excluding self)
                   ...currentActivity.participants
                       .where(
@@ -584,8 +721,8 @@ class ActivityCard extends StatelessWidget {
                                           personId,
                                           categoryId: categoryId,
                                         );
-                                      } else {
-                                        // Toggle ON - show role picker
+                                      } else if (sexualActivity.isActionable) {
+                                        // Toggle ON - show role picker for actionable activities
                                         _showRolePicker(
                                           context,
                                           activityIndex,
@@ -594,10 +731,19 @@ class ActivityCard extends StatelessWidget {
                                           activityCount.role,
                                           categoryId: categoryId,
                                         );
+                                      } else {
+                                        // Toggle ON - just enable for non-actionable (no role needed)
+                                        toggleParticipantForProperty(
+                                          activityIndex,
+                                          sexualActivity.name,
+                                          personId,
+                                          categoryId: categoryId,
+                                        );
                                       }
                                     },
                                   ),
-                                  if (isSelected) ...[
+                                  if (isSelected &&
+                                      sexualActivity.isActionable) ...[
                                     const SizedBox(height: 2),
                                     Container(
                                       padding: const EdgeInsets.symmetric(

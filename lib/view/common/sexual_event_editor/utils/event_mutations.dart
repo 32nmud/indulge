@@ -215,12 +215,14 @@ SexualEvent toggleParticipantForProperty(
   final resolvedCategoryId = categoryId ?? activity.category.reference;
 
   final updatedParticipants = <ActivityParticipant>[];
+  bool participantFound = false;
 
   for (var participant in activity.participants) {
     if (participant.participant.reference != personId) {
       updatedParticipants.add(participant);
       continue;
     }
+    participantFound = true;
 
     final hasActivity = participant.activityCounts.any(
       (ac) =>
@@ -253,6 +255,25 @@ SexualEvent toggleParticipantForProperty(
     }
 
     updatedParticipants.add(participant.copyWith(activityCounts: newCounts));
+  }
+
+  // If participant wasn't found, add them as a new participant
+  if (!participantFound) {
+    updatedParticipants.add(
+      ActivityParticipant(
+        participant: Reference(reference: personId, resourceType: 'Person'),
+        activityCounts: [
+          ActivityCount(
+            categoryReference: Reference(
+              reference: resolvedCategoryId,
+              resourceType: 'SexualActivityCategory',
+            ),
+            activityName: activityName,
+            count: 1,
+          ),
+        ],
+      ),
+    );
   }
 
   updatedActivities[activityIndex] = activity.copyWith(
