@@ -92,7 +92,7 @@ class DatabaseSeed {
     await txn.rawInsert(
       'INSERT OR REPLACE INTO $tableName (id, last_modified, json) VALUES (?, ?, ?)',
       [
-        sexualActivity.id,
+        sexualActivity.name,
         DateTime.now().toIso8601String(),
         jsonEncode(sexualActivity.toJson()),
       ],

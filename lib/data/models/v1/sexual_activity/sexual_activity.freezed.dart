@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SexualActivity {
 
- String get id; String get name; String get displayCharacter; bool get canHaveMultipleParticipants; bool get stiRisk; bool get healthRisk; bool get requiresPartner; bool get isActionable; int get sortOrder;
+ String get name; String get displayCharacter; bool get canHaveMultipleParticipants; bool get stiRisk; bool get healthRisk; bool get requiresPartner; bool get isActionable; int get sortOrder;
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SexualActivityCopyWith<SexualActivity> get copyWith => _$SexualActivityCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivity&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants)&&(identical(other.stiRisk, stiRisk) || other.stiRisk == stiRisk)&&(identical(other.healthRisk, healthRisk) || other.healthRisk == healthRisk)&&(identical(other.requiresPartner, requiresPartner) || other.requiresPartner == requiresPartner)&&(identical(other.isActionable, isActionable) || other.isActionable == isActionable)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SexualActivity&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants)&&(identical(other.stiRisk, stiRisk) || other.stiRisk == stiRisk)&&(identical(other.healthRisk, healthRisk) || other.healthRisk == healthRisk)&&(identical(other.requiresPartner, requiresPartner) || other.requiresPartner == requiresPartner)&&(identical(other.isActionable, isActionable) || other.isActionable == isActionable)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,displayCharacter,canHaveMultipleParticipants,stiRisk,healthRisk,requiresPartner,isActionable,sortOrder);
+int get hashCode => Object.hash(runtimeType,name,displayCharacter,canHaveMultipleParticipants,stiRisk,healthRisk,requiresPartner,isActionable,sortOrder);
 
 @override
 String toString() {
-  return 'SexualActivity(id: $id, name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants, stiRisk: $stiRisk, healthRisk: $healthRisk, requiresPartner: $requiresPartner, isActionable: $isActionable, sortOrder: $sortOrder)';
+  return 'SexualActivity(name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants, stiRisk: $stiRisk, healthRisk: $healthRisk, requiresPartner: $requiresPartner, isActionable: $isActionable, sortOrder: $sortOrder)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SexualActivityCopyWith<$Res>  {
   factory $SexualActivityCopyWith(SexualActivity value, $Res Function(SexualActivity) _then) = _$SexualActivityCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String displayCharacter, bool canHaveMultipleParticipants, bool stiRisk, bool healthRisk, bool requiresPartner, bool isActionable, int sortOrder
+ String name, String displayCharacter, bool canHaveMultipleParticipants, bool stiRisk, bool healthRisk, bool requiresPartner, bool isActionable, int sortOrder
 });
 
 
@@ -65,10 +65,9 @@ class _$SexualActivityCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,Object? stiRisk = null,Object? healthRisk = null,Object? requiresPartner = null,Object? isActionable = null,Object? sortOrder = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,Object? stiRisk = null,Object? healthRisk = null,Object? requiresPartner = null,Object? isActionable = null,Object? sortOrder = null,}) {
   return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,displayCharacter: null == displayCharacter ? _self.displayCharacter : displayCharacter // ignore: cast_nullable_to_non_nullable
 as String,canHaveMultipleParticipants: null == canHaveMultipleParticipants ? _self.canHaveMultipleParticipants : canHaveMultipleParticipants // ignore: cast_nullable_to_non_nullable
 as bool,stiRisk: null == stiRisk ? _self.stiRisk : stiRisk // ignore: cast_nullable_to_non_nullable
@@ -161,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SexualActivity() when $default != null:
-return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
+return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
   return orElse();
 
 }
@@ -182,10 +181,10 @@ return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultiple
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivity():
-return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
+return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +201,10 @@ return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultiple
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String displayCharacter,  bool canHaveMultipleParticipants,  bool stiRisk,  bool healthRisk,  bool requiresPartner,  bool isActionable,  int sortOrder)?  $default,) {final _that = this;
 switch (_that) {
 case _SexualActivity() when $default != null:
-return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
+return $default(_that.name,_that.displayCharacter,_that.canHaveMultipleParticipants,_that.stiRisk,_that.healthRisk,_that.requiresPartner,_that.isActionable,_that.sortOrder);case _:
   return null;
 
 }
@@ -217,10 +216,9 @@ return $default(_that.id,_that.name,_that.displayCharacter,_that.canHaveMultiple
 @JsonSerializable()
 
 class _SexualActivity extends SexualActivity {
-  const _SexualActivity({this.id = "", this.name = "unknown", this.displayCharacter = "❔", this.canHaveMultipleParticipants = true, this.stiRisk = false, this.healthRisk = false, this.requiresPartner = false, this.isActionable = true, this.sortOrder = 0}): super._();
+  const _SexualActivity({this.name = "unknown", this.displayCharacter = "❔", this.canHaveMultipleParticipants = true, this.stiRisk = false, this.healthRisk = false, this.requiresPartner = false, this.isActionable = true, this.sortOrder = 0}): super._();
   factory _SexualActivity.fromJson(Map<String, dynamic> json) => _$SexualActivityFromJson(json);
 
-@override@JsonKey() final  String id;
 @override@JsonKey() final  String name;
 @override@JsonKey() final  String displayCharacter;
 @override@JsonKey() final  bool canHaveMultipleParticipants;
@@ -243,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivity&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants)&&(identical(other.stiRisk, stiRisk) || other.stiRisk == stiRisk)&&(identical(other.healthRisk, healthRisk) || other.healthRisk == healthRisk)&&(identical(other.requiresPartner, requiresPartner) || other.requiresPartner == requiresPartner)&&(identical(other.isActionable, isActionable) || other.isActionable == isActionable)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SexualActivity&&(identical(other.name, name) || other.name == name)&&(identical(other.displayCharacter, displayCharacter) || other.displayCharacter == displayCharacter)&&(identical(other.canHaveMultipleParticipants, canHaveMultipleParticipants) || other.canHaveMultipleParticipants == canHaveMultipleParticipants)&&(identical(other.stiRisk, stiRisk) || other.stiRisk == stiRisk)&&(identical(other.healthRisk, healthRisk) || other.healthRisk == healthRisk)&&(identical(other.requiresPartner, requiresPartner) || other.requiresPartner == requiresPartner)&&(identical(other.isActionable, isActionable) || other.isActionable == isActionable)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,displayCharacter,canHaveMultipleParticipants,stiRisk,healthRisk,requiresPartner,isActionable,sortOrder);
+int get hashCode => Object.hash(runtimeType,name,displayCharacter,canHaveMultipleParticipants,stiRisk,healthRisk,requiresPartner,isActionable,sortOrder);
 
 @override
 String toString() {
-  return 'SexualActivity(id: $id, name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants, stiRisk: $stiRisk, healthRisk: $healthRisk, requiresPartner: $requiresPartner, isActionable: $isActionable, sortOrder: $sortOrder)';
+  return 'SexualActivity(name: $name, displayCharacter: $displayCharacter, canHaveMultipleParticipants: $canHaveMultipleParticipants, stiRisk: $stiRisk, healthRisk: $healthRisk, requiresPartner: $requiresPartner, isActionable: $isActionable, sortOrder: $sortOrder)';
 }
 
 
@@ -263,7 +261,7 @@ abstract mixin class _$SexualActivityCopyWith<$Res> implements $SexualActivityCo
   factory _$SexualActivityCopyWith(_SexualActivity value, $Res Function(_SexualActivity) _then) = __$SexualActivityCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String displayCharacter, bool canHaveMultipleParticipants, bool stiRisk, bool healthRisk, bool requiresPartner, bool isActionable, int sortOrder
+ String name, String displayCharacter, bool canHaveMultipleParticipants, bool stiRisk, bool healthRisk, bool requiresPartner, bool isActionable, int sortOrder
 });
 
 
@@ -280,10 +278,9 @@ class __$SexualActivityCopyWithImpl<$Res>
 
 /// Create a copy of SexualActivity
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,Object? stiRisk = null,Object? healthRisk = null,Object? requiresPartner = null,Object? isActionable = null,Object? sortOrder = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? displayCharacter = null,Object? canHaveMultipleParticipants = null,Object? stiRisk = null,Object? healthRisk = null,Object? requiresPartner = null,Object? isActionable = null,Object? sortOrder = null,}) {
   return _then(_SexualActivity(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,displayCharacter: null == displayCharacter ? _self.displayCharacter : displayCharacter // ignore: cast_nullable_to_non_nullable
 as String,canHaveMultipleParticipants: null == canHaveMultipleParticipants ? _self.canHaveMultipleParticipants : canHaveMultipleParticipants // ignore: cast_nullable_to_non_nullable
 as bool,stiRisk: null == stiRisk ? _self.stiRisk : stiRisk // ignore: cast_nullable_to_non_nullable

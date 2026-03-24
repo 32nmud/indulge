@@ -230,6 +230,26 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
   }
 
   void _addParticipant(int activityIndex, Person person) {
+    // Check if user has any solo activities - if so, don't allow adding others
+    final myself = context.read<EventStateStore>().state.myself;
+    if (myself != null) {
+      final activity = _workingEvent.activities[activityIndex];
+      final myParticipant = activity.participants.firstWhere(
+        (p) => p.participant.reference == myself.id,
+        orElse: () => const ActivityParticipant(),
+      );
+      final hasSoloActivity = myParticipant.activityCounts.any((ac) => ac.solo);
+      if (hasSoloActivity) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot add participants to a solo activity'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+
     final updatedEvent = addParticipant(_workingEvent, activityIndex, person);
     if (identical(updatedEvent, _workingEvent)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -624,10 +644,33 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
           );
         });
       },
-      toggleMyselfForProperty: _toggleMyselfForProperty,
       toggleParticipantForProperty: _toggleParticipantForProperty,
       incrementPropertyCount: _incrementPropertyCount,
       decrementPropertyCount: _decrementPropertyCount,
+      onToggleSolo: (activityIndex, activityName, personId, {categoryId}) {
+        setState(() {
+          _workingEvent = toggleSolo(
+            _workingEvent,
+            activityIndex,
+            activityName,
+            personId,
+            categoryId: categoryId,
+          );
+        });
+      },
+      onToggleParticipantActivity:
+          (activityIndex, activityName, personId, role, {categoryId}) {
+            setState(() {
+              _workingEvent = toggleParticipantActivity(
+                _workingEvent,
+                activityIndex,
+                activityName,
+                personId,
+                role,
+                categoryId: categoryId,
+              );
+            });
+          },
     );
   }
 

@@ -8,7 +8,6 @@ part of 'sexual_activity.dart';
 
 _SexualActivity _$SexualActivityFromJson(Map<String, dynamic> json) =>
     _SexualActivity(
-      id: json['id'] as String? ?? "",
       name: json['name'] as String? ?? "unknown",
       displayCharacter: json['displayCharacter'] as String? ?? "❔",
       canHaveMultipleParticipants:
@@ -22,7 +21,6 @@ _SexualActivity _$SexualActivityFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$SexualActivityToJson(_SexualActivity instance) =>
     <String, dynamic>{
-      'id': instance.id,
       'name': instance.name,
       'displayCharacter': instance.displayCharacter,
       'canHaveMultipleParticipants': instance.canHaveMultipleParticipants,

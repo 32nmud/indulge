@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ActivityCount {
 
- Reference get categoryReference; String get activityName; int get count;
+ Reference get categoryReference; String get activityName; int get count; ActivityRole get role; bool get solo;
 /// Create a copy of ActivityCount
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ActivityCountCopyWith<ActivityCount> get copyWith => _$ActivityCountCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityCount&&(identical(other.categoryReference, categoryReference) || other.categoryReference == categoryReference)&&(identical(other.activityName, activityName) || other.activityName == activityName)&&(identical(other.count, count) || other.count == count));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityCount&&(identical(other.categoryReference, categoryReference) || other.categoryReference == categoryReference)&&(identical(other.activityName, activityName) || other.activityName == activityName)&&(identical(other.count, count) || other.count == count)&&(identical(other.role, role) || other.role == role)&&(identical(other.solo, solo) || other.solo == solo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,categoryReference,activityName,count);
+int get hashCode => Object.hash(runtimeType,categoryReference,activityName,count,role,solo);
 
 @override
 String toString() {
-  return 'ActivityCount(categoryReference: $categoryReference, activityName: $activityName, count: $count)';
+  return 'ActivityCount(categoryReference: $categoryReference, activityName: $activityName, count: $count, role: $role, solo: $solo)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ActivityCountCopyWith<$Res>  {
   factory $ActivityCountCopyWith(ActivityCount value, $Res Function(ActivityCount) _then) = _$ActivityCountCopyWithImpl;
 @useResult
 $Res call({
- Reference categoryReference, String activityName, int count
+ Reference categoryReference, String activityName, int count, ActivityRole role, bool solo
 });
 
 
@@ -65,12 +65,14 @@ class _$ActivityCountCopyWithImpl<$Res>
 
 /// Create a copy of ActivityCount
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? categoryReference = null,Object? activityName = null,Object? count = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? categoryReference = null,Object? activityName = null,Object? count = null,Object? role = null,Object? solo = null,}) {
   return _then(_self.copyWith(
 categoryReference: null == categoryReference ? _self.categoryReference : categoryReference // ignore: cast_nullable_to_non_nullable
 as Reference,activityName: null == activityName ? _self.activityName : activityName // ignore: cast_nullable_to_non_nullable
 as String,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
-as int,
+as int,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as ActivityRole,solo: null == solo ? _self.solo : solo // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 /// Create a copy of ActivityCount
@@ -164,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference categoryReference,  String activityName,  int count)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference categoryReference,  String activityName,  int count,  ActivityRole role,  bool solo)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ActivityCount() when $default != null:
-return $default(_that.categoryReference,_that.activityName,_that.count);case _:
+return $default(_that.categoryReference,_that.activityName,_that.count,_that.role,_that.solo);case _:
   return orElse();
 
 }
@@ -185,10 +187,10 @@ return $default(_that.categoryReference,_that.activityName,_that.count);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference categoryReference,  String activityName,  int count)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference categoryReference,  String activityName,  int count,  ActivityRole role,  bool solo)  $default,) {final _that = this;
 switch (_that) {
 case _ActivityCount():
-return $default(_that.categoryReference,_that.activityName,_that.count);case _:
+return $default(_that.categoryReference,_that.activityName,_that.count,_that.role,_that.solo);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +207,10 @@ return $default(_that.categoryReference,_that.activityName,_that.count);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference categoryReference,  String activityName,  int count)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference categoryReference,  String activityName,  int count,  ActivityRole role,  bool solo)?  $default,) {final _that = this;
 switch (_that) {
 case _ActivityCount() when $default != null:
-return $default(_that.categoryReference,_that.activityName,_that.count);case _:
+return $default(_that.categoryReference,_that.activityName,_that.count,_that.role,_that.solo);case _:
   return null;
 
 }
@@ -220,12 +222,14 @@ return $default(_that.categoryReference,_that.activityName,_that.count);case _:
 @JsonSerializable()
 
 class _ActivityCount extends ActivityCount {
-  const _ActivityCount({this.categoryReference = const Reference(), this.activityName = "", this.count = 1}): super._();
+  const _ActivityCount({this.categoryReference = const Reference(), this.activityName = "", this.count = 1, this.role = ActivityRole.participated, this.solo = false}): super._();
   factory _ActivityCount.fromJson(Map<String, dynamic> json) => _$ActivityCountFromJson(json);
 
 @override@JsonKey() final  Reference categoryReference;
 @override@JsonKey() final  String activityName;
 @override@JsonKey() final  int count;
+@override@JsonKey() final  ActivityRole role;
+@override@JsonKey() final  bool solo;
 
 /// Create a copy of ActivityCount
 /// with the given fields replaced by the non-null parameter values.
@@ -240,16 +244,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityCount&&(identical(other.categoryReference, categoryReference) || other.categoryReference == categoryReference)&&(identical(other.activityName, activityName) || other.activityName == activityName)&&(identical(other.count, count) || other.count == count));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityCount&&(identical(other.categoryReference, categoryReference) || other.categoryReference == categoryReference)&&(identical(other.activityName, activityName) || other.activityName == activityName)&&(identical(other.count, count) || other.count == count)&&(identical(other.role, role) || other.role == role)&&(identical(other.solo, solo) || other.solo == solo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,categoryReference,activityName,count);
+int get hashCode => Object.hash(runtimeType,categoryReference,activityName,count,role,solo);
 
 @override
 String toString() {
-  return 'ActivityCount(categoryReference: $categoryReference, activityName: $activityName, count: $count)';
+  return 'ActivityCount(categoryReference: $categoryReference, activityName: $activityName, count: $count, role: $role, solo: $solo)';
 }
 
 
@@ -260,7 +264,7 @@ abstract mixin class _$ActivityCountCopyWith<$Res> implements $ActivityCountCopy
   factory _$ActivityCountCopyWith(_ActivityCount value, $Res Function(_ActivityCount) _then) = __$ActivityCountCopyWithImpl;
 @override @useResult
 $Res call({
- Reference categoryReference, String activityName, int count
+ Reference categoryReference, String activityName, int count, ActivityRole role, bool solo
 });
 
 
@@ -277,12 +281,14 @@ class __$ActivityCountCopyWithImpl<$Res>
 
 /// Create a copy of ActivityCount
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? categoryReference = null,Object? activityName = null,Object? count = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? categoryReference = null,Object? activityName = null,Object? count = null,Object? role = null,Object? solo = null,}) {
   return _then(_ActivityCount(
 categoryReference: null == categoryReference ? _self.categoryReference : categoryReference // ignore: cast_nullable_to_non_nullable
 as Reference,activityName: null == activityName ? _self.activityName : activityName // ignore: cast_nullable_to_non_nullable
 as String,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
-as int,
+as int,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as ActivityRole,solo: null == solo ? _self.solo : solo // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

@@ -110,7 +110,7 @@ class BackupService {
         backupDir,
         'activities',
         activities,
-        (a) => a.id,
+        (a) => a.name,
         (a) => a.toJson(),
       );
 

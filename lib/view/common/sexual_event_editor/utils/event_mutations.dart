@@ -230,13 +230,14 @@ SexualEvent toggleParticipantForProperty(
 
     List<ActivityCount> newCounts;
     if (hasActivity) {
-      newCounts = participant.activityCounts
-          .where(
-            (ac) =>
-                !(ac.activityName == activityName &&
-                    ac.categoryReference.reference == resolvedCategoryId),
-          )
-          .toList();
+      // Set count to 0 instead of removing to preserve role for future toggling
+      newCounts = participant.activityCounts.map((ac) {
+        if (ac.activityName == activityName &&
+            ac.categoryReference.reference == resolvedCategoryId) {
+          return ac.copyWith(count: 0);
+        }
+        return ac;
+      }).toList();
     } else {
       newCounts = [
         ...participant.activityCounts,
@@ -252,6 +253,104 @@ SexualEvent toggleParticipantForProperty(
     }
 
     updatedParticipants.add(participant.copyWith(activityCounts: newCounts));
+  }
+
+  updatedActivities[activityIndex] = activity.copyWith(
+    participants: updatedParticipants,
+  );
+
+  return event.copyWith(activities: updatedActivities);
+}
+
+/// Toggle a participant's activity with a specific role.
+/// If the participant doesn't exist, they are added.
+/// If the activity exists with the same role, it is removed.
+/// If the activity exists with a different role, the role is updated.
+/// If the activity doesn't exist (count: 0), it is added with the selected role.
+SexualEvent toggleParticipantActivity(
+  SexualEvent event,
+  int activityIndex,
+  String activityName,
+  String personId,
+  ActivityRole role, {
+  String? categoryId,
+}) {
+  if (activityIndex < 0 || activityIndex >= event.activities.length) {
+    return event;
+  }
+
+  final updatedActivities = List<EventActivity>.from(event.activities);
+  final activity = updatedActivities[activityIndex];
+  final resolvedCategoryId = categoryId ?? activity.category.reference;
+
+  final updatedParticipants = <ActivityParticipant>[];
+  bool participantFound = false;
+
+  for (var participant in activity.participants) {
+    if (participant.participant.reference != personId) {
+      updatedParticipants.add(participant);
+      continue;
+    }
+    participantFound = true;
+
+    final existingIndex = participant.activityCounts.indexWhere(
+      (ac) =>
+          ac.activityName == activityName &&
+          ac.categoryReference.reference == resolvedCategoryId,
+    );
+
+    List<ActivityCount> newCounts;
+    if (existingIndex >= 0) {
+      final existing = participant.activityCounts[existingIndex];
+      if (existing.count == 0) {
+        // Activity exists but count is 0 - add it with the selected role
+        newCounts = List<ActivityCount>.from(participant.activityCounts);
+        newCounts[existingIndex] = existing.copyWith(count: 1, role: role);
+      } else if (existing.role == role && existing.count > 0) {
+        // Activity exists with same role and count > 0 - remove it (toggle off)
+        newCounts = List<ActivityCount>.from(participant.activityCounts)
+          ..removeAt(existingIndex);
+      } else {
+        // Activity exists with different role or count - update the role
+        newCounts = List<ActivityCount>.from(participant.activityCounts);
+        newCounts[existingIndex] = existing.copyWith(count: 1, role: role);
+      }
+    } else {
+      // Activity doesn't exist - add it with the role
+      newCounts = [
+        ...participant.activityCounts,
+        ActivityCount(
+          categoryReference: Reference(
+            reference: resolvedCategoryId,
+            resourceType: 'SexualActivityCategory',
+          ),
+          activityName: activityName,
+          count: 1,
+          role: role,
+        ),
+      ];
+    }
+
+    updatedParticipants.add(participant.copyWith(activityCounts: newCounts));
+  }
+
+  if (!participantFound) {
+    // Participant doesn't exist - create them with the activity
+    final newParticipant = ActivityParticipant(
+      participant: Reference(reference: personId, resourceType: 'Person'),
+      activityCounts: [
+        ActivityCount(
+          categoryReference: Reference(
+            reference: resolvedCategoryId,
+            resourceType: 'SexualActivityCategory',
+          ),
+          activityName: activityName,
+          count: 1,
+          role: role,
+        ),
+      ],
+    );
+    updatedParticipants.add(newParticipant);
   }
 
   updatedActivities[activityIndex] = activity.copyWith(
@@ -345,6 +444,174 @@ SexualEvent decrementPropertyCount(
     }
 
     updatedParticipants.add(participant.copyWith(activityCounts: newCounts));
+  }
+
+  updatedActivities[activityIndex] = activity.copyWith(
+    participants: updatedParticipants,
+  );
+
+  return event.copyWith(activities: updatedActivities);
+}
+
+/// Toggle solo mode for a specific participant's activity.
+/// When enabling solo, marks the activity as solo and removes other participants
+/// from THIS SPECIFIC ACTIVITY only (they keep their other activities).
+/// When disabling solo, clears the solo flag and restores visibility.
+SexualEvent toggleSolo(
+  SexualEvent event,
+  int activityIndex,
+  String activityName,
+  String personId, {
+  String? categoryId,
+}) {
+  if (activityIndex < 0 || activityIndex >= event.activities.length) {
+    return event;
+  }
+
+  final updatedActivities = List<EventActivity>.from(event.activities);
+  final activity = updatedActivities[activityIndex];
+  final resolvedCategoryId = categoryId ?? activity.category.reference;
+
+  int? participantIndex;
+  int? activityCountIndex;
+
+  for (int i = 0; i < activity.participants.length; i++) {
+    final p = activity.participants[i];
+    if (p.participant.reference == personId) {
+      participantIndex = i;
+      for (int j = 0; j < p.activityCounts.length; j++) {
+        final ac = p.activityCounts[j];
+        if (ac.activityName == activityName &&
+            ac.categoryReference.reference == resolvedCategoryId) {
+          activityCountIndex = j;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  bool currentSolo = false;
+  if (participantIndex != null && activityCountIndex != null) {
+    currentSolo = activity
+        .participants[participantIndex!]
+        .activityCounts[activityCountIndex!]
+        .solo;
+  }
+  final newSoloState = !currentSolo;
+
+  List<ActivityParticipant> updatedParticipants;
+
+  if (participantIndex != null) {
+    // Existing participant found
+    final participant = activity.participants[participantIndex];
+
+    if (activityCountIndex != null) {
+      // Participant has this activity - update solo flag
+      final updatedCounts = List<ActivityCount>.from(
+        participant.activityCounts,
+      );
+      updatedCounts[activityCountIndex] = updatedCounts[activityCountIndex]
+          .copyWith(solo: newSoloState);
+
+      // Build updated participants list
+      updatedParticipants = [
+        participant.copyWith(activityCounts: updatedCounts),
+      ];
+
+      // Add back other participants (filtering THIS activity when enabling solo)
+      for (final p in activity.participants) {
+        if (p.participant.reference == personId) continue;
+        if (newSoloState) {
+          // Filter out THIS activity from other participants
+          final filteredCounts = p.activityCounts
+              .where(
+                (ac) =>
+                    !(ac.activityName == activityName &&
+                        ac.categoryReference.reference == resolvedCategoryId),
+              )
+              .toList();
+          // Keep participant with filtered counts (empty if this was their only activity)
+          updatedParticipants.add(p.copyWith(activityCounts: filteredCounts));
+        } else {
+          // Keep all activities when disabling solo
+          updatedParticipants.add(p);
+        }
+      }
+    } else {
+      // Participant doesn't have this activity yet - add it
+      final newActivityCount = ActivityCount(
+        categoryReference: Reference(
+          reference: resolvedCategoryId,
+          resourceType: 'SexualActivityCategory',
+        ),
+        activityName: activityName,
+        count: 0,
+        solo: newSoloState,
+      );
+
+      updatedParticipants = [
+        participant.copyWith(
+          activityCounts: [...participant.activityCounts, newActivityCount],
+        ),
+      ];
+
+      // When enabling solo, filter THIS activity from other participants
+      // When disabling solo, keep all participants as-is
+      for (final p in activity.participants) {
+        if (p.participant.reference == personId) continue;
+        if (newSoloState) {
+          final filteredCounts = p.activityCounts
+              .where(
+                (ac) =>
+                    !(ac.activityName == activityName &&
+                        ac.categoryReference.reference == resolvedCategoryId),
+              )
+              .toList();
+          // Keep participant with filtered counts (empty if this was their only activity)
+          updatedParticipants.add(p.copyWith(activityCounts: filteredCounts));
+        } else {
+          updatedParticipants.add(p);
+        }
+      }
+    }
+  } else {
+    // New participant - add them and handle solo filtering for existing participants
+    final newParticipant = ActivityParticipant(
+      participant: Reference(reference: personId, resourceType: 'Person'),
+      activityCounts: [
+        ActivityCount(
+          categoryReference: Reference(
+            reference: resolvedCategoryId,
+            resourceType: 'SexualActivityCategory',
+          ),
+          activityName: activityName,
+          count: 0,
+          solo: newSoloState,
+        ),
+      ],
+    );
+
+    updatedParticipants = [newParticipant];
+
+    // When enabling solo, filter THIS activity from existing participants
+    // When disabling solo, keep all participants as-is
+    for (final p in activity.participants) {
+      if (p.participant.reference == personId) continue;
+      if (newSoloState) {
+        final filteredCounts = p.activityCounts
+            .where(
+              (ac) =>
+                  !(ac.activityName == activityName &&
+                      ac.categoryReference.reference == resolvedCategoryId),
+            )
+            .toList();
+        // Keep participant with filtered counts (empty if this was their only activity)
+        updatedParticipants.add(p.copyWith(activityCounts: filteredCounts));
+      } else {
+        updatedParticipants.add(p);
+      }
+    }
   }
 
   updatedActivities[activityIndex] = activity.copyWith(

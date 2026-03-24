@@ -15,6 +15,10 @@ _ActivityCount _$ActivityCountFromJson(Map<String, dynamic> json) =>
             ),
       activityName: json['activityName'] as String? ?? "",
       count: (json['count'] as num?)?.toInt() ?? 1,
+      role:
+          $enumDecodeNullable(_$ActivityRoleEnumMap, json['role']) ??
+          ActivityRole.participated,
+      solo: json['solo'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$ActivityCountToJson(_ActivityCount instance) =>
@@ -22,4 +26,13 @@ Map<String, dynamic> _$ActivityCountToJson(_ActivityCount instance) =>
       'categoryReference': instance.categoryReference,
       'activityName': instance.activityName,
       'count': instance.count,
+      'role': _$ActivityRoleEnumMap[instance.role]!,
+      'solo': instance.solo,
     };
+
+const _$ActivityRoleEnumMap = {
+  ActivityRole.give: 'give',
+  ActivityRole.receive: 'receive',
+  ActivityRole.both: 'both',
+  ActivityRole.participated: 'participated',
+};
