@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:indulge/data/models/v1/activity_count/activity_count.dart';
 import 'package:indulge/view/analysis/share/share_card_models.dart';
 import 'package:indulge/view/common/share/share_card_theme.dart';
 import 'package:intl/intl.dart';
@@ -532,7 +533,24 @@ class ShareDayOfWeekChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final values = List.generate(7, (i) => averages[i + 1] ?? 0.0);
     final maxVal = values.fold(0.0, (a, b) => a > b ? a : b);
-    final maxY = maxVal == 0 ? 1.0 : ((maxVal * 10).ceil() / 10);
+    // Guard against insufficient data - fl_chart requires valid non-zero maxY
+    if (maxVal <= 0 || maxVal.isNaN || maxVal.isInfinite) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Text(
+            'Insufficient data',
+            style: TextStyle(
+              color: ShareCardTheme.textMuted,
+              fontSize: 16,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      );
+    }
+    final safeMaxVal = maxVal < 1.0 ? 1.0 : maxVal;
+    final maxY = ((safeMaxVal * 10).ceil() / 10).clamp(1.0, double.infinity);
     final busiest = values.fold(0.0, (a, b) => a > b ? a : b);
 
     return BarChart(
@@ -577,6 +595,7 @@ class ShareDayOfWeekChart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 30,
+              interval: 1.0,
               getTitlesWidget: (value, meta) {
                 if (value == 0 || value == maxY) return const SizedBox();
                 return Text(
@@ -624,6 +643,116 @@ class ShareDayOfWeekChart extends StatelessWidget {
           );
         }),
       ),
+    );
+  }
+}
+
+// ── Role breakdown chart ─────────────────────────────────────────────────────
+
+class ShareRoleBreakdownChart extends StatelessWidget {
+  final Map<ActivityRole, int> roleCounts;
+
+  const ShareRoleBreakdownChart({super.key, required this.roleCounts});
+
+  static const _colors = {
+    ActivityRole.give: Color(0xFF42A5F5), // blue
+    ActivityRole.receive: Color(0xFFAB47BC), // purple
+    ActivityRole.both: Color(0xFF26A69A), // teal
+    ActivityRole.participated: Color(0xFF78909C), // grey
+  };
+
+  static const _labels = {
+    ActivityRole.give: 'Gave',
+    ActivityRole.receive: 'Received',
+    ActivityRole.both: 'Both',
+    ActivityRole.participated: 'Participated',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final total = roleCounts.values.fold(0, (a, b) => a + b);
+    if (total == 0) return const SizedBox.shrink();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final role in ActivityRole.values) ...[
+          _buildRow(role, roleCounts[role] ?? 0, total),
+          if (role != ActivityRole.participated) const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRow(ActivityRole role, int count, int total) {
+    final fraction = total > 0 ? count / total : 0.0;
+    final pct = (fraction * 100).round();
+    final color = _colors[role]!;
+
+    return Row(
+      children: [
+        // Label
+        SizedBox(
+          width: 120,
+          child: Text(
+            _labels[role]!,
+            style: const TextStyle(
+              color: ShareCardTheme.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Bar
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Stack(
+              children: [
+                Container(height: 18, color: ShareCardTheme.surfaceHigh),
+                FractionallySizedBox(
+                  widthFactor: fraction.clamp(0.0, 1.0),
+                  child: Container(
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.85),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Count + pct
+        SizedBox(
+          width: 56,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                count.toString(),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  height: 1.0,
+                ),
+              ),
+              Text(
+                '$pct%',
+                style: const TextStyle(
+                  color: ShareCardTheme.textMuted,
+                  fontSize: 14,
+                  height: 1.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

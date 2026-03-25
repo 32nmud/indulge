@@ -539,6 +539,19 @@ class AnalysisShareCard extends StatelessWidget {
                       ),
                     ],
 
+                    // ── Role breakdown ────────────────────────────────
+                    if (activityData.userRoleCounts.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      const ShareCardSectionHeading(
+                        icon: Icons.swap_horiz,
+                        title: 'Your Role Breakdown',
+                      ),
+                      const SizedBox(height: 14),
+                      ShareRoleBreakdownChart(
+                        roleCounts: activityData.userRoleCounts,
+                      ),
+                    ],
+
                     SizedBox(height: _sectionGap),
                     const Divider(color: ShareCardTheme.divider, height: 1),
                     SizedBox(height: _sectionGap),
