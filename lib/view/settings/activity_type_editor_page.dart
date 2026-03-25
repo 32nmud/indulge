@@ -67,6 +67,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
             requiresPartner: act.requiresPartner,
             canHaveMultipleParticipants: act.canHaveMultipleParticipants,
             isActionable: act.isActionable,
+            hasRoles: act.hasRoles,
             sortOrder: act.sortOrder,
           ),
         );
@@ -536,7 +537,21 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
                   tooltip:
                       'Appears as a selectable activity in the event editor',
                   selected: activity.isActionable,
-                  onSelected: (v) => setState(() => activity.isActionable = v),
+                  onSelected: (v) => setState(() {
+                    activity.isActionable = v;
+                    if (!v) activity.hasRoles = false;
+                  }),
+                ),
+                FilterChip(
+                  label: const Text(
+                    'Has Roles',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  tooltip: 'Supports give/receive roles (vs just participated)',
+                  selected: activity.hasRoles,
+                  onSelected: activity.isActionable
+                      ? (v) => setState(() => activity.hasRoles = v)
+                      : null,
                 ),
                 FilterChip(
                   label: Text(
@@ -714,6 +729,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
           requiresPartner: false,
           canHaveMultipleParticipants: true,
           isActionable: true,
+          hasRoles: true,
           sortOrder: _activities.length,
         ),
       );
@@ -805,6 +821,7 @@ class _ActivityTypeEditorPageState extends State<ActivityTypeEditorPage> {
             requiresPartner: row.requiresPartner,
             canHaveMultipleParticipants: row.canHaveMultipleParticipants,
             isActionable: row.isActionable,
+            hasRoles: row.hasRoles,
             sortOrder: i,
           ),
         );
@@ -867,6 +884,7 @@ class _ActivityRow {
   bool requiresPartner;
   bool canHaveMultipleParticipants;
   bool isActionable;
+  bool hasRoles;
   int sortOrder;
 
   _ActivityRow({
@@ -877,6 +895,7 @@ class _ActivityRow {
     required this.requiresPartner,
     required this.canHaveMultipleParticipants,
     required this.isActionable,
+    required this.hasRoles,
     required this.sortOrder,
   });
 }

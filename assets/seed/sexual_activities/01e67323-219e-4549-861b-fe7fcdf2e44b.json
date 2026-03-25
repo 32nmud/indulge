@@ -5,19 +5,17 @@
   "activities": [
     {
       "name": "Recording",
-      "displayCharacter": "🎥"
+      "displayCharacter": "🎥",
+      "hasRoles": false
     },
     {
       "name": "Masturbation",
-      "displayCharacter": "✋"
+      "displayCharacter": "✋",
+      "hasRoles": false
     },
     {
-      "name": "I recieved a handjob",
-      "displayCharacter": "🤲"
-    },
-    {
-      "name": "I gave a handjob",
-      "displayCharacter": "👐"
+      "name": "Handjob",
+      "displayCharacter": "👋"
     }
   ]
 }

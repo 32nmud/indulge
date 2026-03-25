@@ -6,47 +6,56 @@
     {
       "name": "Realistic dildo",
       "displayCharacter": "🍆",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Fantasy dildo",
       "displayCharacter": "🦄",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Realistic penetrable",
       "displayCharacter": "🍑",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Fantasy penetrable",
       "displayCharacter": "✨",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Buttplug",
       "displayCharacter": "🔌",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Wearable dildo",
       "displayCharacter": "🎽",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Magic wand",
       "displayCharacter": "🪄",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Vibrating insertable",
       "displayCharacter": "📳",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
-      "name": "Strap-on",
+      "name": "Strap-on harness",
       "displayCharacter": "🔩",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     }
   ]
 }

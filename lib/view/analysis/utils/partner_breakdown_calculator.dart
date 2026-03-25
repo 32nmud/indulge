@@ -112,6 +112,8 @@ class PartnerBreakdownCalculator {
       startDate: startDate,
       endDate: endDate,
       events: events,
+      partnerRoleCounts: agg.partnerRoleCounts,
+      userRoleCounts: agg.userRoleCounts,
     );
   }
 }

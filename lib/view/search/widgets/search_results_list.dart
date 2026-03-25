@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/view/common/sexual_event_card.dart';
+import 'package:indulge/view/common/sexual_event_card/sexual_event_card.dart';
 
 /// A reusable widget that renders the search results area for the Search page.
 ///

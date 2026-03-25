@@ -5,39 +5,58 @@
   "activities": [
     {
       "name": "Pet play",
-      "displayCharacter": "🐾"
+      "displayCharacter": "🐾",
+      "hasRoles": false
     },
     {
       "name": "Incest role play",
-      "displayCharacter": "🏠"
+      "displayCharacter": "🏠",
+      "hasRoles": false
     },
     {
       "name": "ABDL",
-      "displayCharacter": "🍼"
+      "displayCharacter": "🍼",
+      "hasRoles": false
     },
     {
       "name": "Voyeur/exhibition",
-      "displayCharacter": "👀"
+      "displayCharacter": "👀",
+      "hasRoles": false
     },
     {
       "name": "Fraternity",
-      "displayCharacter": "🏛️"
+      "displayCharacter": "🏛️",
+      "hasRoles": false
     },
     {
       "name": "Public/outdoors",
-      "displayCharacter": "🌳"
+      "displayCharacter": "🌳",
+      "hasRoles": false
     },
     {
       "name": "Occupational role play",
-      "displayCharacter": "🔧"
+      "displayCharacter": "🧑‍🔧",
+      "hasRoles": false
     },
     {
       "name": "Athletic role play",
-      "displayCharacter": "🏋️"
+      "displayCharacter": "🏋️",
+      "hasRoles": false
+    },
+    {
+      "name": "Rape play",
+      "displayCharacter": "🚨",
+      "hasRoles": false
+    },
+    {
+      "name": "Intoxication play",
+      "displayCharacter": "💊",
+      "hasRoles": false
     },
     {
       "name": "Cuckholding",
-      "displayCharacter": "♠️"
+      "displayCharacter": "♠️",
+      "hasRoles": false
     }
   ]
 }

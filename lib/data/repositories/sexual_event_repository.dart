@@ -164,13 +164,11 @@ class SexualEventRepository {
 
   Future<List<SexualActivityCategory>> getAllSexualActivityCategories() async {
     final rows = await _db.query('sexual_activities');
-    _logger.info('DEBUG: Found ${rows.length} rows in sexual_activities table');
 
     final List<SexualActivityCategory> categories = [];
     for (final row in rows) {
       final jsonStr = row['json'] as String;
       final json = jsonDecode(jsonStr) as Map<String, dynamic>;
-      _logger.info('DEBUG: Loading category: ${json['id']} - ${json['name']}');
       categories.add(SexualActivityCategory.fromJson(json));
     }
 
@@ -178,7 +176,6 @@ class SexualEventRepository {
     categories.sort(
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     );
-    _logger.info('DEBUG: Loaded ${categories.length} categories');
     return categories;
   }
 

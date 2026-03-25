@@ -258,32 +258,30 @@ class _ContactListPageState extends State<ContactListPage>
     // The _onStoreChange listener handles data refresh on changes.
     context.watch<EventStateStore>();
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'Contacts',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Contacts',
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  await _loadPersons(forceLoadEvents: true);
-                },
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _persons.isEmpty
-                    ? _buildEmptyState()
-                    : _buildPersonList(),
-              ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _loadPersons(forceLoadEvents: true);
+              },
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _persons.isEmpty
+                  ? _buildEmptyState()
+                  : _buildPersonList(),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

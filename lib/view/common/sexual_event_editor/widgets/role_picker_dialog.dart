@@ -34,9 +34,9 @@ class _RolePickerDialogState extends State<RolePickerDialog> {
   String _roleLabel(ActivityRole role) {
     switch (role) {
       case ActivityRole.give:
-        return 'Give';
+        return 'Gave';
       case ActivityRole.receive:
-        return 'Receive';
+        return 'Received';
       case ActivityRole.both:
         return 'Both';
       case ActivityRole.participated:
@@ -50,23 +50,26 @@ class _RolePickerDialogState extends State<RolePickerDialog> {
       title: const Text('Select Role'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        children: ActivityRole.values.map((role) {
-          return ListTile(
-            leading: Radio<ActivityRole>(
-              value: role,
-              groupValue: _selectedRole,
-              onChanged: (value) {
-                if (value != null) {
-                  Navigator.of(context).pop(value);
-                }
-              },
-            ),
-            title: Text(_roleLabel(role)),
-            onTap: () {
-              Navigator.of(context).pop(role);
-            },
-          );
-        }).toList(),
+        children: ActivityRole.values
+            .where((role) => role != ActivityRole.participated)
+            .map((role) {
+              return ListTile(
+                leading: Radio<ActivityRole>(
+                  value: role,
+                  groupValue: _selectedRole,
+                  onChanged: (value) {
+                    if (value != null) {
+                      Navigator.of(context).pop(value);
+                    }
+                  },
+                ),
+                title: Text(_roleLabel(role)),
+                onTap: () {
+                  Navigator.of(context).pop(role);
+                },
+              );
+            })
+            .toList(),
       ),
       actions: [
         TextButton(

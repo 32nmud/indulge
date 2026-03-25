@@ -6,67 +6,80 @@
     {
       "name": "Leather",
       "displayCharacter": "🥋",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Rubber/latex",
       "displayCharacter": "🫧",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Neoprene",
       "displayCharacter": "🏊",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Athletic/sportswear",
       "displayCharacter": "🏃",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Sneakers/boots",
       "displayCharacter": "👟",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Socks",
       "displayCharacter": "🧦",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Underwear",
       "displayCharacter": "🩲",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Miltac",
       "displayCharacter": "🪖",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Uniforms (cop, medic, etc)",
       "displayCharacter": "👮",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Formalwear",
       "displayCharacter": "🤵",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Pet play gear",
       "displayCharacter": "🐾",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Harnesses",
       "displayCharacter": "🔗",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     },
     {
       "name": "Masks/hoods",
       "displayCharacter": "🎭",
-      "isActionable": false
+      "isActionable": false,
+      "hasRoles": false
     }
   ]
 }

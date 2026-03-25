@@ -515,8 +515,8 @@ SexualEvent toggleSolo(
   bool currentSolo = false;
   if (participantIndex != null && activityCountIndex != null) {
     currentSolo = activity
-        .participants[participantIndex!]
-        .activityCounts[activityCountIndex!]
+        .participants[participantIndex]
+        .activityCounts[activityCountIndex]
         .solo;
   }
   final newSoloState = !currentSolo;

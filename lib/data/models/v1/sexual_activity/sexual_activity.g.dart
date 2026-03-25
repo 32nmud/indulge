@@ -16,6 +16,7 @@ _SexualActivity _$SexualActivityFromJson(Map<String, dynamic> json) =>
       healthRisk: json['healthRisk'] as bool? ?? false,
       requiresPartner: json['requiresPartner'] as bool? ?? false,
       isActionable: json['isActionable'] as bool? ?? true,
+      hasRoles: json['hasRoles'] as bool? ?? true,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
 
@@ -28,5 +29,6 @@ Map<String, dynamic> _$SexualActivityToJson(_SexualActivity instance) =>
       'healthRisk': instance.healthRisk,
       'requiresPartner': instance.requiresPartner,
       'isActionable': instance.isActionable,
+      'hasRoles': instance.hasRoles,
       'sortOrder': instance.sortOrder,
     };

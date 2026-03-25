@@ -4,44 +4,19 @@
   "displayCharacter": "👄",
   "activities": [
     {
-      "name": "I gave head",
-      "displayCharacter": "⬇️",
+      "name": "Head",
+      "displayCharacter": "😛",
       "requiresPartner": true
     },
     {
-      "name": "I recieved head",
-      "displayCharacter": "⬆️",
-      "requiresPartner": true
-    },
-    {
-      "name": "I swallowed",
+      "name": "Swallowed",
       "displayCharacter": "💧",
       "requiresPartner": true,
       "stiRisk": true
     },
     {
-      "name": "They swallowed",
-      "displayCharacter": "🌊",
-      "requiresPartner": true
-    },
-    {
-      "name": "I gave blow job",
-      "displayCharacter": "😮",
-      "requiresPartner": true
-    },
-    {
-      "name": "I recieved blow job",
-      "displayCharacter": "😌",
-      "requiresPartner": true
-    },
-    {
-      "name": "I rimmed",
+      "name": "Rimmed",
       "displayCharacter": "🍑",
-      "requiresPartner": true
-    },
-    {
-      "name": "I was rimmed",
-      "displayCharacter": "✨",
       "requiresPartner": true
     }
   ]

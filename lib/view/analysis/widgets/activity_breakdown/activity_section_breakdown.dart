@@ -18,6 +18,11 @@ class _ActivityEntry {
   final bool stiRisk;
   final bool healthRisk;
   final int sortOrder;
+  // Role breakdown data
+  final int? giveCount;
+  final int? receiveCount;
+  final int? bothCount;
+  final int? participatedCount;
 
   const _ActivityEntry({
     required this.compositeKey,
@@ -28,6 +33,10 @@ class _ActivityEntry {
     required this.stiRisk,
     required this.healthRisk,
     required this.sortOrder,
+    this.giveCount,
+    this.receiveCount,
+    this.bothCount,
+    this.participatedCount,
   });
 }
 
@@ -164,6 +173,20 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
         context.read<EventStateStore>().state.sexualActivities?[compositeKey];
   }
 
+  /// Get role breakdown counts for an activity from userRoleActivityCounts.
+  ({int give, int receive, int both, int participated}) _getRoleCounts(
+    String compositeKey,
+  ) {
+    final roleMap = widget.data.userRoleActivityCounts[compositeKey];
+    if (roleMap == null) return (give: 0, receive: 0, both: 0, participated: 0);
+    return (
+      give: roleMap[ActivityRole.give] ?? 0,
+      receive: roleMap[ActivityRole.receive] ?? 0,
+      both: roleMap[ActivityRole.both] ?? 0,
+      participated: roleMap[ActivityRole.participated] ?? 0,
+    );
+  }
+
   /// Build an [_ActivityEntry] for [compositeKey] with [count].
   /// Falls back to scanning the category definition, then a synthesised stub.
   _ActivityEntry _makeEntry(String compositeKey, int count) {
@@ -172,6 +195,8 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
     final actName = colonIdx > 0
         ? compositeKey.substring(colonIdx + 1)
         : compositeKey;
+
+    final roles = _getRoleCounts(compositeKey);
 
     // Try the aggregated sexualActivities map first (keyed by composite key).
     final fromMap = _lookupActivity(compositeKey);
@@ -185,6 +210,10 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
         stiRisk: fromMap.stiRisk,
         healthRisk: fromMap.healthRisk,
         sortOrder: fromMap.sortOrder,
+        giveCount: roles.give,
+        receiveCount: roles.receive,
+        bothCount: roles.both,
+        participatedCount: roles.participated,
       );
     }
 
@@ -202,6 +231,10 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
             stiRisk: act.stiRisk,
             healthRisk: act.healthRisk,
             sortOrder: act.sortOrder,
+            giveCount: roles.give,
+            receiveCount: roles.receive,
+            bothCount: roles.both,
+            participatedCount: roles.participated,
           );
         }
       }
@@ -217,6 +250,10 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
       stiRisk: false,
       healthRisk: false,
       sortOrder: 0,
+      giveCount: roles.give,
+      receiveCount: roles.receive,
+      bothCount: roles.both,
+      participatedCount: roles.participated,
     );
   }
 
@@ -623,48 +660,165 @@ class _CategoryCardState extends State<_CategoryCard> {
     final scheme = Theme.of(context).colorScheme;
     final isRisky = entry.stiRisk || entry.healthRisk;
 
+    // Calculate role totals if role data exists
+    final hasRoleData =
+        entry.giveCount != null ||
+        entry.receiveCount != null ||
+        entry.bothCount != null ||
+        entry.participatedCount != null;
+    final totalRoleCount =
+        (entry.giveCount ?? 0) +
+        (entry.receiveCount ?? 0) +
+        (entry.bothCount ?? 0) +
+        (entry.participatedCount ?? 0);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(entry.displayCharacter, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              entry.activityName,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ),
-          if (isRisky) ...[
-            const SizedBox(width: 4),
-            Tooltip(
-              message: entry.stiRisk ? 'STI Risk' : 'Health Risk',
-              child: Icon(
-                Icons.warning_amber_rounded,
-                size: 14,
-                color: scheme.tertiary,
+          Row(
+            children: [
+              Text(
+                entry.displayCharacter,
+                style: const TextStyle(fontSize: 18),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  entry.activityName,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+                ),
+              ),
+              if (isRisky) ...[
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: entry.stiRisk ? 'STI Risk' : 'Health Risk',
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    size: 14,
+                    color: scheme.tertiary,
+                  ),
+                ),
+              ],
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${entry.count}×',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Role breakdown bar
+          if (hasRoleData && totalRoleCount > 0) ...[
+            const SizedBox(height: 4),
+            _buildRoleBar(entry, totalRoleCount),
           ],
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: scheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              '${entry.count}×',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: scheme.onSecondaryContainer,
-              ),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoleBar(_ActivityEntry entry, int total) {
+    if (total == 0) return const SizedBox.shrink();
+
+    final givePct = (entry.giveCount ?? 0) / total;
+    final receivePct = (entry.receiveCount ?? 0) / total;
+    final bothPct = (entry.bothCount ?? 0) / total;
+    final participatedPct = (entry.participatedCount ?? 0) / total;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: SizedBox(
+        height: 10,
+        child: Row(
+          children: [
+            if (givePct > 0)
+              Expanded(
+                flex: (givePct * 100).round(),
+                child: Container(
+                  color: Colors.blue.shade400,
+                  alignment: Alignment.center,
+                  child: givePct >= 0.2
+                      ? const Text(
+                          'Gave',
+                          style: TextStyle(
+                            fontSize: 6,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+            if (receivePct > 0)
+              Expanded(
+                flex: (receivePct * 100).round(),
+                child: Container(
+                  color: Colors.purple.shade400,
+                  alignment: Alignment.center,
+                  child: receivePct >= 0.2
+                      ? const Text(
+                          'Received',
+                          style: TextStyle(
+                            fontSize: 6,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+            if (bothPct > 0)
+              Expanded(
+                flex: (bothPct * 100).round(),
+                child: Container(
+                  color: Colors.teal.shade400,
+                  alignment: Alignment.center,
+                  child: bothPct >= 0.2
+                      ? const Text(
+                          'Both',
+                          style: TextStyle(
+                            fontSize: 6,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+            if (participatedPct > 0)
+              Expanded(
+                flex: (participatedPct * 100).round(),
+                child: Container(
+                  color: Colors.grey.shade400,
+                  alignment: Alignment.center,
+                  child: participatedPct >= 0.2
+                      ? const Text(
+                          'Participated',
+                          style: TextStyle(
+                            fontSize: 6,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

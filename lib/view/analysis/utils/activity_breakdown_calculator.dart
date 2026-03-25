@@ -119,6 +119,11 @@ class ActivityBreakdownCalculator {
       startDate: startDate,
       endDate: endDate,
       events: events,
+      // Role breakdown data
+      partnerRoleActivityCounts: agg.partnerRoleActivityCounts,
+      userRoleActivityCounts: agg.userRoleActivityCounts,
+      partnerRoleCounts: agg.partnerRoleCounts,
+      userRoleCounts: agg.userRoleCounts,
     );
   }
 }

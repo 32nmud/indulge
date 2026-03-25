@@ -7,7 +7,6 @@ import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:uuid/uuid.dart';
 import 'utils/event_mutations.dart';
 import 'widgets/widgets.dart';
-import 'widgets/activity_card.dart';
 import 'utils/event_validator.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:latlong2/latlong.dart' as ll;
@@ -265,25 +264,6 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
 
     setState(() {
       _workingEvent = updatedEvent;
-    });
-  }
-
-  void _toggleMyselfForProperty(
-    int activityIndex,
-    String activityName, {
-    String? categoryId,
-  }) {
-    final myself = context.read<EventStateStore>().state.myself;
-    if (myself == null) return;
-
-    setState(() {
-      _workingEvent = toggleMyselfForProperty(
-        _workingEvent,
-        activityIndex,
-        myself.id,
-        activityName: activityName,
-        categoryId: categoryId,
-      );
     });
   }
 

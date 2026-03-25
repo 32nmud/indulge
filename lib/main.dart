@@ -11,6 +11,7 @@ import 'package:indulge/view/home/daily_event_view.dart';
 import 'package:indulge/view/search/search_page.dart';
 import 'package:indulge/view/analysis/analysis_page.dart';
 import 'package:indulge/view/contacts/contact_list_page.dart';
+import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:indulge/view/settings/settings_page.dart';
 import 'package:indulge/view/common/speed_dial_fab.dart';
 import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
@@ -486,6 +487,17 @@ class _MyHomePageState extends State<MyHomePage> {
                   onPressed: () => _openClinicalEventEditor(null),
                 ),
               ],
+            )
+          : index == 3
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ContactEditorPage(),
+                  ),
+                );
+              },
+              child: const Icon(Icons.add),
             )
           : null,
     );

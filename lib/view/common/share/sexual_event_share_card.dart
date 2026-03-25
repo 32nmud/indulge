@@ -125,7 +125,8 @@ class SexualEventShareCard extends StatelessWidget {
       final parentName = isSubcat ? _parentCategoryName(parentCatRef) : null;
 
       // ── Build per-activity rows (same grouping logic as the event card) ──
-      final Map<String, Map<Person, int>> propertyGroups = {};
+      final Map<String, Map<Person, _SharePersonActivityInfo>> propertyGroups =
+          {};
 
       for (final participant in activity.participants) {
         final person =
@@ -136,11 +137,13 @@ class SexualEventShareCard extends StatelessWidget {
             );
 
         if (participant.activityCounts.isEmpty) {
-          propertyGroups.putIfAbsent('_no_activity', () => {})[person] = 1;
+          propertyGroups.putIfAbsent('_no_activity', () => {})[person] =
+              const _SharePersonActivityInfo();
         } else {
           for (final ac in participant.activityCounts) {
             final key = '${ac.categoryReference.reference}:${ac.activityName}';
-            propertyGroups.putIfAbsent(key, () => {})[person] = ac.count;
+            propertyGroups.putIfAbsent(key, () => {})[person] =
+                _SharePersonActivityInfo(count: ac.count, role: ac.role);
           }
         }
       }
@@ -390,13 +393,24 @@ class _ShareActivityCard {
   });
 }
 
+/// Holds count and role for a single participant in a share activity row.
+class _SharePersonActivityInfo {
+  final int count;
+  final ActivityRole role;
+
+  const _SharePersonActivityInfo({
+    this.count = 1,
+    this.role = ActivityRole.participated,
+  });
+}
+
 class _ShareActivityRow {
   final String catRef;
   final String activityEmoji;
   final String activityName;
   final bool isRisky;
   final String? subcategoryLabel;
-  final Map<Person, int> persons;
+  final Map<Person, _SharePersonActivityInfo> persons;
   final bool isNoActivity;
   final int subcategorySortOrder;
   final int activitySortOrder;
@@ -413,16 +427,17 @@ class _ShareActivityRow {
     this.activitySortOrder = 0,
   });
 
-  factory _ShareActivityRow.noActivity(Map<Person, int> persons) =>
-      _ShareActivityRow(
-        catRef: '',
-        activityEmoji: '',
-        activityName: '',
-        isRisky: false,
-        subcategoryLabel: null,
-        persons: persons,
-        isNoActivity: true,
-      );
+  factory _ShareActivityRow.noActivity(
+    Map<Person, _SharePersonActivityInfo> persons,
+  ) => _ShareActivityRow(
+    catRef: '',
+    activityEmoji: '',
+    activityName: '',
+    isRisky: false,
+    subcategoryLabel: null,
+    persons: persons,
+    isNoActivity: true,
+  );
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
@@ -697,8 +712,9 @@ class _ActivityRowWidget extends StatelessWidget {
                 return _MiniAvatar(
                   person: e.key,
                   displayName: personDisplayName(e.key, idx < 0 ? 0 : idx),
-                  count: e.value > 1 ? e.value : null,
+                  count: e.value.count > 1 ? e.value.count : null,
                   showProfilePicture: showProfilePictures,
+                  role: e.value.role,
                 );
               }).toList(),
             ),
@@ -714,13 +730,28 @@ class _MiniAvatar extends StatelessWidget {
   final String displayName;
   final int? count;
   final bool showProfilePicture;
+  final ActivityRole? role;
 
   const _MiniAvatar({
     required this.person,
     required this.displayName,
     this.count,
     this.showProfilePicture = true,
+    this.role,
   });
+
+  String _roleLabel(ActivityRole r) {
+    switch (r) {
+      case ActivityRole.give:
+        return 'Gave';
+      case ActivityRole.receive:
+        return 'Received';
+      case ActivityRole.both:
+        return 'Both';
+      case ActivityRole.participated:
+        return 'Participated';
+    }
+  }
 
   Uint8List? _decodeAvatar() {
     final raw = person.imageBytes;
@@ -820,6 +851,24 @@ class _MiniAvatar extends StatelessWidget {
             fontSize: 11,
           ),
         ),
+        if (role != null && role != ActivityRole.participated) ...[
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+            decoration: BoxDecoration(
+              color: SexualEventShareCard._accentColor.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(
+              _roleLabel(role!),
+              style: const TextStyle(
+                color: SexualEventShareCard._textPrimary,
+                fontSize: 8,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

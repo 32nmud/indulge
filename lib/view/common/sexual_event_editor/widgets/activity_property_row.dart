@@ -312,8 +312,8 @@ class ActivityPropertyRow extends StatelessWidget {
     if (isSelected) {
       // Toggle OFF - remove the activity
       onToggleProperty(sexualActivity.name, id, categoryId: categoryId);
-    } else if (sexualActivity.isActionable) {
-      // Toggle ON - show role picker for actionable activities
+    } else if (sexualActivity.hasRoles) {
+      // Toggle ON - show role picker for activities with roles
       onShowRolePicker(
         context,
         sexualActivity.name,
@@ -322,7 +322,7 @@ class ActivityPropertyRow extends StatelessWidget {
         categoryId: categoryId,
       );
     } else {
-      // Toggle ON - just enable for non-actionable (no role needed)
+      // Toggle ON - for activities without roles, just mark as participated
       onToggleProperty(sexualActivity.name, id, categoryId: categoryId);
     }
   }
@@ -424,9 +424,9 @@ class ActivityPropertyRow extends StatelessWidget {
   String _roleLabel(ActivityRole role) {
     switch (role) {
       case ActivityRole.give:
-        return 'Give';
+        return 'Gave';
       case ActivityRole.receive:
-        return 'Receive';
+        return 'Received';
       case ActivityRole.both:
         return 'Both';
       case ActivityRole.participated:

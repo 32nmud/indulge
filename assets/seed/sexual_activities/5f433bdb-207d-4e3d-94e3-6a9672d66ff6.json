@@ -1,0 +1,73 @@
+{
+  "id": "5f433bdb-207d-4e3d-94e3-6a9672d66ff6",
+  "name": "Substances",
+  "displayCharacter": "💊",
+  "activities": [
+    {
+      "name": "Cannabis",
+      "displayCharacter": "🥬",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "LSD",
+      "displayCharacter": "🌈",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Molly/Ecstasy/MDMA",
+      "displayCharacter": "💊",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Alcohol",
+      "displayCharacter": "🍺",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Poppers",
+      "displayCharacter": "💨",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Cocaine",
+      "displayCharacter": "❄️",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Meth",
+      "displayCharacter": "💎",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Ketamine",
+      "displayCharacter": "🐴",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "GHB",
+      "displayCharacter": "💧",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Mushrooms",
+      "displayCharacter": "🍄",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Cialis/Viagra",
+      "displayCharacter": "🍆",
+      "isActionable": false,
+      "hasRoles": false
+    }
+  ]
+}

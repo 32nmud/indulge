@@ -6,6 +6,7 @@ import 'activity_type_distribution.dart';
 import 'activity_section_breakdown.dart';
 import 'category_trends_chart.dart';
 import 'activity_trends_chart.dart';
+
 import '../../models/analysis_event_type.dart';
 import '../../models/activity_breakdown_data.dart';
 

@@ -7,7 +7,7 @@ import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/view/common/person_avatar.dart';
 import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
 import 'package:indulge/view/common/share/event_share_bottom_sheet.dart';
-import 'location_map.dart';
+import '../location_map.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:provider/provider.dart';
 
@@ -384,8 +384,8 @@ class _SexualEventCardState extends State<SexualEventCard>
         .where((person) => activityParticipantIds.contains(person.id))
         .toList();
 
-    // key: '$catRef:$actName'  →  map of Person → count
-    final Map<String, Map<Person, int>> propertyGroups = {};
+    // key: '$catRef:$actName'  →  map of Person → info (count + role)
+    final Map<String, Map<Person, _PersonActivityInfo>> propertyGroups = {};
 
     for (var participant in activity.participants) {
       final person = activityPersons.firstWhere(
@@ -398,7 +398,7 @@ class _SexualEventCardState extends State<SexualEventCard>
 
       if (participant.activityCounts.isEmpty) {
         propertyGroups.putIfAbsent('_no_activity', () => {});
-        propertyGroups['_no_activity']![person] = 1;
+        propertyGroups['_no_activity']![person] = const _PersonActivityInfo();
       } else {
         for (var activityCount in participant.activityCounts) {
           // catRef is the direct category (may be a subcategory) that owns this activity
@@ -406,7 +406,10 @@ class _SexualEventCardState extends State<SexualEventCard>
           final actName = activityCount.activityName;
           final key = '$catRef:$actName';
           propertyGroups.putIfAbsent(key, () => {});
-          propertyGroups[key]![person] = activityCount.count;
+          propertyGroups[key]![person] = _PersonActivityInfo(
+            count: activityCount.count,
+            role: activityCount.role,
+          );
         }
       }
     }
@@ -646,11 +649,41 @@ class _SexualEventCardState extends State<SexualEventCard>
                 spacing: 6,
                 runSpacing: 6,
                 children: row.persons.entries.map((personEntry) {
-                  return PersonAvatar(
-                    person: personEntry.key,
-                    radius: 16,
-                    count: personEntry.value > 1 ? personEntry.value : null,
-                    showName: true,
+                  final info = personEntry.value;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      PersonAvatar(
+                        person: personEntry.key,
+                        radius: 16,
+                        count: info.count > 1 ? info.count : null,
+                        showName: true,
+                      ),
+                      if (info.role != ActivityRole.participated) ...[
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _roleLabel(info.role),
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 }).toList(),
               ),
@@ -659,6 +692,19 @@ class _SexualEventCardState extends State<SexualEventCard>
         ),
       );
     }).toList();
+  }
+
+  String _roleLabel(ActivityRole role) {
+    switch (role) {
+      case ActivityRole.give:
+        return 'Gave';
+      case ActivityRole.receive:
+        return 'Received';
+      case ActivityRole.both:
+        return 'Both';
+      case ActivityRole.participated:
+        return 'Participated';
+    }
   }
 
   Widget _buildButtonRow(
@@ -798,6 +844,18 @@ class _SexualEventCardState extends State<SexualEventCard>
 }
 
 /// Data model for a single rendered row inside [_buildParticipantsBreakdown].
+/// Holds count and role for a single participant in an activity.
+class _PersonActivityInfo {
+  final int count;
+  final ActivityRole role;
+
+  const _PersonActivityInfo({
+    this.count = 1,
+    this.role = ActivityRole.participated,
+  });
+}
+
+/// Data model for a single rendered row inside [_buildParticipantsBreakdown].
 class _ActivityRow {
   final String catRef;
   final String activityEmoji;
@@ -807,7 +865,7 @@ class _ActivityRow {
   /// Non-null when this activity belongs to a subcategory distinct from the
   /// parent [EventActivity] category. Used as a visual group header.
   final String? subcategoryLabel;
-  final Map<Person, int> persons;
+  final Map<Person, _PersonActivityInfo> persons;
   final bool isNoActivity;
 
   /// Sort order of the subcategory (or 0 for the parent category). Used to
@@ -829,13 +887,14 @@ class _ActivityRow {
     this.activitySortOrder = 0,
   });
 
-  factory _ActivityRow.noActivity(Map<Person, int> persons) => _ActivityRow(
-    catRef: '',
-    activityEmoji: '',
-    activityName: '',
-    isRisky: false,
-    subcategoryLabel: null,
-    persons: persons,
-    isNoActivity: true,
-  );
+  factory _ActivityRow.noActivity(Map<Person, _PersonActivityInfo> persons) =>
+      _ActivityRow(
+        catRef: '',
+        activityEmoji: '',
+        activityName: '',
+        isRisky: false,
+        subcategoryLabel: null,
+        persons: persons,
+        isNoActivity: true,
+      );
 }

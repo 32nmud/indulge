@@ -366,7 +366,6 @@ class DatabaseEngine {
           .toList();
       for (final statement in schemaStatements) {
         await encryptedDb.execute(statement);
-        _logger.info('DEBUGGING: Executed statement: $statement');
       }
 
       // Step 5: Import all data into encrypted DB

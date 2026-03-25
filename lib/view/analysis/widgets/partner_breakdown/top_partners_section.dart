@@ -311,6 +311,8 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
             ],
           ),
           const SizedBox(height: 16),
+          _buildRoleBreakdown(context, partnerId),
+          const SizedBox(height: 16),
           Text(
             'Categories & Activities',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -777,6 +779,117 @@ class _TopPartnersSectionState extends State<TopPartnersSection> {
       Colors.lime,
     ];
     return colors[index % colors.length];
+  }
+
+  Widget _buildRoleBreakdown(BuildContext context, String partnerId) {
+    final partnerRoleCounts = widget.data.partnerRoleCounts[partnerId];
+    if (partnerRoleCounts == null) return const SizedBox.shrink();
+
+    // Calculate what user did with this partner (inverse of partner's role)
+    // Partner gave -> user received
+    // Partner received -> user gave
+    // Partner both -> user both
+    final userGave = partnerRoleCounts[ActivityRole.receive] ?? 0;
+    final userReceived = partnerRoleCounts[ActivityRole.give] ?? 0;
+    final userBoth = partnerRoleCounts[ActivityRole.both] ?? 0;
+
+    final total = userGave + userReceived + userBoth;
+    if (total == 0) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Your Roles',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            height: 16,
+            child: Row(
+              children: [
+                if (userGave > 0)
+                  Expanded(
+                    flex: userGave,
+                    child: Container(
+                      color: Colors.blue.shade400,
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Gave',
+                        style: const TextStyle(
+                          fontSize: 8,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (userReceived > 0)
+                  Expanded(
+                    flex: userReceived,
+                    child: Container(
+                      color: Colors.purple.shade400,
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Received',
+                        style: const TextStyle(
+                          fontSize: 8,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (userBoth > 0)
+                  Expanded(
+                    flex: userBoth,
+                    child: Container(
+                      color: Colors.teal.shade400,
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Both',
+                        style: const TextStyle(
+                          fontSize: 8,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            if (userGave > 0)
+              Text(
+                '$userGave gave',
+                style: TextStyle(fontSize: 10, color: Colors.blue.shade700),
+              ),
+            if (userReceived > 0)
+              Text(
+                '$userReceived received',
+                style: TextStyle(fontSize: 10, color: Colors.purple.shade700),
+              ),
+            if (userBoth > 0)
+              Text(
+                '$userBoth both',
+                style: TextStyle(fontSize: 10, color: Colors.teal.shade700),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

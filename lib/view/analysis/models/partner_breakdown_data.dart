@@ -24,6 +24,12 @@ class PartnerBreakdownData {
   final DateTime? endDate;
   final List<SexualEvent> events;
 
+  // Role data
+  // personId -> role -> count (what each partner did to user)
+  final Map<String, Map<ActivityRole, int>> partnerRoleCounts;
+  // role -> count (what user did to partners)
+  final Map<ActivityRole, int> userRoleCounts;
+
   const PartnerBreakdownData({
     required this.allCategoriesMap,
     required this.personCounts,
@@ -45,6 +51,8 @@ class PartnerBreakdownData {
     this.startDate,
     this.endDate,
     required this.events,
+    required this.partnerRoleCounts,
+    required this.userRoleCounts,
   });
 
   factory PartnerBreakdownData.empty() {
@@ -67,6 +75,8 @@ class PartnerBreakdownData {
       activityCategories: {},
       personMap: {},
       events: [],
+      partnerRoleCounts: {},
+      userRoleCounts: {},
     );
   }
 }

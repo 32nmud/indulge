@@ -1,12 +1,8 @@
 {
   "id": "1fd43eab-f66d-4843-af68-b47157373674",
-  "name": "BSDM",
+  "name": "BDSM",
   "displayCharacter": "⛓️",
   "subCategories": [
-    {
-      "reference": "5a0cfb05-2b4d-4157-a615-2666886cf28c",
-      "resourceType": "SexualActivityCategory"
-    },
     {
       "reference": "e2dc5cc7-d90d-455d-a347-abba4b9d3acb",
       "resourceType": "SexualActivityCategory"

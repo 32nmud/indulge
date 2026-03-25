@@ -44,6 +44,16 @@ class ActivityBreakdownData {
   final DateTime? endDate;
   final List<SexualEvent> events;
 
+  // Role breakdown data
+  // compositeKey -> role -> count (what partner did to user)
+  final Map<String, Map<ActivityRole, int>> partnerRoleActivityCounts;
+  // compositeKey -> role -> count (what user did per activity, inverse of partner role)
+  final Map<String, Map<ActivityRole, int>> userRoleActivityCounts;
+  // personId -> role -> count (what each partner did to user)
+  final Map<String, Map<ActivityRole, int>> partnerRoleCounts;
+  // role -> count (what user did to partner, inverse of partner role)
+  final Map<ActivityRole, int> userRoleCounts;
+
   const ActivityBreakdownData({
     required this.allCategoriesMap,
     required this.totalActivities,
@@ -83,6 +93,11 @@ class ActivityBreakdownData {
     this.startDate,
     this.endDate,
     required this.events,
+    // Role breakdown data
+    required this.partnerRoleActivityCounts,
+    required this.userRoleActivityCounts,
+    required this.partnerRoleCounts,
+    required this.userRoleCounts,
   });
 
   factory ActivityBreakdownData.empty() {
@@ -123,6 +138,10 @@ class ActivityBreakdownData {
       personMap: {},
       eventsThisYear: 0,
       events: [],
+      partnerRoleActivityCounts: {},
+      userRoleActivityCounts: {},
+      partnerRoleCounts: {},
+      userRoleCounts: {},
     );
   }
 }

@@ -15,6 +15,7 @@ abstract class SexualActivity with _$SexualActivity {
     @Default(false) bool healthRisk,
     @Default(false) bool requiresPartner,
     @Default(true) bool isActionable,
+    @Default(true) bool hasRoles,
     @Default(0) int sortOrder,
   }) = _SexualActivity;
 
