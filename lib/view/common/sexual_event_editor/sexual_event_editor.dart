@@ -414,7 +414,9 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
         _clearPendingLocation();
       }
 
-      await provider.saveEvent(_workingEvent);
+      // Clean up participants who were added but have no activities
+      final cleanedEvent = cleanupDanglingParticipants(_workingEvent);
+      await provider.saveEvent(cleanedEvent);
 
       if (mounted) {
         Navigator.of(context).pop();

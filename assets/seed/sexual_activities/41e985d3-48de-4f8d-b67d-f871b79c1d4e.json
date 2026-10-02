@@ -134,6 +134,24 @@
       "displayCharacter": "⛔",
       "isActionable": false,
       "hasRoles": false
+    },
+    {
+      "name": "Knife/blade",
+      "displayCharacter": "🔪",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Needles",
+      "displayCharacter": "🪡",
+      "isActionable": false,
+      "hasRoles": false
+    },
+    {
+      "name": "Cups",
+      "displayCharacter": "🥤",
+      "isActionable": false,
+      "hasRoles": false
     }
   ]
 }

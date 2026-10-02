@@ -28,6 +28,26 @@
     {
       "name": "Sensory depravation",
       "displayCharacter": "😶‍🌫️"
+    },
+    {
+      "name": "Cupping",
+      "displayCharacter": "🥤"
+    },
+    {
+      "name": "Knife play",
+      "displayCharacter": "🔪",
+      "healthRisk": true
+    },
+    {
+      "name": "Needle play",
+      "displayCharacter": "🪡",
+      "healthRisk": true
+    },
+    {
+      "name": "Biting",
+      "displayCharacter": "🦷",
+      "healthRisk": true,
+      "requiresPartner": true
     }
   ]
 }

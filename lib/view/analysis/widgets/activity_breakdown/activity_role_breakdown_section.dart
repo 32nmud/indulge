@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:indulge/data/models.dart';
+import 'package:indulge/provider/event_state_store.dart';
 import '../../models/activity_breakdown_data.dart';
 
 /// Widget showing user's role breakdown (give/receive/both) for each activity,
@@ -13,8 +15,22 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.userRoleActivityCounts.isEmpty) {
+      debugPrint('DEBUG build: userRoleActivityCounts is EMPTY');
       return const SizedBox.shrink();
     }
+
+    debugPrint('DEBUG build: allCategoriesMap entries:');
+    for (final e in data.allCategoriesMap.entries) {
+      debugPrint(
+        '  ${e.key}: ${e.value.name} (activities: ${e.value.activities.length}, subCats: ${e.value.subCategories.length})',
+      );
+      for (final act in e.value.activities) {
+        debugPrint('    - ${act.name} (hasRoles=${act.hasRoles})');
+      }
+    }
+    debugPrint(
+      'DEBUG build: userRoleActivityCounts keys: ${data.userRoleActivityCounts.keys.join(", ")}',
+    );
 
     // Build category groupings with role data
     final categories = _buildCategoryBreakdowns(context);
@@ -60,6 +76,53 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
     );
   }
 
+  /// Look up a [SexualActivity] by composite key with fallback to scanning
+  /// all categories' activities. This handles cases where the activity metadata
+  /// wasn't captured during aggregation or the category isn't in allCategoriesMap.
+  SexualActivity? _lookupActivity(
+    String compositeKey, [
+    BuildContext? context,
+  ]) {
+    // Try the aggregated sexualActivities map first (keyed by composite key).
+    final fromMap = data.sexualActivities[compositeKey];
+    if (fromMap != null) return fromMap;
+
+    // Try the EventStateStore sexualActivities as a fallback if context is available
+    if (context != null) {
+      final storeActivities = context
+          .read<EventStateStore>()
+          .state
+          .sexualActivities;
+      if (storeActivities != null) {
+        final fromStore = storeActivities[compositeKey];
+        if (fromStore != null) return fromStore;
+      }
+    }
+
+    // Fall back to scanning all categories' activities for the activity by name.
+    final colonIdx = compositeKey.indexOf(':');
+    if (colonIdx <= 0) return null;
+    final actName = compositeKey.substring(colonIdx + 1);
+
+    // Try the category specified in the composite key first
+    final catId = compositeKey.substring(0, colonIdx);
+    final cat = data.allCategoriesMap[catId];
+    if (cat != null) {
+      for (final act in cat.activities) {
+        if (act.name == actName) return act;
+      }
+    }
+
+    // If not found, scan all categories (handles subcategories not in allCategoriesMap)
+    for (final c in data.allCategoriesMap.values) {
+      for (final act in c.activities) {
+        if (act.name == actName) return act;
+      }
+    }
+
+    return null;
+  }
+
   List<_CategoryRoleData> _buildCategoryBreakdowns(BuildContext context) {
     final result = <_CategoryRoleData>[];
     final subcategoryIds = <String>{};
@@ -71,6 +134,16 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
       }
     }
 
+    debugPrint(
+      'DEBUG _buildCategoryBreakdowns: allCategoriesMap keys: ${data.allCategoriesMap.keys.join(", ")}',
+    );
+    debugPrint(
+      'DEBUG _buildCategoryBreakdowns: subcategoryIds: ${subcategoryIds.join(", ")}',
+    );
+    debugPrint(
+      'DEBUG _buildCategoryBreakdowns: userRoleActivityCounts keys: ${data.userRoleActivityCounts.keys.join(", ")}',
+    );
+
     // Get top-level categories (not subcategories)
     final topLevelCats =
         data.allCategoriesMap.values
@@ -78,8 +151,12 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
             .toList()
           ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
+    debugPrint(
+      'DEBUG _buildCategoryBreakdowns: topLevelCats: ${topLevelCats.map((c) => "${c.id}:${c.name}").join(", ")}',
+    );
+
     for (final cat in topLevelCats) {
-      final breakdown = _buildCategoryBreakdown(cat);
+      final breakdown = _buildCategoryBreakdown(cat, context);
       if (breakdown != null) {
         result.add(breakdown);
       }
@@ -88,7 +165,10 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
     return result;
   }
 
-  _CategoryRoleData? _buildCategoryBreakdown(SexualActivityCategory cat) {
+  _CategoryRoleData? _buildCategoryBreakdown(
+    SexualActivityCategory cat,
+    BuildContext context,
+  ) {
     final subIds = cat.subCategories
         .where((r) => r.reference.isNotEmpty)
         .map((r) => r.reference)
@@ -105,20 +185,48 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
       final activityName = parts.length > 1 ? parts.sublist(1).join(':') : '';
 
       // Skip if not this category or a subcategory of this category
-      if (catId != cat.id && !subIds.contains(catId)) continue;
+      if (catId != cat.id && !subIds.contains(catId)) {
+        debugPrint(
+          'DEBUG _buildCategoryBreakdown SKIP: compositeKey=$compositeKey catId=$catId cat.id=${cat.id} subIds=$subIds',
+        );
+        continue;
+      }
 
-      final sexualActivity = data.sexualActivities[compositeKey];
+      // Look up activity with fallback to category definition
+      final sexualActivity = _lookupActivity(compositeKey, context);
+      debugPrint(
+        'DEBUG _buildCategoryBreakdown: compositeKey=$compositeKey sexualActivity=${sexualActivity?.name ?? "null"} hasRoles=${sexualActivity?.hasRoles}',
+      );
 
-      // Skip activities without roles
-      if (sexualActivity == null || !sexualActivity.hasRoles) continue;
+      // Skip activities without roles (default to true if no metadata found)
+      if (sexualActivity == null) {
+        debugPrint(
+          'DEBUG _buildCategoryBreakdown SKIP null: compositeKey=$compositeKey',
+        );
+        continue;
+      }
+      if (!sexualActivity.hasRoles) {
+        debugPrint(
+          'DEBUG _buildCategoryBreakdown SKIP no roles: compositeKey=$compositeKey',
+        );
+        continue;
+      }
 
       final roleCounts = entry.value;
       final userGave = roleCounts[ActivityRole.give] ?? 0;
       final userReceive = roleCounts[ActivityRole.receive] ?? 0;
       final userBoth = roleCounts[ActivityRole.both] ?? 0;
-      final total = userGave + userReceive + userBoth;
+      final userParticipated = roleCounts[ActivityRole.participated] ?? 0;
+      final total = userGave + userReceive + userBoth + userParticipated;
 
       if (total == 0) continue;
+
+      // If activity has no roles but has participated counts, still show it
+      // but only show participated (give/receive/both will be 0 anyway)
+      final showAsParticipatedOnly = sexualActivity.hasRoles
+          ? false
+          : userParticipated > 0;
+      if (!sexualActivity.hasRoles && !showAsParticipatedOnly) continue;
 
       final entryData = _ActivityRoleEntry(
         compositeKey: compositeKey,
@@ -128,6 +236,7 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
         receiveCount: userReceive,
         bothCount: userBoth,
         totalCount: total,
+        participatedCount: userParticipated,
       );
 
       // Determine if this belongs to a subcategory
@@ -150,15 +259,15 @@ class ActivityRoleBreakdownSection extends StatelessWidget {
 
     // Sort entries
     directEntries.sort((a, b) {
-      final sa = data.sexualActivities[a.compositeKey];
-      final sb = data.sexualActivities[b.compositeKey];
+      final sa = _lookupActivity(a.compositeKey, context);
+      final sb = _lookupActivity(b.compositeKey, context);
       return (sa?.sortOrder ?? 0).compareTo(sb?.sortOrder ?? 0);
     });
 
     for (final sub in subGroups) {
       sub.entries.sort((a, b) {
-        final sa = data.sexualActivities[a.compositeKey];
-        final sb = data.sexualActivities[b.compositeKey];
+        final sa = _lookupActivity(a.compositeKey, context);
+        final sb = _lookupActivity(b.compositeKey, context);
         return (sa?.sortOrder ?? 0).compareTo(sb?.sortOrder ?? 0);
       });
     }
@@ -191,6 +300,7 @@ class _ActivityRoleEntry {
   final int giveCount;
   final int receiveCount;
   final int bothCount;
+  final int participatedCount;
   final int totalCount;
 
   const _ActivityRoleEntry({
@@ -200,6 +310,7 @@ class _ActivityRoleEntry {
     required this.giveCount,
     required this.receiveCount,
     required this.bothCount,
+    required this.participatedCount,
     required this.totalCount,
   });
 }
@@ -429,6 +540,7 @@ class _RoleBarRow extends StatelessWidget {
     final givePct = entry.giveCount / total;
     final receivePct = entry.receiveCount / total;
     final bothPct = entry.bothCount / total;
+    final participatedPct = entry.participatedCount / total;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -512,6 +624,24 @@ class _RoleBarRow extends StatelessWidget {
                         child: bothPct >= 0.15
                             ? const Text(
                                 'Both',
+                                style: TextStyle(
+                                  fontSize: 7,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
+                  if (participatedPct > 0)
+                    Expanded(
+                      flex: (participatedPct * 100).round(),
+                      child: Container(
+                        color: Colors.grey.shade400,
+                        alignment: Alignment.center,
+                        child: participatedPct >= 0.15
+                            ? const Text(
+                                'Part.',
                                 style: TextStyle(
                                   fontSize: 7,
                                   color: Colors.white,

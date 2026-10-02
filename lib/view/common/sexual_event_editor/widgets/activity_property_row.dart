@@ -167,24 +167,25 @@ class ActivityPropertyRow extends StatelessWidget {
   }
 
   Widget _buildParticipantAvatars(BuildContext context, String categoryRef) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        // Myself (if logged in) - only for non-actionable activities
-        if (myself != null && !sexualActivity.isActionable)
-          _buildMyselfAvatar(context, categoryRef),
+    final participants = <Widget>[];
 
-        // Other participants (excluding self)
-        ...activity.participants
-            .where(
-              (p) => myself == null || p.participant.reference != myself!.id,
-            )
-            .map(
-              (participant) =>
-                  _buildParticipantAvatar(context, participant, categoryRef),
-            ),
-      ],
+    // Myself (if logged in) - only for non-actionable activities
+    if (myself != null && !sexualActivity.isActionable)
+      participants.add(_buildMyselfAvatar(context, categoryRef));
+
+    // Other participants (excluding self)
+    participants.addAll(
+      activity.participants
+          .where((p) => myself == null || p.participant.reference != myself!.id)
+          .map(
+            (participant) =>
+                _buildParticipantAvatar(context, participant, categoryRef),
+          ),
+    );
+
+    return SizedBox(
+      height: 100,
+      child: ListView(scrollDirection: Axis.horizontal, children: participants),
     );
   }
 
@@ -209,29 +210,13 @@ class ActivityPropertyRow extends StatelessWidget {
 
     final isSelected = activityCount.count > 0;
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PersonAvatar(
-                person: myself!,
-                radius: 20,
-                showName: true,
-                isSelected: isSelected,
-                onTap: () => _onAvatarTap(context, isSelected),
-              ),
-              if (isSelected && sexualActivity.isActionable)
-                _buildRoleBadge(context, activityCount.role),
-            ],
-          ),
-          if (isSelected) _buildCountControls(context, categoryRef),
-        ],
-      ),
+    return _buildParticipantCard(
+      context: context,
+      person: myself!,
+      activityCount: activityCount,
+      categoryRef: categoryRef,
+      isSelected: isSelected,
+      personId: myself!.id,
     );
   }
 
@@ -268,36 +253,179 @@ class ActivityPropertyRow extends StatelessWidget {
 
     final isSelected = activityCount.count > 0;
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Column(
+    return _buildParticipantCard(
+      context: context,
+      person: person,
+      activityCount: activityCount,
+      categoryRef: categoryRef,
+      isSelected: isSelected,
+      personId: personId,
+    );
+  }
+
+  Widget _buildParticipantCard({
+    required BuildContext context,
+    required Person person,
+    required ActivityCount activityCount,
+    required String categoryRef,
+    required bool isSelected,
+    required String personId,
+  }) {
+    final personName = person.name.nickname ?? person.name.given ?? 'Unknown';
+
+    return Container(
+      width: 160,
+      margin: const EdgeInsets.only(right: 8, bottom: 4),
+      child: Card(
+        elevation: isSelected ? 2 : 0,
+        color: isSelected
+            ? Theme.of(
+                context,
+              ).colorScheme.primaryContainer.withValues(alpha: 0.5)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: isSelected
+              ? BorderSide.none
+              : BorderSide(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.5),
+                  width: 1,
+                ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              PersonAvatar(
-                person: person,
-                radius: 20,
-                showName: true,
-                isSelected: isSelected,
-                onTap: () => _onAvatarTap(
-                  context,
-                  isSelected,
-                  personId: personId,
-                  currentRole: activityCount.role,
-                ),
+              // Row 1: Avatar+count left, name right
+              Row(
+                children: [
+                  PersonAvatar(
+                    person: person,
+                    radius: 20,
+                    showName: false,
+                    isSelected: isSelected,
+                    onTap: () => _onAvatarTap(
+                      context,
+                      isSelected,
+                      personId: personId,
+                      currentRole: activityCount.role,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      personName,
+                      style: TextStyle(
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              if (isSelected && sexualActivity.isActionable)
-                _buildRoleBadge(context, activityCount.role),
+              const SizedBox(height: 4),
+              // Row 2: Role badge and +/- buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (isSelected && sexualActivity.isActionable)
+                    _buildRoleBadge(context, activityCount.role)
+                  else
+                    const SizedBox.shrink(),
+                  _buildCountButtons(
+                    context,
+                    categoryRef,
+                    personId,
+                    isSelected,
+                  ),
+                ],
+              ),
             ],
           ),
-          if (isSelected)
-            _buildCountControls(context, categoryRef, personId: personId),
-        ],
+        ),
       ),
     );
+  }
+
+  Widget _buildCountButtons(
+    BuildContext context,
+    String categoryRef,
+    String personId,
+    bool isSelected,
+  ) {
+    final count = _getCount(categoryRef, personId);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isSelected)
+          GestureDetector(
+            onTap: () => onDecrementCount(
+              sexualActivity.name,
+              personId,
+              categoryId: categoryRef,
+            ),
+            child: Icon(
+              Icons.remove_circle_outline,
+              size: 20,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          )
+        else
+          const SizedBox(width: 20),
+        Container(
+          constraints: const BoxConstraints(minWidth: 24),
+          alignment: Alignment.center,
+          child: Text(
+            '$count',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.outline,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _onIncrementTap(context, isSelected, personId: personId),
+          child: Icon(
+            Icons.add_circle_outline,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  int _getCount(String categoryRef, String personId) {
+    final participant = activity.participants.firstWhere(
+      (p) => p.participant.reference == personId,
+      orElse: () => const ActivityParticipant(),
+    );
+    final activityCount = participant.activityCounts.firstWhere(
+      (ac) =>
+          ac.activityName == sexualActivity.name &&
+          ac.categoryReference.reference == categoryRef,
+      orElse: () => ActivityCount(
+        categoryReference: Reference(
+          reference: categoryRef,
+          resourceType: 'SexualActivityCategory',
+        ),
+        activityName: sexualActivity.name,
+        count: 0,
+      ),
+    );
+    return activityCount.count;
   }
 
   void _onAvatarTap(
@@ -327,6 +455,36 @@ class ActivityPropertyRow extends StatelessWidget {
     }
   }
 
+  void _onIncrementTap(
+    BuildContext context,
+    bool isSelected, {
+    String? personId,
+  }) {
+    if (isSelected) {
+      // Already added - just increment the count
+      onIncrementCount(
+        sexualActivity.name,
+        personId ?? myself!.id,
+        categoryId: categoryId,
+      );
+    } else {
+      // Not added - show role picker and add participant
+      final id = personId ?? myself!.id;
+      if (sexualActivity.hasRoles) {
+        onShowRolePicker(
+          context,
+          sexualActivity.name,
+          id,
+          ActivityRole.participated,
+          categoryId: categoryId,
+        );
+      } else {
+        // For activities without roles, just mark as participated
+        onToggleProperty(sexualActivity.name, id, categoryId: categoryId);
+      }
+    }
+  }
+
   Widget _buildRoleBadge(BuildContext context, ActivityRole role) {
     return Padding(
       padding: const EdgeInsets.only(top: 2),
@@ -345,80 +503,6 @@ class ActivityPropertyRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildCountControls(
-    BuildContext context,
-    String categoryRef, {
-    String? personId,
-  }) {
-    final id = personId ?? myself!.id;
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, size: 16),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => onIncrementCount(
-              sexualActivity.name,
-              id,
-              categoryId: categoryId,
-            ),
-            tooltip: 'Increase count',
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              '${_getCount(categoryRef, id)}',
-              style: TextStyle(
-                fontSize: 10,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.remove_circle_outline, size: 16),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => onDecrementCount(
-              sexualActivity.name,
-              id,
-              categoryId: categoryId,
-            ),
-            tooltip: 'Decrease count',
-          ),
-        ],
-      ),
-    );
-  }
-
-  int _getCount(String categoryRef, String personId) {
-    final participant = activity.participants.firstWhere(
-      (p) => p.participant.reference == personId,
-      orElse: () => const ActivityParticipant(),
-    );
-    final activityCount = participant.activityCounts.firstWhere(
-      (ac) =>
-          ac.activityName == sexualActivity.name &&
-          ac.categoryReference.reference == categoryRef,
-      orElse: () => ActivityCount(
-        categoryReference: Reference(
-          reference: categoryRef,
-          resourceType: 'SexualActivityCategory',
-        ),
-        activityName: sexualActivity.name,
-        count: 0,
-      ),
-    );
-    return activityCount.count;
   }
 
   String _roleLabel(ActivityRole role) {

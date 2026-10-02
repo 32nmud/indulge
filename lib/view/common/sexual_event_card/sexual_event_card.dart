@@ -656,7 +656,7 @@ class _SexualEventCardState extends State<SexualEventCard>
                       PersonAvatar(
                         person: personEntry.key,
                         radius: 16,
-                        count: info.count > 1 ? info.count : null,
+                        count: info.count > 0 ? info.count : null,
                         showName: true,
                       ),
                       if (info.role != ActivityRole.participated) ...[

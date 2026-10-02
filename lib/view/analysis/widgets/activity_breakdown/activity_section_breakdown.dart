@@ -127,11 +127,15 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
   }
 
   List<SexualActivityCategory> _subsOf(SexualActivityCategory parent) {
-    return parent.subCategories
+    final result = parent.subCategories
         .where((r) => r.reference.isNotEmpty)
         .map((r) => widget.data.allCategoriesMap[r.reference])
         .whereType<SexualActivityCategory>()
         .toList();
+    debugPrint(
+      'DEBUG _subsOf: parent=${parent.name} (${parent.id}) returning=${result.map((s) => '${s.name}(${s.id})').join(', ')}',
+    );
+    return result;
   }
 
   // ── Count helpers ────────────────────────────────────────────────────────
@@ -285,7 +289,7 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
     return entries;
   }
 
-  /// Merge a list of entries by compositeKey, summing counts.
+  /// Merge a list of entries by compositeKey, summing counts and role counts.
   List<_ActivityEntry> _mergeEntries(List<_ActivityEntry> entries) {
     final merged = <String, _ActivityEntry>{};
     for (final e in entries) {
@@ -300,6 +304,11 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
           stiRisk: e.stiRisk,
           healthRisk: e.healthRisk,
           sortOrder: e.sortOrder,
+          giveCount: (existing.giveCount ?? 0) + (e.giveCount ?? 0),
+          receiveCount: (existing.receiveCount ?? 0) + (e.receiveCount ?? 0),
+          bothCount: (existing.bothCount ?? 0) + (e.bothCount ?? 0),
+          participatedCount:
+              (existing.participatedCount ?? 0) + (e.participatedCount ?? 0),
         );
       } else {
         merged[e.compositeKey] = e;
@@ -323,6 +332,12 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
     final subs = _subsOf(cat);
     final subIds = subs.map((s) => s.id).toSet();
 
+    debugPrint('DEBUG _buildBreakdown: cat=${cat.name} (${cat.id})');
+    debugPrint(
+      'DEBUG _buildBreakdown: subs=${subs.map((s) => '${s.name}(${s.id})').join(', ')}',
+    );
+    debugPrint('DEBUG _buildBreakdown: subIds=${subIds.join(', ')}');
+
     // Bucket: subCatId → list of entries (will be merged later).
     final subBuckets = <String, List<_ActivityEntry>>{
       for (final s in subs) s.id: [],
@@ -334,6 +349,9 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
       final keyCatId = entry.compositeKey.contains(':')
           ? entry.compositeKey.substring(0, entry.compositeKey.indexOf(':'))
           : '';
+      debugPrint(
+        'DEBUG _buildBreakdown Step1: entry=${entry.compositeKey} keyCatId=$keyCatId roles=give:${entry.giveCount} recv:${entry.receiveCount} both:${entry.bothCount} part:${entry.participatedCount}',
+      );
       if (subIds.contains(keyCatId)) {
         subBuckets[keyCatId]!.add(entry);
       } else {
@@ -343,7 +361,11 @@ class _ActivitySectionBreakdownState extends State<ActivitySectionBreakdown> {
 
     // Step 2 – entries from EventActivities logged directly under each sub.
     for (final sub in subs) {
-      subBuckets[sub.id]!.addAll(_buildEntriesFor(sub.id));
+      final entries = _buildEntriesFor(sub.id);
+      debugPrint(
+        'DEBUG _buildBreakdown Step2: sub=${sub.name} entries=${entries.map((e) => '${e.compositeKey}(g:${e.giveCount} r:${e.receiveCount})').join(', ')}',
+      );
+      subBuckets[sub.id]!.addAll(entries);
     }
 
     // Step 3 – merge & sort each bucket; keep only non-empty subGroups.
@@ -671,6 +693,10 @@ class _CategoryCardState extends State<_CategoryCard> {
         (entry.receiveCount ?? 0) +
         (entry.bothCount ?? 0) +
         (entry.participatedCount ?? 0);
+
+    debugPrint(
+      'DEBUG _buildEntryRow: ${entry.activityName} hasRoleData=$hasRoleData totalRoleCount=$totalRoleCount give=${entry.giveCount} recv=${entry.receiveCount} both=${entry.bothCount} part=${entry.participatedCount}',
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),

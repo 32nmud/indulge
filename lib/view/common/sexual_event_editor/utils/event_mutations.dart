@@ -641,3 +641,16 @@ SexualEvent toggleSolo(
 
   return event.copyWith(activities: updatedActivities);
 }
+
+/// Removes participants who have no activities (all activityCounts have count = 0)
+/// from all activities in the event. This cleans up "dangling" participant entries.
+SexualEvent cleanupDanglingParticipants(SexualEvent event) {
+  final updatedActivities = event.activities.map((activity) {
+    final cleanedParticipants = activity.participants
+        .where((p) => p.activityCounts.any((ac) => ac.count > 0))
+        .toList();
+    return activity.copyWith(participants: cleanedParticipants);
+  }).toList();
+
+  return event.copyWith(activities: updatedActivities);
+}
