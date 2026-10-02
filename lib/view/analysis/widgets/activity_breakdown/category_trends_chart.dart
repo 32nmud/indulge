@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indulge/view/common/dialogs/category_picker_dialog.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +30,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
   final Set<String> _selectedCategoryIds = {};
   bool _showPattern = false;
   List<String> _topCategories = [];
+  List<String> _visibleCategories = [];
   final List<Color> _colors = [
     Colors.blue,
     Colors.red,
@@ -82,6 +84,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     // Take top 5
     setState(() {
       _topCategories = sortedIds.take(5).toList();
+      // Rebuild visible list, keeping any previously-selected extras.
+      final visibleSet = {..._topCategories, ..._selectedCategoryIds};
+      _visibleCategories = visibleSet.toList();
     });
   }
 
@@ -128,11 +133,17 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
           _selectedCategoryIds
             ..clear()
             ..addAll(ids);
+          final visibleSet = {..._topCategories, ..._selectedCategoryIds};
+          _visibleCategories = visibleSet.toList();
         });
       } else {
         _selectedCategoryIds
           ..clear()
           ..addAll(ids);
+        _visibleCategories = {
+          ..._topCategories,
+          ..._selectedCategoryIds,
+        }.toList();
       }
 
       // Keep in sync with future preference changes.
@@ -143,11 +154,19 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
             _selectedCategoryIds
               ..clear()
               ..addAll(newIds);
+            _visibleCategories = {
+              ..._topCategories,
+              ..._selectedCategoryIds,
+            }.toList();
           });
         } else {
           _selectedCategoryIds
             ..clear()
             ..addAll(newIds);
+          _visibleCategories = {
+            ..._topCategories,
+            ..._selectedCategoryIds,
+          }.toList();
         }
       });
     } catch (_) {
@@ -277,18 +296,18 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       child: ActionChip(
                         avatar: const Icon(Icons.clear_all, size: 16),
                         label: const Text('Clear'),
-                        onPressed: () {
+                        onPressed: () async {
                           setState(() {
                             _selectedCategoryIds.clear();
+                            _visibleCategories = _topCategories.toList();
                           });
-                          // Persist the cleared selection (best-effort).
-                          _persistSelectedCategories();
+                          await _persistSelectedCategories();
                         },
                         padding: EdgeInsets.zero,
                         labelPadding: const EdgeInsets.only(right: 8),
                       ),
                     ),
-                  ..._topCategories.asMap().entries.map((entry) {
+                  ..._visibleCategories.asMap().entries.map((entry) {
                     final index = entry.key;
                     final id = entry.value;
                     final category = widget.data.activityCategories[id];
@@ -305,7 +324,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       child: FilterChip(
                         label: Text(label),
                         selected: isSelected,
-                        onSelected: (selected) {
+                        onSelected: (selected) async {
                           setState(() {
                             if (selected) {
                               _selectedCategoryIds.add(id);
@@ -313,8 +332,7 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                               _selectedCategoryIds.remove(id);
                             }
                           });
-                          // Persist changes to the selected categories immediately.
-                          _persistSelectedCategories();
+                          await _persistSelectedCategories();
                         },
                         showCheckmark: false,
                         selectedColor: color.withOpacity(0.2),
@@ -329,6 +347,16 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
                       ),
                     );
                   }),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      avatar: const Icon(Icons.add, size: 16),
+                      label: const Text('Add'),
+                      onPressed: _showCategoryPicker,
+                      padding: EdgeInsets.zero,
+                      labelPadding: const EdgeInsets.only(right: 8),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -359,6 +387,47 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
+  }
+
+  Future<void> _showCategoryPicker() async {
+    // Build the set of category IDs that have events in the current data.
+    final availableCatIds = <String>{};
+    for (final event in widget.data.events) {
+      for (final activity in event.activities) {
+        availableCatIds.add(activity.category.reference);
+      }
+    }
+
+    // Use allCategoriesMap for hierarchy; fall back to activityCategories for
+    // data that may have been computed before allCategoriesMap was added.
+    final fullMap = widget.data.allCategoriesMap.isNotEmpty
+        ? widget.data.allCategoriesMap
+        : widget.data.activityCategories;
+
+    // Filter to only categories that have data.
+    final filteredMap = Map.fromEntries(
+      fullMap.entries.where((e) => availableCatIds.contains(e.key)),
+    );
+
+    if (!mounted) return;
+
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (ctx) => CategoryPickerDialog(
+        categoriesMap: filteredMap,
+        selectedIds: _selectedCategoryIds,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _selectedCategoryIds.clear();
+        _selectedCategoryIds.addAll(result);
+        final visibleSet = {..._topCategories, ..._selectedCategoryIds};
+        _visibleCategories = visibleSet.toList();
+      });
+      await _persistSelectedCategories();
+    }
   }
 
   Widget _buildChart(BuildContext context) {
@@ -605,9 +674,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
           final stackItems = <BarChartRodStackItem>[];
           final barValues = <MapEntry<Color, double>>[];
 
-          // Collect values
-          for (int i = 0; i < _topCategories.length; i++) {
-            final id = _topCategories[i];
+          // Collect values — use _visibleCategories so colors match the chips.
+          for (int i = 0; i < _visibleCategories.length; i++) {
+            final id = _visibleCategories[i];
             if (!_selectedCategoryIds.contains(id)) continue;
 
             final rawCount = categories[id] ?? 0;
@@ -847,9 +916,9 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
           final stackItems = <BarChartRodStackItem>[];
           final barValues = <MapEntry<Color, double>>[];
 
-          // Process in order of top categories
-          for (int i = 0; i < _topCategories.length; i++) {
-            final id = _topCategories[i];
+          // Process in order of visible categories so colors match the chips.
+          for (int i = 0; i < _visibleCategories.length; i++) {
+            final id = _visibleCategories[i];
             if (!_selectedCategoryIds.contains(id)) continue;
 
             final count = (categories[id] ?? 0).toDouble();
@@ -926,3 +995,5 @@ class _CategoryTrendsChartState extends State<CategoryTrendsChart>
     return ((rawInterval / 5).ceil() * 5).toDouble();
   }
 }
+
+// ── Category Picker Dialog ─────────────────────────────────────────────────

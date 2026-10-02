@@ -71,6 +71,8 @@ class PeriodComparisonCalculator {
     }
 
     return PeriodComparisonData(
+      allCategoriesMap: stateSnapshot.sexualActivityCategories ?? {},
+      sexualActivities: agg.sexualActivities,
       thisWeekVsLastWeek: thisWeekVsLastWeek,
       thisMonthVsLastMonth: thisMonthVsLastMonth,
       daysSinceLastRiskyActivity: daysSinceLastRiskyActivity,

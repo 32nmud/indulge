@@ -9,10 +9,13 @@ void main() {
     Reference ref(String id, String resourceType) =>
         Reference(reference: id, resourceType: resourceType);
 
-    ActivityCount activityCount(String activityId) => ActivityCount(
-      activityReference: ref(activityId, 'SexualActivity'),
+    ActivityCount activityCount(
+      String activityName, {
+      String categoryId = 'cat',
+    }) => ActivityCount(
+      categoryReference: ref(categoryId, 'SexualActivityCategory'),
+      activityName: activityName,
       count: 1,
-      version: 2,
     );
 
     ActivityParticipant participant(
@@ -198,7 +201,10 @@ void main() {
         DateTime(2024, 6, 1),
         activities: [
           activity('cat1', [
-            participant('u1', counts: [activityCount('act1')]),
+            participant(
+              'u1',
+              counts: [activityCount('act1', categoryId: 'cat1')],
+            ),
           ]),
         ],
       );
@@ -241,7 +247,10 @@ void main() {
         notes: 'A special encounter',
         activities: [
           activity('catX', [
-            participant('me', counts: [activityCount('actX')]),
+            participant(
+              'me',
+              counts: [activityCount('actX', categoryId: 'catX')],
+            ),
             participant('pA'),
           ]),
         ],
@@ -282,12 +291,12 @@ void main() {
     test('activity filter handles empty activityReference values', () {
       // activityCount with empty activityReference.reference
       final badActivityCount = ActivityCount(
-        activityReference: Reference(
+        categoryReference: Reference(
           reference: '',
-          resourceType: 'SexualActivity',
+          resourceType: 'SexualActivityCategory',
         ),
+        activityName: '',
         count: 1,
-        version: 2,
       );
 
       final e = event(

@@ -73,13 +73,11 @@ void main() {
 
       test('stores sexual activity type properties as map', () {
         const activity1 = SexualActivity(
-          id: 'giving',
           name: 'Giving',
           stiRisk: false,
           healthRisk: false,
         );
         const activity2 = SexualActivity(
-          id: 'receiving',
           name: 'Receiving',
           stiRisk: false,
           healthRisk: false,
@@ -250,9 +248,7 @@ void main() {
           sexualActivityCategories: {
             'oral': const SexualActivityCategory(id: 'oral', name: 'Oral'),
           },
-          sexualActivities: {
-            'giving': const SexualActivity(id: 'giving', name: 'Giving'),
-          },
+          sexualActivities: {'Giving': const SexualActivity(name: 'Giving')},
         );
 
         expect(state.selectedDate, equals(testDate));

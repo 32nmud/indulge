@@ -1,9 +1,0 @@
-{
-  "id": "13",
-  "name": "Edging",
-  "displayCharacter": "📐",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

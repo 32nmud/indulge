@@ -77,7 +77,8 @@ void main() {
                   participant: Reference(reference: 'p1'),
                   activityCounts: [
                     ActivityCount(
-                      activityReference: Reference(reference: 'giving'),
+                      categoryReference: Reference(reference: 'oral'),
+                      activityName: 'giving',
                       count: 1,
                     ),
                   ],
@@ -91,7 +92,8 @@ void main() {
                   participant: Reference(reference: 'p1'),
                   activityCounts: [
                     ActivityCount(
-                      activityReference: Reference(reference: 'receiving'),
+                      categoryReference: Reference(reference: 'vaginal'),
+                      activityName: 'receiving',
                       count: 2,
                     ),
                   ],
@@ -132,34 +134,26 @@ void main() {
 
       test('SexualActivityCategory can be created', () {
         const activityCategory = SexualActivityCategory(
-          id: 'oral',
           name: 'Oral',
           displayCharacter: '👄',
-          requiresPartner: true,
         );
 
-        expect(activityCategory.id, equals('oral'));
         expect(activityCategory.name, equals('Oral'));
         expect(activityCategory.displayCharacter, equals('👄'));
-        expect(activityCategory.requiresPartner, isTrue);
       });
 
       test('SexualActivity can be created', () {
         const activity = SexualActivity(
-          id: 'giving',
           name: 'Giving',
           displayCharacter: '👅',
           stiRisk: false,
           healthRisk: false,
-          requiresPartner: true,
         );
 
-        expect(activity.id, equals('giving'));
         expect(activity.name, equals('Giving'));
         expect(activity.displayCharacter, equals('👅'));
         expect(activity.stiRisk, isFalse);
         expect(activity.healthRisk, isFalse);
-        expect(activity.requiresPartner, isTrue);
       });
 
       test('Reference can be created', () {
@@ -171,17 +165,19 @@ void main() {
 
       test('ActivityCount can be created', () {
         const activityCount = ActivityCount(
-          activityReference: Reference(
-            reference: 'activity-id',
-            resourceType: 'SexualActivity',
+          categoryReference: Reference(
+            reference: 'category-id',
+            resourceType: 'SexualActivityCategory',
           ),
+          activityName: 'some-activity',
           count: 3,
         );
 
         expect(
-          activityCount.activityReference.reference,
-          equals('activity-id'),
+          activityCount.categoryReference.reference,
+          equals('category-id'),
         );
+        expect(activityCount.activityName, equals('some-activity'));
         expect(activityCount.count, equals(3));
       });
 
@@ -221,7 +217,7 @@ void main() {
       );
 
       test('SexualActivity resourceType is always "SexualActivity"', () {
-        const activity = SexualActivity(id: 'test', name: 'Test');
+        const activity = SexualActivity(name: 'Test');
 
         expect(activity.resourceType, equals('SexualActivity'));
       });
@@ -242,15 +238,18 @@ void main() {
           participant: Reference(reference: 'p1'),
           activityCounts: [
             ActivityCount(
-              activityReference: Reference(reference: 'activity1'),
+              categoryReference: Reference(reference: 'cat1'),
+              activityName: 'activity1',
               count: 1,
             ),
             ActivityCount(
-              activityReference: Reference(reference: 'activity2'),
+              categoryReference: Reference(reference: 'cat1'),
+              activityName: 'activity2',
               count: 2,
             ),
             ActivityCount(
-              activityReference: Reference(reference: 'activity3'),
+              categoryReference: Reference(reference: 'cat1'),
+              activityName: 'activity3',
               count: 3,
             ),
           ],

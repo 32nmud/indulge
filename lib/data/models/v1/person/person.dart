@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:indulge/data/models/versioned_model.dart';
 import '../name/name.dart';
 import '../reference/reference.dart';
 import 'package:uuid/uuid.dart';
@@ -7,7 +8,7 @@ part 'person.freezed.dart';
 part 'person.g.dart';
 
 @Freezed(toJson: true, fromJson: true)
-abstract class Person with _$Person {
+abstract class Person with _$Person implements VersionedModel {
   const Person._();
 
   const factory Person({
@@ -16,9 +17,25 @@ abstract class Person with _$Person {
     DateTime? lastUpdateDate,
     required Name name,
     Reference? location,
-    // HivStatus hivStatus,
     DateTime? birthday,
     @Default(false) bool isSelf,
+    // Body info
+    String? bodyType, // bear, twink, otter, butch, doll, etc
+    String? endowment,
+    String? cutStatus, // cut/uncut
+    String? breastSize,
+    String? assignedSexAtBirth, // AMAB/AFAB
+    String? height,
+    // Soft/personal info
+    String? gender,
+    String? hivStatus,
+    String? herpesStatus,
+    String? pronouns,
+    // Other
+    @Default([]) List<String> socialLinks, // links to socials/other contacts
+    String? notes, // free notes section
+    String? imageBytes, // contact image as base64-encoded byte string
+    @Default(1) int version,
   }) = _Person;
 
   // -----------------------------------------------------------------
@@ -41,6 +58,7 @@ abstract class Person with _$Person {
   // Fixed getters
   // -----------------------------------------------------------------
   @JsonKey(name: 'resourceType')
+  @override
   String get resourceType => "Person";
 
   @override

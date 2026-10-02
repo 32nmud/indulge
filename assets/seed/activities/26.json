@@ -1,9 +1,0 @@
-{
-  "id": "26",
-  "name": "Sensory Deprivation",
-  "displayCharacter": "🙈",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

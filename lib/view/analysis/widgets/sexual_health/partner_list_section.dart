@@ -9,6 +9,32 @@ class PartnerListSection extends StatelessWidget {
 
   const PartnerListSection({super.key, required this.data});
 
+  /// Counts the number of risky activity instances involving [partnerId]
+  /// across all events in the period.
+  int _riskyCountForPartner(String partnerId) {
+    int count = 0;
+    for (final event in data.eventsInPeriod) {
+      for (final activity in event.activities) {
+        final hasPartner = activity.participants.any(
+          (p) => p.participant.reference == partnerId,
+        );
+        if (!hasPartner) continue;
+        for (final participant in activity.participants) {
+          if (participant.participant.reference != partnerId) continue;
+          for (final ac in participant.activityCounts) {
+            final compositeKey =
+                '${ac.categoryReference.reference}:${ac.activityName}';
+            final act = data.sexualActivities[compositeKey];
+            if (act != null && (act.stiRisk || act.healthRisk)) {
+              count += ac.count;
+            }
+          }
+        }
+      }
+    }
+    return count;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Filter partners: exclude "me", include anonymous and known partners
@@ -38,10 +64,12 @@ class PartnerListSection extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Partners in Period',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Partners in Period',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -56,8 +84,10 @@ class PartnerListSection extends StatelessWidget {
                   ? 'Anonymous'
                   : (person?.name.nickname ?? person?.name.given ?? 'Unknown');
 
+              final riskyCount = _riskyCountForPartner(partnerId);
+
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   children: [
                     if (person != null)
@@ -81,18 +111,46 @@ class PartnerListSection extends StatelessWidget {
                       ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        displayName,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                '$eventCount event${eventCount == 1 ? '' : 's'}',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              if (riskyCount > 0) ...[
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  size: 11,
+                                  color: Colors.red.shade600,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '$riskyCount risky',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Colors.red.shade600,
+                                        fontSize: 11,
+                                      ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      '$eventCount event${eventCount == 1 ? '' : 's'}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.search, size: 18),
                       onPressed: () {

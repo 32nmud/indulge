@@ -1,9 +1,0 @@
-{
-  "id": "3c242e19-a6b5-4d6a-97bf-f13ae1627c8d",
-  "name": "Wearable",
-  "displayCharacter": "🥼",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

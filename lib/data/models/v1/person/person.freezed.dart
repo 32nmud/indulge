@@ -15,8 +15,16 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Person {
 
- String get id; DateTime get date; DateTime? get lastUpdateDate; Name get name; Reference? get location;// HivStatus hivStatus,
- DateTime? get birthday; bool get isSelf;
+ String get id; DateTime get date; DateTime? get lastUpdateDate; Name get name; Reference? get location; DateTime? get birthday; bool get isSelf;// Body info
+ String? get bodyType;// bear, twink, otter, butch, doll, etc
+ String? get endowment; String? get cutStatus;// cut/uncut
+ String? get breastSize; String? get assignedSexAtBirth;// AMAB/AFAB
+ String? get height;// Soft/personal info
+ String? get gender; String? get hivStatus; String? get herpesStatus; String? get pronouns;// Other
+ List<String> get socialLinks;// links to socials/other contacts
+ String? get notes;// free notes section
+ String? get imageBytes;// contact image as base64-encoded byte string
+ int get version;
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +37,16 @@ $PersonCopyWith<Person> get copyWith => _$PersonCopyWithImpl<Person>(this as Per
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.isSelf, isSelf) || other.isSelf == isSelf));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.isSelf, isSelf) || other.isSelf == isSelf)&&(identical(other.bodyType, bodyType) || other.bodyType == bodyType)&&(identical(other.endowment, endowment) || other.endowment == endowment)&&(identical(other.cutStatus, cutStatus) || other.cutStatus == cutStatus)&&(identical(other.breastSize, breastSize) || other.breastSize == breastSize)&&(identical(other.assignedSexAtBirth, assignedSexAtBirth) || other.assignedSexAtBirth == assignedSexAtBirth)&&(identical(other.height, height) || other.height == height)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.hivStatus, hivStatus) || other.hivStatus == hivStatus)&&(identical(other.herpesStatus, herpesStatus) || other.herpesStatus == herpesStatus)&&(identical(other.pronouns, pronouns) || other.pronouns == pronouns)&&const DeepCollectionEquality().equals(other.socialLinks, socialLinks)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.imageBytes, imageBytes) || other.imageBytes == imageBytes)&&(identical(other.version, version) || other.version == version));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,lastUpdateDate,name,location,birthday,isSelf);
+int get hashCode => Object.hashAll([runtimeType,id,date,lastUpdateDate,name,location,birthday,isSelf,bodyType,endowment,cutStatus,breastSize,assignedSexAtBirth,height,gender,hivStatus,herpesStatus,pronouns,const DeepCollectionEquality().hash(socialLinks),notes,imageBytes,version]);
 
 @override
 String toString() {
-  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday, isSelf: $isSelf)';
+  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday, isSelf: $isSelf, bodyType: $bodyType, endowment: $endowment, cutStatus: $cutStatus, breastSize: $breastSize, assignedSexAtBirth: $assignedSexAtBirth, height: $height, gender: $gender, hivStatus: $hivStatus, herpesStatus: $herpesStatus, pronouns: $pronouns, socialLinks: $socialLinks, notes: $notes, imageBytes: $imageBytes, version: $version)';
 }
 
 
@@ -49,7 +57,7 @@ abstract mixin class $PersonCopyWith<$Res>  {
   factory $PersonCopyWith(Person value, $Res Function(Person) _then) = _$PersonCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday, bool isSelf
+ String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday, bool isSelf, String? bodyType, String? endowment, String? cutStatus, String? breastSize, String? assignedSexAtBirth, String? height, String? gender, String? hivStatus, String? herpesStatus, String? pronouns, List<String> socialLinks, String? notes, String? imageBytes, int version
 });
 
 
@@ -66,7 +74,7 @@ class _$PersonCopyWithImpl<$Res>
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,Object? isSelf = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,Object? isSelf = null,Object? bodyType = freezed,Object? endowment = freezed,Object? cutStatus = freezed,Object? breastSize = freezed,Object? assignedSexAtBirth = freezed,Object? height = freezed,Object? gender = freezed,Object? hivStatus = freezed,Object? herpesStatus = freezed,Object? pronouns = freezed,Object? socialLinks = null,Object? notes = freezed,Object? imageBytes = freezed,Object? version = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -75,7 +83,21 @@ as DateTime?,name: null == name ? _self.name : name // ignore: cast_nullable_to_
 as Name,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as Reference?,birthday: freezed == birthday ? _self.birthday : birthday // ignore: cast_nullable_to_non_nullable
 as DateTime?,isSelf: null == isSelf ? _self.isSelf : isSelf // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,bodyType: freezed == bodyType ? _self.bodyType : bodyType // ignore: cast_nullable_to_non_nullable
+as String?,endowment: freezed == endowment ? _self.endowment : endowment // ignore: cast_nullable_to_non_nullable
+as String?,cutStatus: freezed == cutStatus ? _self.cutStatus : cutStatus // ignore: cast_nullable_to_non_nullable
+as String?,breastSize: freezed == breastSize ? _self.breastSize : breastSize // ignore: cast_nullable_to_non_nullable
+as String?,assignedSexAtBirth: freezed == assignedSexAtBirth ? _self.assignedSexAtBirth : assignedSexAtBirth // ignore: cast_nullable_to_non_nullable
+as String?,height: freezed == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
+as String?,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
+as String?,hivStatus: freezed == hivStatus ? _self.hivStatus : hivStatus // ignore: cast_nullable_to_non_nullable
+as String?,herpesStatus: freezed == herpesStatus ? _self.herpesStatus : herpesStatus // ignore: cast_nullable_to_non_nullable
+as String?,pronouns: freezed == pronouns ? _self.pronouns : pronouns // ignore: cast_nullable_to_non_nullable
+as String?,socialLinks: null == socialLinks ? _self.socialLinks : socialLinks // ignore: cast_nullable_to_non_nullable
+as List<String>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,imageBytes: freezed == imageBytes ? _self.imageBytes : imageBytes // ignore: cast_nullable_to_non_nullable
+as String?,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 /// Create a copy of Person
@@ -181,10 +203,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf,  String? bodyType,  String? endowment,  String? cutStatus,  String? breastSize,  String? assignedSexAtBirth,  String? height,  String? gender,  String? hivStatus,  String? herpesStatus,  String? pronouns,  List<String> socialLinks,  String? notes,  String? imageBytes,  int version)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Person() when $default != null:
-return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf);case _:
+return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf,_that.bodyType,_that.endowment,_that.cutStatus,_that.breastSize,_that.assignedSexAtBirth,_that.height,_that.gender,_that.hivStatus,_that.herpesStatus,_that.pronouns,_that.socialLinks,_that.notes,_that.imageBytes,_that.version);case _:
   return orElse();
 
 }
@@ -202,10 +224,10 @@ return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.locati
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf,  String? bodyType,  String? endowment,  String? cutStatus,  String? breastSize,  String? assignedSexAtBirth,  String? height,  String? gender,  String? hivStatus,  String? herpesStatus,  String? pronouns,  List<String> socialLinks,  String? notes,  String? imageBytes,  int version)  $default,) {final _that = this;
 switch (_that) {
 case _Person():
-return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf);case _:
+return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf,_that.bodyType,_that.endowment,_that.cutStatus,_that.breastSize,_that.assignedSexAtBirth,_that.height,_that.gender,_that.hivStatus,_that.herpesStatus,_that.pronouns,_that.socialLinks,_that.notes,_that.imageBytes,_that.version);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -222,10 +244,10 @@ return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.locati
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime date,  DateTime? lastUpdateDate,  Name name,  Reference? location,  DateTime? birthday,  bool isSelf,  String? bodyType,  String? endowment,  String? cutStatus,  String? breastSize,  String? assignedSexAtBirth,  String? height,  String? gender,  String? hivStatus,  String? herpesStatus,  String? pronouns,  List<String> socialLinks,  String? notes,  String? imageBytes,  int version)?  $default,) {final _that = this;
 switch (_that) {
 case _Person() when $default != null:
-return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf);case _:
+return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.location,_that.birthday,_that.isSelf,_that.bodyType,_that.endowment,_that.cutStatus,_that.breastSize,_that.assignedSexAtBirth,_that.height,_that.gender,_that.hivStatus,_that.herpesStatus,_that.pronouns,_that.socialLinks,_that.notes,_that.imageBytes,_that.version);case _:
   return null;
 
 }
@@ -237,7 +259,7 @@ return $default(_that.id,_that.date,_that.lastUpdateDate,_that.name,_that.locati
 @JsonSerializable()
 
 class _Person extends Person {
-  const _Person({this.id = "", required this.date, this.lastUpdateDate, required this.name, this.location, this.birthday, this.isSelf = false}): super._();
+  const _Person({this.id = "", required this.date, this.lastUpdateDate, required this.name, this.location, this.birthday, this.isSelf = false, this.bodyType, this.endowment, this.cutStatus, this.breastSize, this.assignedSexAtBirth, this.height, this.gender, this.hivStatus, this.herpesStatus, this.pronouns, final  List<String> socialLinks = const [], this.notes, this.imageBytes, this.version = 1}): _socialLinks = socialLinks,super._();
   factory _Person.fromJson(Map<String, dynamic> json) => _$PersonFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -245,9 +267,38 @@ class _Person extends Person {
 @override final  DateTime? lastUpdateDate;
 @override final  Name name;
 @override final  Reference? location;
-// HivStatus hivStatus,
 @override final  DateTime? birthday;
 @override@JsonKey() final  bool isSelf;
+// Body info
+@override final  String? bodyType;
+// bear, twink, otter, butch, doll, etc
+@override final  String? endowment;
+@override final  String? cutStatus;
+// cut/uncut
+@override final  String? breastSize;
+@override final  String? assignedSexAtBirth;
+// AMAB/AFAB
+@override final  String? height;
+// Soft/personal info
+@override final  String? gender;
+@override final  String? hivStatus;
+@override final  String? herpesStatus;
+@override final  String? pronouns;
+// Other
+ final  List<String> _socialLinks;
+// Other
+@override@JsonKey() List<String> get socialLinks {
+  if (_socialLinks is EqualUnmodifiableListView) return _socialLinks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_socialLinks);
+}
+
+// links to socials/other contacts
+@override final  String? notes;
+// free notes section
+@override final  String? imageBytes;
+// contact image as base64-encoded byte string
+@override@JsonKey() final  int version;
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
@@ -262,16 +313,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.isSelf, isSelf) || other.isSelf == isSelf));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Person&&(identical(other.id, id) || other.id == id)&&(identical(other.date, date) || other.date == date)&&(identical(other.lastUpdateDate, lastUpdateDate) || other.lastUpdateDate == lastUpdateDate)&&(identical(other.name, name) || other.name == name)&&(identical(other.location, location) || other.location == location)&&(identical(other.birthday, birthday) || other.birthday == birthday)&&(identical(other.isSelf, isSelf) || other.isSelf == isSelf)&&(identical(other.bodyType, bodyType) || other.bodyType == bodyType)&&(identical(other.endowment, endowment) || other.endowment == endowment)&&(identical(other.cutStatus, cutStatus) || other.cutStatus == cutStatus)&&(identical(other.breastSize, breastSize) || other.breastSize == breastSize)&&(identical(other.assignedSexAtBirth, assignedSexAtBirth) || other.assignedSexAtBirth == assignedSexAtBirth)&&(identical(other.height, height) || other.height == height)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.hivStatus, hivStatus) || other.hivStatus == hivStatus)&&(identical(other.herpesStatus, herpesStatus) || other.herpesStatus == herpesStatus)&&(identical(other.pronouns, pronouns) || other.pronouns == pronouns)&&const DeepCollectionEquality().equals(other._socialLinks, _socialLinks)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.imageBytes, imageBytes) || other.imageBytes == imageBytes)&&(identical(other.version, version) || other.version == version));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,date,lastUpdateDate,name,location,birthday,isSelf);
+int get hashCode => Object.hashAll([runtimeType,id,date,lastUpdateDate,name,location,birthday,isSelf,bodyType,endowment,cutStatus,breastSize,assignedSexAtBirth,height,gender,hivStatus,herpesStatus,pronouns,const DeepCollectionEquality().hash(_socialLinks),notes,imageBytes,version]);
 
 @override
 String toString() {
-  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday, isSelf: $isSelf)';
+  return 'Person(id: $id, date: $date, lastUpdateDate: $lastUpdateDate, name: $name, location: $location, birthday: $birthday, isSelf: $isSelf, bodyType: $bodyType, endowment: $endowment, cutStatus: $cutStatus, breastSize: $breastSize, assignedSexAtBirth: $assignedSexAtBirth, height: $height, gender: $gender, hivStatus: $hivStatus, herpesStatus: $herpesStatus, pronouns: $pronouns, socialLinks: $socialLinks, notes: $notes, imageBytes: $imageBytes, version: $version)';
 }
 
 
@@ -282,7 +333,7 @@ abstract mixin class _$PersonCopyWith<$Res> implements $PersonCopyWith<$Res> {
   factory _$PersonCopyWith(_Person value, $Res Function(_Person) _then) = __$PersonCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday, bool isSelf
+ String id, DateTime date, DateTime? lastUpdateDate, Name name, Reference? location, DateTime? birthday, bool isSelf, String? bodyType, String? endowment, String? cutStatus, String? breastSize, String? assignedSexAtBirth, String? height, String? gender, String? hivStatus, String? herpesStatus, String? pronouns, List<String> socialLinks, String? notes, String? imageBytes, int version
 });
 
 
@@ -299,7 +350,7 @@ class __$PersonCopyWithImpl<$Res>
 
 /// Create a copy of Person
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,Object? isSelf = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? date = null,Object? lastUpdateDate = freezed,Object? name = null,Object? location = freezed,Object? birthday = freezed,Object? isSelf = null,Object? bodyType = freezed,Object? endowment = freezed,Object? cutStatus = freezed,Object? breastSize = freezed,Object? assignedSexAtBirth = freezed,Object? height = freezed,Object? gender = freezed,Object? hivStatus = freezed,Object? herpesStatus = freezed,Object? pronouns = freezed,Object? socialLinks = null,Object? notes = freezed,Object? imageBytes = freezed,Object? version = null,}) {
   return _then(_Person(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -308,7 +359,21 @@ as DateTime?,name: null == name ? _self.name : name // ignore: cast_nullable_to_
 as Name,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as Reference?,birthday: freezed == birthday ? _self.birthday : birthday // ignore: cast_nullable_to_non_nullable
 as DateTime?,isSelf: null == isSelf ? _self.isSelf : isSelf // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,bodyType: freezed == bodyType ? _self.bodyType : bodyType // ignore: cast_nullable_to_non_nullable
+as String?,endowment: freezed == endowment ? _self.endowment : endowment // ignore: cast_nullable_to_non_nullable
+as String?,cutStatus: freezed == cutStatus ? _self.cutStatus : cutStatus // ignore: cast_nullable_to_non_nullable
+as String?,breastSize: freezed == breastSize ? _self.breastSize : breastSize // ignore: cast_nullable_to_non_nullable
+as String?,assignedSexAtBirth: freezed == assignedSexAtBirth ? _self.assignedSexAtBirth : assignedSexAtBirth // ignore: cast_nullable_to_non_nullable
+as String?,height: freezed == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
+as String?,gender: freezed == gender ? _self.gender : gender // ignore: cast_nullable_to_non_nullable
+as String?,hivStatus: freezed == hivStatus ? _self.hivStatus : hivStatus // ignore: cast_nullable_to_non_nullable
+as String?,herpesStatus: freezed == herpesStatus ? _self.herpesStatus : herpesStatus // ignore: cast_nullable_to_non_nullable
+as String?,pronouns: freezed == pronouns ? _self.pronouns : pronouns // ignore: cast_nullable_to_non_nullable
+as String?,socialLinks: null == socialLinks ? _self._socialLinks : socialLinks // ignore: cast_nullable_to_non_nullable
+as List<String>,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String?,imageBytes: freezed == imageBytes ? _self.imageBytes : imageBytes // ignore: cast_nullable_to_non_nullable
+as String?,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

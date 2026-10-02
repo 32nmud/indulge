@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../common/page_title.dart';
 import 'top_partners_section.dart';
-import 'property_partner_section.dart';
+import 'partner_activity_diversity_section.dart';
 import '../../models/partner_breakdown_data.dart';
 
 class PartnerBreakdownPage extends StatelessWidget {
@@ -20,7 +20,20 @@ class PartnerBreakdownPage extends StatelessWidget {
           subtitle: 'Top partners and diversity stats',
         ),
         TopPartnersSection(data: data),
-        PropertyPartnerSection(data: data),
+        PartnerActivityDiversitySection(
+          data: data,
+          showActionable: true,
+          title: 'Partner Diversity — Activities',
+          subtitle: 'Unique partners per activity — grouped by category',
+          icon: Icons.sports_martial_arts,
+        ),
+        PartnerActivityDiversitySection(
+          data: data,
+          showActionable: false,
+          title: 'Partner Diversity — Gear & Items',
+          subtitle: 'Unique partners per item — grouped by category',
+          icon: Icons.hardware,
+        ),
         const SizedBox(height: 16),
       ],
     );

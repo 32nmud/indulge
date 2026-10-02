@@ -1,9 +1,0 @@
-{
-  "id": "20",
-  "name": "Heat/Fire/Wax",
-  "displayCharacter": "❤️‍🔥",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

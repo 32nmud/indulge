@@ -1,19 +1,23 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:indulge/data/models/versioned_model.dart';
 import 'package:uuid/uuid.dart';
-import '../sexual_activity/sexual_activity.dart';
+import '../event_activity/event_activity.dart';
+import '../location/location.dart';
 
 part 'sexual_event.freezed.dart';
 part 'sexual_event.g.dart';
 
 @Freezed(toJson: true, fromJson: true)
-abstract class SexualEvent with _$SexualEvent {
+abstract class SexualEvent with _$SexualEvent implements VersionedModel {
   const SexualEvent._();
 
   const factory SexualEvent({
     @Default("") String id,
     required DateTime date,
     DateTime? lastModifiedDate,
-    required List<SexualActivity> activities,
+    required List<EventActivity> activities,
+    Location? location, // embedded Location resource (optional)
+    String? notes, // free-form text notes for the event
   }) = _SexualEvent;
 
   // -----------------------------------------------------------------
@@ -37,7 +41,11 @@ abstract class SexualEvent with _$SexualEvent {
   // Fixed getters
   // -----------------------------------------------------------------
   @JsonKey(name: 'resourceType')
+  @override
   String get resourceType => "SexualEvent";
+
+  @override
+  int get version => 1;
 
   @override
   String get id => (this as _SexualEvent).id == ""

@@ -57,6 +57,8 @@ void main() {
           dayOfWeekCountsByType: {},
           eventPartnerCounts: {},
           eventPropertyCounts: {},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {},
           thisYearStart: DateTime.now().subtract(const Duration(days: 365)),
         );
@@ -90,6 +92,8 @@ void main() {
           },
           eventPartnerCounts: {1},
           eventPropertyCounts: {1},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {1},
           thisYearStart: thisYearStart,
         );
@@ -126,6 +130,8 @@ void main() {
           },
           eventPartnerCounts: {1},
           eventPropertyCounts: {1},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {1},
           thisYearStart: thisYearStart,
         );
@@ -161,6 +167,8 @@ void main() {
           dayOfWeekCountsByType: {},
           eventPartnerCounts: {1, 2, 3},
           eventPropertyCounts: {1, 2, 3},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {1, 2, 3},
           thisYearStart: DateTime(2024, 1, 1),
         );
@@ -190,6 +198,8 @@ void main() {
           dayOfWeekCountsByType: {},
           eventPartnerCounts: {1},
           eventPropertyCounts: {2, 3},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {2, 3},
           thisYearStart: DateTime(2024, 1, 1),
         );
@@ -207,6 +217,8 @@ void main() {
           dayOfWeekCountsByType: {},
           eventPartnerCounts: {}, // Empty set
           eventPropertyCounts: {},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {},
           thisYearStart: DateTime.now(),
         );
@@ -225,6 +237,8 @@ void main() {
           dayOfWeekCountsByType: {},
           eventPartnerCounts: {},
           eventPropertyCounts: {},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {},
           thisYearStart: DateTime(2024, 1, 1),
         );
@@ -244,6 +258,8 @@ void main() {
           dayOfWeekCountsByType: {},
           eventPartnerCounts: {},
           eventPropertyCounts: {},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
           eventActivityCounts: {},
           thisYearStart: DateTime(2024, 1, 1),
         );
@@ -291,6 +307,8 @@ void main() {
             },
             eventPartnerCounts: {1},
             eventPropertyCounts: {1},
+          eventActionablePropertyCounts: {},
+          eventGearPropertyCounts: {},
             eventActivityCounts: {1},
             thisYearStart: thisYearStart,
           );

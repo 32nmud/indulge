@@ -68,8 +68,11 @@ class MockSexualEventRepository implements SexualEventRepository {
   }
 
   @override
-  Future<void> saveSexualActivity(SexualActivity activity) async {
-    final index = _activities.indexWhere((a) => a.id == activity.id);
+  Future<void> saveSexualActivity(
+    SexualActivity activity, {
+    required String categoryId,
+  }) async {
+    final index = _activities.indexWhere((a) => a.name == activity.name);
     if (index >= 0) {
       _activities[index] = activity;
     } else {
@@ -93,16 +96,27 @@ class MockSexualEventRepository implements SexualEventRepository {
   @override
   Future<void> deleteActivityCategory(String id) async {}
   @override
-  Future<void> deleteSexualActivity(String id) async {}
+  Future<void> deleteSexualActivity({
+    required String categoryId,
+    required String activityName,
+  }) async {}
   @override
   @override
   Future<int> getEventCountForActivityCategory(String id) async => 0;
   @override
   Future<int> getEventCountForSexualActivity(String id) async => 0;
   @override
+  Future<int> getEventCountForSpecificActivity({
+    required String categoryId,
+    required String activityName,
+  }) async => 0;
+  @override
   Future<bool> isActivityCategoryUsed(String id) async => false;
   @override
-  Future<bool> isSexualActivityUsed(String id) async => false;
+  Future<bool> isSexualActivityUsed({
+    required String categoryId,
+    required String activityName,
+  }) async => false;
   @override
   Future<List<Person>> getPersonsFromActivity(EventActivity activity) async =>
       [];
@@ -203,9 +217,7 @@ void main() {
         mockSexualRepo.addCategory(
           const SexualActivityCategory(id: 'cat1', name: 'Test Category'),
         );
-        mockSexualRepo.addActivity(
-          const SexualActivity(id: 'act1', name: 'Test Activity'),
-        );
+        mockSexualRepo.addActivity(const SexualActivity(name: 'Test Activity'));
         mockClinicalRepo.addEvent(
           ClinicalEvent(id: 'clinical1', date: DateTime.now(), tests: []),
         );

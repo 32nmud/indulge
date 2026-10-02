@@ -1,9 +1,0 @@
-{
-  "id": "37",
-  "name": "Drank alcohol",
-  "displayCharacter": "🍺",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": false
-}

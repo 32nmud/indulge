@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:indulge/data/models.dart';
-import 'package:indulge/view/common/person_avatar.dart';
+import 'package:indulge/view/common/sexual_event_editor/widgets/activity_card_header.dart';
+import 'package:indulge/view/common/sexual_event_editor/widgets/activity_card_participants_section.dart';
+import 'package:indulge/view/common/sexual_event_editor/widgets/activity_card_subcategory_tile.dart';
+import 'package:indulge/view/common/sexual_event_editor/widgets/activity_property_row.dart';
+import 'package:indulge/view/common/sexual_event_editor/widgets/role_picker_dialog.dart';
 
 /// A extracted widget for rendering a single activity card used by the
 /// Event editor. This mirrors the original `_buildActivityCard` logic but
@@ -17,20 +21,53 @@ class ActivityCard extends StatelessWidget {
   final List<Person> availablePersons;
   final Person? myself;
 
+  // Subcategory data (resolved by parent)
+  final List<SexualActivityCategory> subcategories;
+
   // UI state / actions
   final bool isExpanded;
   final VoidCallback onToggleExpanded;
   final VoidCallback onRemove;
   final VoidCallback onShowPersonPicker;
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId, {
+    String? categoryId,
+  })
+  onToggleSolo;
+
+  // Toggle participant activity with role selection
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId,
+    ActivityRole role, {
+    String? categoryId,
+  })
+  onToggleParticipantActivity;
 
   // Property/participant interactions
-  final void Function(int activityIndex, String activityId)
-  toggleMyselfForProperty;
-  final void Function(int activityIndex, String activityId, String personId)
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId, {
+    String? categoryId,
+  })
   toggleParticipantForProperty;
-  final void Function(int activityIndex, String activityId, String personId)
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId, {
+    String? categoryId,
+  })
   incrementPropertyCount;
-  final void Function(int activityIndex, String activityId, String personId)
+  final void Function(
+    int activityIndex,
+    String activityName,
+    String personId, {
+    String? categoryId,
+  })
   decrementPropertyCount;
   // Callback to request removal of a participant (activityIndex + participantIndex)
   final void Function(int activityIndex, int participantIndex)
@@ -44,16 +81,28 @@ class ActivityCard extends StatelessWidget {
     required this.availableActivities,
     required this.availablePersons,
     required this.myself,
+    required this.subcategories,
     required this.isExpanded,
     required this.onToggleExpanded,
     required this.onRemove,
     required this.onShowPersonPicker,
-    required this.toggleMyselfForProperty,
+    required this.onToggleSolo,
     required this.toggleParticipantForProperty,
     required this.incrementPropertyCount,
     required this.decrementPropertyCount,
+    required this.onToggleParticipantActivity,
     required this.onRemoveParticipant,
   });
+
+  /// Check if the current user has any solo activities in this category
+  bool get _userHasSoloActivity {
+    if (myself == null) return false;
+    final myParticipant = activity.participants.firstWhere(
+      (p) => p.participant.reference == myself!.id,
+      orElse: () => const ActivityParticipant(),
+    );
+    return myParticipant.activityCounts.any((ac) => ac.solo);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,18 +111,14 @@ class ActivityCard extends StatelessWidget {
     final emoji = activityCategory?.displayCharacter ?? '❔';
     final name = activityCategory?.name ?? 'Unknown';
 
-    // Get available properties for this activity type and sort alphabetically
+    // Activities are directly embedded in the category as List<SexualActivity>.
+    // When subcategories exist the flat list is intentionally left empty — each
+    // subcategory renders its own ExpansionTile instead.
     final availableSexualActivities = <SexualActivity>[];
-    if (activityCategory != null) {
-      for (var activityRef in activityCategory.activities) {
-        final sexualActivity = availableActivities[activityRef.reference];
-        if (sexualActivity != null) {
-          availableSexualActivities.add(sexualActivity);
-        }
-      }
-      // Sort alphabetically by name
+    if (subcategories.isEmpty && activityCategory != null) {
+      availableSexualActivities.addAll(activityCategory.activities);
       availableSexualActivities.sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        (a, b) => a.sortOrder.compareTo(b.sortOrder),
       );
     }
 
@@ -84,53 +129,13 @@ class ActivityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Activity header (always visible, tappable)
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onToggleExpanded,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Text(emoji, style: const TextStyle(fontSize: 40)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (activityCategory?.requiresPartner == true)
-                            const Text(
-                              'Requires partner',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      isExpanded ? Icons.expand_less : Icons.expand_more,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: onRemove,
-                      tooltip: 'Remove activity',
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          ActivityCardHeader(
+            activityCategory: activityCategory,
+            emoji: emoji,
+            name: name,
+            isExpanded: isExpanded,
+            onToggleExpanded: onToggleExpanded,
+            onRemove: onRemove,
           ),
           // Collapsible content
           if (isExpanded) ...[
@@ -141,61 +146,17 @@ class ActivityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Participants section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Participants',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: onShowPersonPicker,
-                        icon: const Icon(Icons.person_add, size: 18),
-                        label: const Text('Add'),
-                      ),
-                    ],
+                  ActivityCardParticipantsSection(
+                    participants: activity.participants,
+                    availablePersons: availablePersons,
+                    myself: myself,
+                    userHasSoloActivity: _userHasSoloActivity,
+                    requiresPartner: activityCategory?.requiresPartner ?? false,
+                    onShowPersonPicker: onShowPersonPicker,
+                    onRemoveParticipant: (participantIndex) =>
+                        onRemoveParticipant(activityIndex, participantIndex),
                   ),
-                  const SizedBox(height: 8),
-                  if (activity.participants.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              activityCategory?.requiresPartner == true
-                                  ? 'Add at least one partner to continue'
-                                  : 'Add other participants, or toggle properties below to track your own participation',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    _buildParticipantSection(context),
-                  // Properties section (show even with no participants for solo-capable activities)
+                  // Activities section — flat list when no subcategories exist
                   if (availableSexualActivities.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     const Text(
@@ -207,8 +168,40 @@ class ActivityCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     ...availableSexualActivities.map((sexualActivity) {
-                      return _buildPropertyRow(context, sexualActivity);
+                      return ActivityPropertyRow(
+                        sexualActivity: sexualActivity,
+                        activity: activity,
+                        availableActivityCategories:
+                            availableActivityCategories,
+                        availablePersons: availablePersons,
+                        myself: myself,
+                        categoryId: null,
+                        onShowRolePicker: _handleShowRolePicker,
+                        onToggleProperty: _handleToggleProperty,
+                        onIncrementCount: _handleIncrementCount,
+                        onDecrementCount: _handleDecrementCount,
+                        onToggleSolo: _handleToggleSolo,
+                      );
                     }),
+                  ],
+                  // Activities section — one ExpansionTile per subcategory
+                  if (subcategories.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    ...subcategories.map(
+                      (sub) => ActivityCardSubcategoryTile(
+                        subcategory: sub,
+                        activity: activity,
+                        availableActivityCategories:
+                            availableActivityCategories,
+                        availablePersons: availablePersons,
+                        myself: myself,
+                        onShowRolePicker: _handleShowRolePicker,
+                        onToggleProperty: _handleToggleProperty,
+                        onIncrementCount: _handleIncrementCount,
+                        onDecrementCount: _handleDecrementCount,
+                        onToggleSolo: _handleToggleSolo,
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -219,318 +212,71 @@ class ActivityCard extends StatelessWidget {
     );
   }
 
-  Widget _buildParticipantSection(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: activity.participants.asMap().entries.map((entry) {
-        final participantIndex = entry.key;
-        final participant = entry.value;
-        final person = availablePersons.firstWhere(
-          (p) => p.id == participant.participant.reference,
-          orElse: () => Person(
-            date: DateTime.now(),
-            name: const Name(given: 'Unknown'),
-          ),
-        );
-        final personName =
-            person.name.nickname ?? person.name.given ?? 'Unknown';
-        final isSelf = myself != null && person.id == myself!.id;
+  // Handlers that adapt callbacks to include activityIndex
 
-        return Chip(
-          avatar: Icon(
-            isSelf ? Icons.account_circle : Icons.person,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          label: Text(
-            personName,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          onDeleted: () => onRemoveParticipant(activityIndex, participantIndex),
-          deleteIcon: const Icon(Icons.close, size: 18),
-        );
-      }).toList(),
+  Future<void> _handleShowRolePicker(
+    BuildContext context,
+    String activityName,
+    String personId,
+    ActivityRole currentRole, {
+    String? categoryId,
+  }) async {
+    final role = await showRolePickerDialog(context, currentRole);
+    if (role != null) {
+      onToggleParticipantActivity(
+        activityIndex,
+        activityName,
+        personId,
+        role,
+        categoryId: categoryId,
+      );
+    }
+  }
+
+  void _handleToggleProperty(
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
+    toggleParticipantForProperty(
+      activityIndex,
+      activityName,
+      personId,
+      categoryId: categoryId,
     );
   }
 
-  Widget _buildPropertyRow(
-    BuildContext context,
-    SexualActivity sexualActivity,
-  ) {
-    final activityCategory =
-        availableActivityCategories[activity.category.reference];
-
-    // Use the current working activity state (not from provider)
-    final currentActivity = activity;
-
-    // Check if "Me" has this property
-    final meParticipant = currentActivity.participants.firstWhere(
-      (p) => myself != null && p.participant.reference == myself!.id,
-      orElse: () => ActivityParticipant(
-        participant: Reference(reference: '', resourceType: 'Person'),
-        activityCounts: [],
-      ),
+  void _handleIncrementCount(
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
+    incrementPropertyCount(
+      activityIndex,
+      activityName,
+      personId,
+      categoryId: categoryId,
     );
-    final meActivityCount = meParticipant.activityCounts.firstWhere(
-      (ac) => ac.activityReference.reference == sexualActivity.id,
-      orElse: () => ActivityCount(
-        activityReference: Reference(
-          reference: '',
-          resourceType: 'SexualActivity',
-        ),
-        count: 0,
-      ),
+  }
+
+  void _handleDecrementCount(
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
+    decrementPropertyCount(
+      activityIndex,
+      activityName,
+      personId,
+      categoryId: categoryId,
     );
-    final meHasProperty = meActivityCount.count > 0;
+  }
 
-    // Determine if "Me" checkbox should be shown (hide if property or category requires partner)
-    final activityRequiresPartner = activityCategory?.requiresPartner ?? false;
-    final propertyRequiresPartner = sexualActivity.requiresPartner;
-    final showMeOption = !activityRequiresPartner && !propertyRequiresPartner;
-
-    // Get non-self participants who have this property
-    final participantsWithProperty = <String>[];
-    for (var participant in currentActivity.participants) {
-      if (myself != null && participant.participant.reference == myself!.id) {
-        continue; // Skip "Me"
-      }
-      final activityCount = participant.activityCounts.firstWhere(
-        (ac) => ac.activityReference.reference == sexualActivity.id,
-        orElse: () => ActivityCount(
-          activityReference: Reference(
-            reference: '',
-            resourceType: 'SexualActivity',
-          ),
-          count: 0,
-        ),
-      );
-      if (activityCount.count > 0) {
-        participantsWithProperty.add(participant.participant.reference);
-      }
-    }
-
-    // Check if this activity has any participants with this property marked
-    final hasParticipantsWithProperty =
-        participantsWithProperty.isNotEmpty || meHasProperty;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: hasParticipantsWithProperty
-          ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
-          : Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  sexualActivity.displayCharacter,
-                  style: const TextStyle(fontSize: 24),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    sexualActivity.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (sexualActivity.stiRisk)
-                  Tooltip(
-                    message: 'STI Risk',
-                    child: Icon(
-                      Icons.warning_amber_rounded,
-                      size: 20,
-                      color: Colors.purple.shade700,
-                    ),
-                  )
-                else if (sexualActivity.healthRisk)
-                  Tooltip(
-                    message: 'Health Risk',
-                    child: Icon(
-                      Icons.warning_amber_rounded,
-                      size: 20,
-                      color: Colors.orange.shade700,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                // "Me" checkbox (only show if property doesn't require partner)
-                if (myself != null && showMeOption)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        PersonAvatar(
-                          person: myself!,
-                          radius: 20,
-                          showName: true,
-                          isSelected: meHasProperty,
-                          count: meActivityCount.count > 0
-                              ? meActivityCount.count
-                              : null,
-                          onTap: () {
-                            toggleMyselfForProperty(
-                              activityIndex,
-                              sexualActivity.id,
-                            );
-                          },
-                        ),
-                        if (meHasProperty) ...[
-                          const SizedBox(width: 4),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle_outline,
-                                  size: 20,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => incrementPropertyCount(
-                                  activityIndex,
-                                  sexualActivity.id,
-                                  myself!.id,
-                                ),
-                                tooltip: 'Increase count',
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  size: 20,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => decrementPropertyCount(
-                                  activityIndex,
-                                  sexualActivity.id,
-                                  myself!.id,
-                                ),
-                                tooltip: 'Decrease count',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                // Other participants (iterate only participants added to this activity)
-                ...currentActivity.participants
-                    .where((p) {
-                      // Filter out "Me" (already handled above)
-                      return myself == null ||
-                          p.participant.reference != myself!.id;
-                    })
-                    .map((participant) {
-                      final personId = participant.participant.reference;
-                      // Find person details from available persons
-                      final person = availablePersons.firstWhere(
-                        (p) => p.id == personId,
-                        orElse: () => Person(
-                          id: personId,
-                          date: DateTime.now(),
-                          name: const Name(given: 'Unknown'),
-                        ),
-                      );
-
-                      final activityCount = participant.activityCounts
-                          .firstWhere(
-                            (ac) =>
-                                ac.activityReference.reference ==
-                                sexualActivity.id,
-                            orElse: () => ActivityCount(
-                              activityReference: Reference(
-                                reference: '',
-                                resourceType: 'SexualActivity',
-                              ),
-                              count: 0,
-                            ),
-                          );
-
-                      final isSelected = activityCount.count > 0;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PersonAvatar(
-                              person: person,
-                              radius: 20,
-                              showName: true,
-                              isSelected: isSelected,
-                              count: activityCount.count > 0
-                                  ? activityCount.count
-                                  : null,
-                              onTap: () {
-                                toggleParticipantForProperty(
-                                  activityIndex,
-                                  sexualActivity.id,
-                                  personId,
-                                );
-                              },
-                            ),
-                            if (isSelected) ...[
-                              const SizedBox(width: 4),
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.add_circle_outline,
-                                      size: 20,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () => incrementPropertyCount(
-                                      activityIndex,
-                                      sexualActivity.id,
-                                      personId,
-                                    ),
-                                    tooltip: 'Increase count',
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.remove_circle_outline,
-                                      size: 20,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () => decrementPropertyCount(
-                                      activityIndex,
-                                      sexualActivity.id,
-                                      personId,
-                                    ),
-                                    tooltip: 'Decrease count',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
-                    })
-                    .toList(),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+  void _handleToggleSolo(
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
+    onToggleSolo(activityIndex, activityName, personId, categoryId: categoryId);
   }
 }

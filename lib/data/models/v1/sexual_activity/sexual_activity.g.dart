@@ -8,22 +8,27 @@ part of 'sexual_activity.dart';
 
 _SexualActivity _$SexualActivityFromJson(Map<String, dynamic> json) =>
     _SexualActivity(
-      type: json['type'] == null
-          ? const Reference()
-          : Reference.fromJson(json['type'] as Map<String, dynamic>),
-      participants:
-          (json['participants'] as List<dynamic>?)
-              ?.map(
-                (e) => SexualActivityParticipant.fromJson(
-                  e as Map<String, dynamic>,
-                ),
-              )
-              .toList() ??
-          const [],
+      name: json['name'] as String? ?? "unknown",
+      displayCharacter: json['displayCharacter'] as String? ?? "❔",
+      canHaveMultipleParticipants:
+          json['canHaveMultipleParticipants'] as bool? ?? true,
+      stiRisk: json['stiRisk'] as bool? ?? false,
+      healthRisk: json['healthRisk'] as bool? ?? false,
+      requiresPartner: json['requiresPartner'] as bool? ?? false,
+      isActionable: json['isActionable'] as bool? ?? true,
+      hasRoles: json['hasRoles'] as bool? ?? true,
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$SexualActivityToJson(_SexualActivity instance) =>
     <String, dynamic>{
-      'type': instance.type,
-      'participants': instance.participants,
+      'name': instance.name,
+      'displayCharacter': instance.displayCharacter,
+      'canHaveMultipleParticipants': instance.canHaveMultipleParticipants,
+      'stiRisk': instance.stiRisk,
+      'healthRisk': instance.healthRisk,
+      'requiresPartner': instance.requiresPartner,
+      'isActionable': instance.isActionable,
+      'hasRoles': instance.hasRoles,
+      'sortOrder': instance.sortOrder,
     };

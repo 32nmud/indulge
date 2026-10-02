@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:indulge/data/models.dart';
+
 import '../../services/database_connection_service.dart';
 import 'package:logging/logging.dart';
 
@@ -162,15 +163,13 @@ class SexualEventRepository {
   }
 
   Future<List<SexualActivityCategory>> getAllSexualActivityCategories() async {
-    final rows = await _db.query('sexual_activity_type');
+    final rows = await _db.query('sexual_activities');
 
     final List<SexualActivityCategory> categories = [];
     for (final row in rows) {
-      categories.add(
-        SexualActivityCategory.fromJson(
-          jsonDecode(row['json'] as String) as Map<String, dynamic>,
-        ),
-      );
+      final jsonStr = row['json'] as String;
+      final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+      categories.add(SexualActivityCategory.fromJson(json));
     }
 
     // Sort alphabetically by name
@@ -181,15 +180,13 @@ class SexualEventRepository {
   }
 
   Future<List<SexualActivity>> getAllSexualActivities() async {
-    final rows = await _db.query('sexual_activity_type_property');
-
+    // Activities are now embedded in categories - extract from categories
+    final categories = await getAllSexualActivityCategories();
     final List<SexualActivity> activities = [];
-    for (final row in rows) {
-      activities.add(
-        SexualActivity.fromJson(
-          jsonDecode(row['json'] as String) as Map<String, dynamic>,
-        ),
-      );
+    for (final category in categories) {
+      for (final activity in category.activities) {
+        activities.add(activity);
+      }
     }
 
     // Sort alphabetically by name
@@ -209,7 +206,7 @@ class SexualEventRepository {
 
     final placeholders = List.filled(ids.length, '?').join(',');
     final rows = await _db.query(
-      'sexual_activity_type',
+      'sexual_activities',
       where: 'id IN ($placeholders)',
       whereArgs: ids,
     );
@@ -263,18 +260,21 @@ class SexualEventRepository {
 
     final List<SexualActivity> activities = [];
     for (var activityCount in participant.activityCounts) {
-      final rows = await _db.query(
-        'sexual_activity_type_property',
-        where: 'id = ?',
-        whereArgs: [activityCount.activityReference.reference],
-      );
+      // Look up activity by category + name instead of by ID
+      final categoryRef = activityCount.categoryReference.reference;
+      final activityName = activityCount.activityName;
+      if (categoryRef.isEmpty || activityName.isEmpty) continue;
 
-      for (final row in rows) {
-        activities.add(
-          SexualActivity.fromJson(
-            jsonDecode(row['json'] as String) as Map<String, dynamic>,
-          ),
-        );
+      final categories = await getAllSexualActivityCategories();
+      for (final category in categories) {
+        if (category.id != categoryRef) continue;
+        for (final activity in category.activities) {
+          if (activity.name == activityName) {
+            activities.add(activity);
+            break;
+          }
+        }
+        break;
       }
     }
 
@@ -482,7 +482,7 @@ class SexualEventRepository {
   ) async {
     _logger.info('Saving activity category: ${activityCategory.id}');
 
-    await _db.insert('sexual_activity_type', {
+    await _db.insert('sexual_activities', {
       'id': activityCategory.id,
       'last_modified': DateTime.now().toIso8601String(),
       'json': jsonEncode(
@@ -536,7 +536,7 @@ class SexualEventRepository {
     }
 
     // Then delete the activity category
-    await _db.delete('sexual_activity_type', where: 'id = ?', whereArgs: [id]);
+    await _db.delete('sexual_activities', where: 'id = ?', whereArgs: [id]);
   }
 
   /// Checks if an activity category is used in any events
@@ -560,23 +560,36 @@ class SexualEventRepository {
     return false;
   }
 
-  /// Saves a sexual activity to the database
-  Future<void> saveSexualActivity(SexualActivity activity) async {
-    _logger.info('Saving sexual activity: ${activity.id}');
+  /// Saves a sexual activity to the database.
+  /// Activities are identified by name + categoryId and are embedded in the
+  /// category JSON blob. Find the containing category by matching activity name,
+  /// update the entry, then re-save the category.
+  Future<void> saveSexualActivity(
+    SexualActivity activity, {
+    required String categoryId,
+  }) async {
+    _logger.info('Saving sexual activity: ${activity.name} in $categoryId');
 
-    await _db.insert(
-      'sexual_activity_type_property',
-      {
-        'id': activity.id,
-        'last_modified': DateTime.now().toIso8601String(),
-        'json': jsonEncode(
-          ModelVersionMigration.addVersion(
-            activity.toJson(),
-            ModelVersionMigration.currentVersion,
-          ),
-        ),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
+    final categories = await getAllSexualActivityCategories();
+    for (final category in categories) {
+      if (category.id != categoryId) continue;
+      final activityIndex = category.activities.indexWhere(
+        (a) => a.name == activity.name,
+      );
+      if (activityIndex >= 0) {
+        final updatedActivities = List<SexualActivity>.from(
+          category.activities,
+        );
+        updatedActivities[activityIndex] = activity;
+        await saveActivityCategory(
+          category.copyWith(activities: updatedActivities),
+        );
+        return;
+      }
+    }
+
+    throw Exception(
+      'Activity "${activity.name}" not found in category $categoryId.',
     );
   }
 
@@ -593,7 +606,39 @@ class SexualEventRepository {
       for (final activity in event.activities) {
         for (final participant in activity.participants) {
           if (participant.activityCounts.any(
-            (ac) => ac.activityReference.reference == id,
+            (ac) => ac.categoryReference.reference == id,
+          )) {
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (found) count++;
+    }
+    return count;
+  }
+
+  /// Returns the number of events that contain a specific activity identified
+  /// by both [categoryId] and [activityName].
+  Future<int> getEventCountForSpecificActivity({
+    required String categoryId,
+    required String activityName,
+  }) async {
+    final rows = await _db.query('sexual_event');
+    int count = 0;
+    for (final row in rows) {
+      final event = SexualEvent.fromJson(
+        jsonDecode(row['json'] as String) as Map<String, dynamic>,
+      );
+
+      bool found = false;
+      for (final activity in event.activities) {
+        for (final participant in activity.participants) {
+          if (participant.activityCounts.any(
+            (ac) =>
+                ac.categoryReference.reference == categoryId &&
+                ac.activityName == activityName,
           )) {
             found = true;
             break;
@@ -607,27 +652,31 @@ class SexualEventRepository {
   }
 
   /// Deletes a sexual activity and removes it from all activity categories
-  Future<void> deleteSexualActivity(String id) async {
-    _logger.info('Deleting sexual activity: $id');
+  /// Uses categoryId and activityName to identify the activity
+  Future<void> deleteSexualActivity({
+    required String categoryId,
+    required String activityName,
+  }) async {
+    _logger.info(
+      'Deleting sexual activity: $activityName in category $categoryId',
+    );
 
-    // First, remove this activity from all activity categories
-    final activityCategoryRows = await _db.query('sexual_activity_type');
+    // First, remove this activity from the activity category
+    final categories = await getAllSexualActivityCategories();
 
-    for (final row in activityCategoryRows) {
-      final activityCategory = SexualActivityCategory.fromJson(
-        jsonDecode(row['json'] as String) as Map<String, dynamic>,
+    for (final category in categories) {
+      if (category.id != categoryId) continue;
+      final activityIndex = category.activities.indexWhere(
+        (a) => a.name == activityName,
       );
-
-      final updatedActivities = activityCategory.activities
-          .where((ref) => ref.reference != id)
-          .toList();
-
-      // Only save if activities were removed
-      if (updatedActivities.length != activityCategory.activities.length) {
-        final updatedCategory = activityCategory.copyWith(
+      if (activityIndex >= 0) {
+        final updatedActivities = List<SexualActivity>.from(category.activities)
+          ..removeAt(activityIndex);
+        final updatedCategory = category.copyWith(
           activities: updatedActivities,
         );
         await saveActivityCategory(updatedCategory);
+        break;
       }
     }
 
@@ -646,9 +695,16 @@ class SexualEventRepository {
         final updatedParticipants = <ActivityParticipant>[];
 
         for (final participant in activity.participants) {
-          // Remove the activity reference from this participant
+          // Remove only the specific activity from this participant.
+          // Both the category AND the name must match to identify the exact
+          // activity — using || would incorrectly remove all activities that
+          // share either the category or the name.
           final updatedActivityCounts = participant.activityCounts
-              .where((ac) => ac.activityReference.reference != id)
+              .where(
+                (ac) =>
+                    !(ac.activityName == activityName &&
+                        ac.categoryReference.reference == categoryId),
+              )
               .toList();
 
           // Check if activities were removed
@@ -663,44 +719,47 @@ class SexualEventRepository {
           }
         }
 
-        updatedActivities.add(
-          activity.copyWith(participants: updatedParticipants),
+        // Drop the entire EventActivity (category row) if every participant
+        // has no activity counts left after the removal.
+        final allEmpty = updatedParticipants.every(
+          (p) => p.activityCounts.isEmpty,
         );
+        if (!allEmpty) {
+          updatedActivities.add(
+            activity.copyWith(participants: updatedParticipants),
+          );
+        }
+        // If allEmpty, the category row is silently dropped (eventModified is
+        // already true because at least one activityCount was removed above).
       }
 
-      // Save the event if it was modified
       if (eventModified) {
-        final updatedEvent = event.copyWith(
-          activities: updatedActivities,
-          lastModifiedDate: DateTime.now(),
-        );
+        final updatedEvent = event.copyWith(activities: updatedActivities);
         await save(updatedEvent);
       }
     }
-
-    // Finally, delete the activity
-    await _db.delete(
-      'sexual_activity_type_property',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
   }
 
-  /// Checks if a sexual activity is used in any activity categories
-  Future<bool> isSexualActivityUsed(String activityId) async {
-    _logger.info('Checking if sexual activity is used: $activityId');
+  /// Checks if a specific activity (by name + categoryId) exists in any
+  /// activity category.
+  Future<bool> isSexualActivityUsed({
+    required String categoryId,
+    required String activityName,
+  }) async {
+    _logger.info('Checking if activity "$activityName" exists in $categoryId');
 
-    final rows = await _db.query('sexual_activity_type');
+    final rows = await _db.query(
+      'sexual_activities',
+      where: 'id = ?',
+      whereArgs: [categoryId],
+    );
 
     for (final row in rows) {
-      final activityCategory = SexualActivityCategory.fromJson(
+      final category = SexualActivityCategory.fromJson(
         jsonDecode(row['json'] as String) as Map<String, dynamic>,
       );
-
-      for (final activity in activityCategory.activities) {
-        if (activity.reference == activityId) {
-          return true;
-        }
+      if (category.activities.any((a) => a.name == activityName)) {
+        return true;
       }
     }
 

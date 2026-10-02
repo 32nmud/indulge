@@ -1,9 +1,0 @@
-{
-  "id": "17",
-  "name": "Feet",
-  "displayCharacter": "👣",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": true
-}

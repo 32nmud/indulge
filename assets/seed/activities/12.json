@@ -1,9 +1,0 @@
-{
-  "id": "12",
-  "name": "Consensual non consent",
-  "displayCharacter": "🤝",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": true
-}

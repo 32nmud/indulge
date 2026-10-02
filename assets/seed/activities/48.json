@@ -1,9 +1,0 @@
-{
-  "id": "48",
-  "name": "Received head",
-  "displayCharacter": "🧒",
-  "canHaveMultipleParticipants": true,
-  "stiRisk": false,
-  "healthRisk": false,
-  "requiresPartner": true
-}

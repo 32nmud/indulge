@@ -7,6 +7,7 @@ import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/view/settings/activity_type_list_page.dart';
 import 'package:indulge/services/preferences_service.dart';
 import 'package:indulge/view/security/pin_setup_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:indulge/data/repositories/sexual_event_repository.dart';
 import 'package:indulge/data/repositories/clinical_event_repository.dart';
@@ -97,6 +98,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: 'Version',
                   subtitle: 'Beta 0.3.0',
                   onTap: null,
+                ),
+                _buildListTile(
+                  context,
+                  icon: Icons.coffee,
+                  title: 'Buy Me a Coffee',
+                  subtitle: 'Support the development of Indulge',
+                  onTap: () => _showKoFiDialog(context),
                 ),
               ],
             ),
@@ -298,6 +306,43 @@ class _SettingsPageState extends State<SettingsPage> {
       subtitle: Text(subtitle),
       trailing: onTap != null ? const Icon(Icons.chevron_right) : null,
       onTap: onTap,
+    );
+  }
+
+  Future<void> _showKoFiDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.coffee, color: Colors.brown),
+            SizedBox(width: 8),
+            Text('Buy Me a Coffee'),
+          ],
+        ),
+        content: const Text(
+          'Thank you for considering buying me a coffee! The work I do is '
+          'free to use but does incur hosting and platform costs, so any '
+          'donations are greatly appreciated!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Maybe Later'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.open_in_new, size: 16),
+            label: const Text('Open Ko-Fi'),
+            onPressed: () async {
+              final uri = Uri.parse('https://ko-fi.com/tondaly');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            },
+          ),
+        ],
+      ),
     );
   }
 

@@ -3,6 +3,9 @@ import 'analysis_event_type.dart';
 import 'co_occurance_pair.dart';
 
 class ActivityBreakdownData {
+  /// Full map of all categories from the store (including subcategories).
+  /// Used by widgets that need to show the nested category hierarchy.
+  final Map<String, SexualActivityCategory> allCategoriesMap;
   final int totalActivities;
   final Map<String, int> activityCounts;
   final Map<String, int> activityCountsThisYear;
@@ -26,6 +29,8 @@ class ActivityBreakdownData {
   final double averagePartnersPerEvent;
   final double averageActivitiesPerEvent;
   final double averageSexualActivitiesPerEvent;
+  final double averageActionableActivitiesPerEvent;
+  final double averageGearPerEvent;
   final Map<int, double> averageEventsPerDayOfWeek;
   final List<CoOccurrencePair> topActivityPairs;
   final List<CoOccurrencePair> topCategoryPairs;
@@ -39,7 +44,18 @@ class ActivityBreakdownData {
   final DateTime? endDate;
   final List<SexualEvent> events;
 
+  // Role breakdown data
+  // compositeKey -> role -> count (what partner did to user)
+  final Map<String, Map<ActivityRole, int>> partnerRoleActivityCounts;
+  // compositeKey -> role -> count (what user did per activity, inverse of partner role)
+  final Map<String, Map<ActivityRole, int>> userRoleActivityCounts;
+  // personId -> role -> count (what each partner did to user)
+  final Map<String, Map<ActivityRole, int>> partnerRoleCounts;
+  // role -> count (what user did to partner, inverse of partner role)
+  final Map<ActivityRole, int> userRoleCounts;
+
   const ActivityBreakdownData({
+    required this.allCategoriesMap,
     required this.totalActivities,
     required this.activityCounts,
     required this.activityCountsThisYear,
@@ -63,6 +79,8 @@ class ActivityBreakdownData {
     required this.averagePartnersPerEvent,
     required this.averageActivitiesPerEvent,
     required this.averageSexualActivitiesPerEvent,
+    required this.averageActionableActivitiesPerEvent,
+    required this.averageGearPerEvent,
     required this.averageEventsPerDayOfWeek,
     required this.topActivityPairs,
     required this.topCategoryPairs,
@@ -75,10 +93,16 @@ class ActivityBreakdownData {
     this.startDate,
     this.endDate,
     required this.events,
+    // Role breakdown data
+    required this.partnerRoleActivityCounts,
+    required this.userRoleActivityCounts,
+    required this.partnerRoleCounts,
+    required this.userRoleCounts,
   });
 
   factory ActivityBreakdownData.empty() {
     return const ActivityBreakdownData(
+      allCategoriesMap: {},
       totalActivities: 0,
       activityCounts: {},
       activityCountsThisYear: {},
@@ -102,6 +126,8 @@ class ActivityBreakdownData {
       averagePartnersPerEvent: 0.0,
       averageActivitiesPerEvent: 0.0,
       averageSexualActivitiesPerEvent: 0.0,
+      averageActionableActivitiesPerEvent: 0.0,
+      averageGearPerEvent: 0.0,
       averageEventsPerDayOfWeek: {},
       topActivityPairs: [],
       topCategoryPairs: [],
@@ -112,6 +138,10 @@ class ActivityBreakdownData {
       personMap: {},
       eventsThisYear: 0,
       events: [],
+      partnerRoleActivityCounts: {},
+      userRoleActivityCounts: {},
+      partnerRoleCounts: {},
+      userRoleCounts: {},
     );
   }
 }

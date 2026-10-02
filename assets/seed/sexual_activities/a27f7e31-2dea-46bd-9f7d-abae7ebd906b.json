@@ -1,0 +1,23 @@
+{
+  "id": "a27f7e31-2dea-46bd-9f7d-abae7ebd906b",
+  "name": "Oral",
+  "displayCharacter": "👄",
+  "activities": [
+    {
+      "name": "Head",
+      "displayCharacter": "😛",
+      "requiresPartner": true
+    },
+    {
+      "name": "Swallowed",
+      "displayCharacter": "💧",
+      "requiresPartner": true,
+      "stiRisk": true
+    },
+    {
+      "name": "Rimmed",
+      "displayCharacter": "🍑",
+      "requiresPartner": true
+    }
+  ]
+}

@@ -3,6 +3,13 @@ import 'analysis_event_type.dart';
 import 'package:indulge/data/models.dart';
 
 class PeriodComparisonData {
+  /// Full map of all categories (including subcategories) from the store.
+  final Map<String, SexualActivityCategory> allCategoriesMap;
+
+  /// Aggregated sexual activities keyed by composite key "catId:activityName".
+  /// Used to classify each activityCount as actionable vs gear.
+  final Map<String, SexualActivity> sexualActivities;
+
   final PeriodComparison thisWeekVsLastWeek;
   final PeriodComparison thisMonthVsLastMonth;
   final int daysSinceLastRiskyActivity;
@@ -21,6 +28,8 @@ class PeriodComparisonData {
   final List<SexualEvent> events;
 
   const PeriodComparisonData({
+    required this.allCategoriesMap,
+    required this.sexualActivities,
     required this.thisWeekVsLastWeek,
     required this.thisMonthVsLastMonth,
     required this.daysSinceLastRiskyActivity,
@@ -41,6 +50,8 @@ class PeriodComparisonData {
 
   factory PeriodComparisonData.empty() {
     return const PeriodComparisonData(
+      allCategoriesMap: {},
+      sexualActivities: {},
       thisWeekVsLastWeek: PeriodComparison(
         currentPeriodCount: 0,
         previousPeriodCount: 0,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:indulge/view/common/sexual_event_card.dart';
+import 'package:indulge/view/common/sexual_event_card/sexual_event_card.dart';
 import '../../models/overview_data.dart';
 
 class RecordsSection extends StatelessWidget {
@@ -77,9 +77,7 @@ class RecordsSection extends StatelessWidget {
     final activityCount = event.activities
         .expand((a) => a.participants)
         .expand((p) => p.activityCounts)
-        .map((ac) => ac.activityReference.reference)
-        .toSet()
-        .length;
+        .fold<int>(0, (sum, ac) => sum + ac.count);
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),

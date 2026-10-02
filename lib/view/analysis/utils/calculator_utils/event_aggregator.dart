@@ -24,6 +24,23 @@ class EventAggregationResult {
   final int soloEventsTotal;
   final int nonSoloEventsTotal;
 
+  // Role breakdown per activity from the PARTNER's perspective
+  // (compositeKey -> role -> count)
+  // compositeKey = 'categoryId:activityName'
+  final Map<String, Map<ActivityRole, int>> partnerRoleActivityCounts;
+
+  // User's role breakdown per activity (compositeKey -> role -> count)
+  // Computed as inverse of partner's role (give->received, receive->give, both->both)
+  final Map<String, Map<ActivityRole, int>> userRoleActivityCounts;
+
+  // Role breakdown per partner (personId -> role -> count)
+  // This is what the PARTNER did to the user
+  final Map<String, Map<ActivityRole, int>> partnerRoleCounts;
+
+  // User's own role breakdown (role -> count)
+  // Computed as inverse of partner's role (give->received, receive->gave, both->both)
+  final Map<ActivityRole, int> userRoleCounts;
+
   final Map<AnalysisEventType, Map<String, int>> activityCountsByType;
   final Map<AnalysisEventType, Map<String, int>> sexualActivityCountsByType;
   final Map<AnalysisEventType, Map<String, int>> monthlyCountsByType;
@@ -46,6 +63,12 @@ class EventAggregationResult {
 
   /// Number of sexual activity instances per event (unordered collection).
   final Set<int> eventPropertyCounts;
+
+  /// Number of actionable (non-gear) sexual activity instances per event.
+  final Set<int> eventActionablePropertyCounts;
+
+  /// Number of inactionable (gear/items) sexual activity instances per event.
+  final Set<int> eventGearPropertyCounts;
 
   /// Number of activity categories per event (unordered collection).
   final Set<int> eventActivityCounts;
@@ -107,6 +130,8 @@ class EventAggregationResult {
     required this.weeklyCounts,
     required this.eventPartnerCounts,
     required this.eventPropertyCounts,
+    required this.eventActionablePropertyCounts,
+    required this.eventGearPropertyCounts,
     required this.eventActivityCounts,
     // Period-scoped
     required this.eventsThisMonth,
@@ -126,6 +151,11 @@ class EventAggregationResult {
     required this.categoryPartnerCountsThisYear,
     required this.sexualActivityPartnerCountsThisYear,
     required this.categoryActivityPartnerCountsThisYear,
+    // Role aggregations
+    required this.partnerRoleActivityCounts,
+    required this.userRoleActivityCounts,
+    required this.partnerRoleCounts,
+    required this.userRoleCounts,
   });
 }
 
@@ -208,6 +238,8 @@ class EventAggregator {
     final weeklyCounts = <String, int>{};
     final eventPartnerCounts = <int>{};
     final eventPropertyCounts = <int>{};
+    final eventActionablePropertyCounts = <int>{};
+    final eventGearPropertyCounts = <int>{};
     final eventActivityCounts = <int>{};
 
     // ---------- period-scoped accumulators ----------
@@ -236,6 +268,16 @@ class EventAggregator {
     final sexualActivityPartnerCountsThisYear = <String, Set<String>>{};
     final categoryActivityPartnerCountsThisYear =
         <String, Map<String, Set<String>>>{};
+
+    // Role accumulators
+    // partnerRoleActivityCounts: compositeKey -> role -> count (partner's perspective)
+    final partnerRoleActivityCounts = <String, Map<ActivityRole, int>>{};
+    // partnerRoleCounts: personId -> role -> count (what partner did to user)
+    final partnerRoleCounts = <String, Map<ActivityRole, int>>{};
+    // userRoleCounts: role -> count (what user did to partner, inverse of partner role)
+    final userRoleCounts = <ActivityRole, int>{};
+    // userRoleActivityCounts: compositeKey -> role -> count (what user did per activity)
+    final userRoleActivityCounts = <String, Map<ActivityRole, int>>{};
 
     // ---------- iterate events (single pass) ----------
     for (final event in sortedEvents) {
@@ -276,6 +318,8 @@ class EventAggregator {
 
       // Track activities and sexual activities for this event
       int eventProperties = 0;
+      int eventActionableProperties = 0;
+      int eventGearProperties = 0;
       int eventActivitiesCount = 0;
       final eventActivityCategoryIds = <String, int>{};
       final eventSexualActivityIds = <String, int>{};
@@ -349,26 +393,55 @@ class EventAggregator {
 
           // Count sexual activities (for everyone, including me)
           for (final activityCount in participant.activityCounts) {
-            final sexualActivityId = activityCount.activityReference.reference;
+            // Use categoryReference as the activity identifier (since activities don't have IDs)
+            final sexualActivityId = activityCount.categoryReference.reference;
+            final activityName = activityCount.activityName;
             final count = activityCount.count;
+            final role = activityCount.role;
 
-            sexualActivityCountsTotal[sexualActivityId] =
-                (sexualActivityCountsTotal[sexualActivityId] ?? 0) + count;
-            eventSexualActivityIds[sexualActivityId] =
-                (eventSexualActivityIds[sexualActivityId] ?? 0) + count;
-            final sexualActivity = sexualActivitiesMap?[sexualActivityId];
+            // Use composite key: categoryId:activityName
+            final compositeKey = '$sexualActivityId:$activityName';
+            sexualActivityCountsTotal[compositeKey] =
+                (sexualActivityCountsTotal[compositeKey] ?? 0) + count;
+            eventSexualActivityIds[compositeKey] =
+                (eventSexualActivityIds[compositeKey] ?? 0) + count;
+
+            // Look up activity by category + name from sexualActivityCategories
+            SexualActivity? sexualActivity;
+            if (sexualActivityId.isNotEmpty) {
+              final category = sexualActivityCategories?[sexualActivityId];
+              if (category != null) {
+                for (final activity in category.activities) {
+                  if (activity.name == activityName) {
+                    sexualActivity = activity;
+                    break;
+                  }
+                }
+              }
+            }
+
             if (sexualActivity != null) {
-              sexualActivities[sexualActivityId] = sexualActivity;
+              sexualActivities[compositeKey] = sexualActivity;
 
               // Check if this sexual activity is risky
               if (sexualActivity.stiRisk || sexualActivity.healthRisk) {
                 _logger.fine(
-                  'Found risky sexual activity: ${sexualActivity.name} (${sexualActivity.id})',
+                  'Found risky sexual activity: ${sexualActivity.name}',
                 );
                 hasRiskyProperty = true;
               }
             }
             eventProperties += count;
+            if (sexualActivity != null) {
+              if (sexualActivity.isActionable) {
+                eventActionableProperties += count;
+              } else {
+                eventGearProperties += count;
+              }
+            } else {
+              // Unknown activity — treat as actionable so it isn't lost
+              eventActionableProperties += count;
+            }
 
             if (!isMe) {
               // Track sexual activities per partner
@@ -394,15 +467,46 @@ class EventAggregator {
                   personId,
                 );
 
-                // Track unique partners per sexual activity within each category
+                // Track unique partners per sexual activity within each category.
+                // Use composite key (catId:activityName) as the inner key so
+                // callers can look up SexualActivity metadata and group by sub.
                 categoryActivityPartnerCountsThisYear.putIfAbsent(
                   activityCategoryId,
                   () => {},
                 );
                 categoryActivityPartnerCountsThisYear[activityCategoryId]!
-                    .putIfAbsent(sexualActivityId, () => {});
-                categoryActivityPartnerCountsThisYear[activityCategoryId]![sexualActivityId]!
+                    .putIfAbsent(compositeKey, () => {});
+                categoryActivityPartnerCountsThisYear[activityCategoryId]![compositeKey]!
                     .add(personId);
+
+                // Track partner's role for this activity
+                partnerRoleActivityCounts.putIfAbsent(compositeKey, () => {});
+                partnerRoleActivityCounts[compositeKey]![role] =
+                    (partnerRoleActivityCounts[compositeKey]![role] ?? 0) +
+                    count;
+
+                // Track partner's overall role
+                partnerRoleCounts.putIfAbsent(personId, () => {});
+                partnerRoleCounts[personId]![role] =
+                    (partnerRoleCounts[personId]![role] ?? 0) + count;
+
+                // Track user's inverse role (user did the opposite of what partner did)
+                final userRole = _inverseRole(role);
+                userRoleCounts[userRole] =
+                    (userRoleCounts[userRole] ?? 0) + count;
+
+                // Track user's role for this specific activity
+                userRoleActivityCounts.putIfAbsent(compositeKey, () => {});
+                userRoleActivityCounts[compositeKey]![userRole] =
+                    (userRoleActivityCounts[compositeKey]![userRole] ?? 0) +
+                    count;
+              } else {
+                // This is the user's own participation - track directly
+                userRoleCounts[role] = (userRoleCounts[role] ?? 0) + count;
+                // Also track per-activity for user's own participation
+                userRoleActivityCounts.putIfAbsent(compositeKey, () => {});
+                userRoleActivityCounts[compositeKey]![role] =
+                    (userRoleActivityCounts[compositeKey]![role] ?? 0) + count;
               }
             }
           }
@@ -457,6 +561,8 @@ class EventAggregator {
       // Record partners, properties, and activities for this event
       eventPartnerCounts.add(eventPartners.length);
       eventPropertyCounts.add(eventProperties);
+      eventActionablePropertyCounts.add(eventActionableProperties);
+      eventGearPropertyCounts.add(eventGearProperties);
       eventActivityCounts.add(eventActivitiesCount);
 
       // Track events per partner
@@ -548,6 +654,8 @@ class EventAggregator {
       weeklyCounts: weeklyCounts,
       eventPartnerCounts: eventPartnerCounts,
       eventPropertyCounts: eventPropertyCounts,
+      eventActionablePropertyCounts: eventActionablePropertyCounts,
+      eventGearPropertyCounts: eventGearPropertyCounts,
       eventActivityCounts: eventActivityCounts,
       // Period-scoped
       eventsThisMonth: eventsThisMonth,
@@ -568,6 +676,29 @@ class EventAggregator {
       sexualActivityPartnerCountsThisYear: sexualActivityPartnerCountsThisYear,
       categoryActivityPartnerCountsThisYear:
           categoryActivityPartnerCountsThisYear,
+      // Role aggregations
+      partnerRoleActivityCounts: partnerRoleActivityCounts,
+      userRoleActivityCounts: userRoleActivityCounts,
+      partnerRoleCounts: partnerRoleCounts,
+      userRoleCounts: userRoleCounts,
     );
+  }
+
+  /// Returns the inverse role: what the user did to the partner
+  /// based on what the partner did to the user.
+  /// - give -> receive (partner gave to user, so user received from partner)
+  /// - receive -> give
+  /// - both -> both
+  static ActivityRole _inverseRole(ActivityRole role) {
+    switch (role) {
+      case ActivityRole.give:
+        return ActivityRole.receive;
+      case ActivityRole.receive:
+        return ActivityRole.give;
+      case ActivityRole.both:
+        return ActivityRole.both;
+      case ActivityRole.participated:
+        return ActivityRole.participated;
+    }
   }
 }

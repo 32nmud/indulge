@@ -35,10 +35,11 @@ void main() {
                   activityCounts: activityIds
                       .map(
                         (aId) => ActivityCount(
-                          activityReference: Reference(
-                            reference: aId,
-                            resourceType: 'SexualActivity',
+                          categoryReference: Reference(
+                            reference: 'category-sex',
+                            resourceType: 'SexualActivityCategory',
                           ),
+                          activityName: aId,
                           count: 1,
                         ),
                       )
@@ -232,8 +233,7 @@ void main() {
 
         final mockState = EventState(
           sexualActivities: {
-            'safe-activity': const SexualActivity(
-              id: 'safe-activity',
+            'Safe Activity': const SexualActivity(
               name: 'Safe Activity',
               stiRisk: false,
               healthRisk: false,
@@ -260,19 +260,27 @@ void main() {
           ]),
         ];
 
+        // calculateDaysSinceLastRisky looks up via sexualActivityCategories
+        // using categoryReference + activityName, so we need a category entry
+        // whose activities include the risky/safe items by the names used in
+        // the event's activityCounts (the activityId strings passed above).
         final mockState = EventState(
-          sexualActivities: {
-            'risky-activity': const SexualActivity(
-              id: 'risky-activity',
-              name: 'Risky Activity',
-              stiRisk: true,
-              healthRisk: false,
-            ),
-            'safe-activity': const SexualActivity(
-              id: 'safe-activity',
-              name: 'Safe Activity',
-              stiRisk: false,
-              healthRisk: false,
+          sexualActivityCategories: {
+            'category-sex': SexualActivityCategory(
+              id: 'category-sex',
+              name: 'Sex',
+              activities: [
+                const SexualActivity(
+                  name: 'risky-activity',
+                  stiRisk: true,
+                  healthRisk: false,
+                ),
+                const SexualActivity(
+                  name: 'safe-activity',
+                  stiRisk: false,
+                  healthRisk: false,
+                ),
+              ],
             ),
           },
         );
@@ -301,24 +309,27 @@ void main() {
         ];
 
         final mockState = EventState(
-          sexualActivities: {
-            'risky-activity': const SexualActivity(
-              id: 'risky-activity',
-              name: 'Risky Activity',
-              stiRisk: true,
-              healthRisk: false,
-            ),
-            'safe-activity': const SexualActivity(
-              id: 'safe-activity',
-              name: 'Safe Activity',
-              stiRisk: false,
-              healthRisk: false,
-            ),
-            'another-safe': const SexualActivity(
-              id: 'another-safe',
-              name: 'Another Safe',
-              stiRisk: false,
-              healthRisk: false,
+          sexualActivityCategories: {
+            'category-sex': SexualActivityCategory(
+              id: 'category-sex',
+              name: 'Sex',
+              activities: [
+                const SexualActivity(
+                  name: 'risky-activity',
+                  stiRisk: true,
+                  healthRisk: false,
+                ),
+                const SexualActivity(
+                  name: 'safe-activity',
+                  stiRisk: false,
+                  healthRisk: false,
+                ),
+                const SexualActivity(
+                  name: 'another-safe',
+                  stiRisk: false,
+                  healthRisk: false,
+                ),
+              ],
             ),
           },
         );

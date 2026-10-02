@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/data/models/v2/clinical_event/clinical_event.dart';
-import 'package:indulge/data/models/v2/clinical_test_result/clinical_test_result.dart';
+import 'package:indulge/data/models/v1/clinical_event/clinical_event.dart';
+import 'package:indulge/data/models/v1/clinical_test_result/clinical_test_result.dart';
 import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
 

@@ -17,13 +17,7 @@ CREATE TABLE sexual_event (
 
 CREATE INDEX IF NOT EXISTS idx_sexual_event_date ON sexual_event(date);
 
-CREATE TABLE sexual_activity_type (
-    id TEXT PRIMARY KEY,
-    last_modified TIMESTAMP NOT NULL,
-    json VARCHAR NOT NULL
-);
-
-CREATE TABLE sexual_activity_type_property (
+CREATE TABLE sexual_activities (
     id TEXT PRIMARY KEY,
     last_modified TIMESTAMP NOT NULL,
     json VARCHAR NOT NULL

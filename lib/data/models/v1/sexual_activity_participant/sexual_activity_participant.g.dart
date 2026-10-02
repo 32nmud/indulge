@@ -12,9 +12,9 @@ _SexualActivityParticipant _$SexualActivityParticipantFromJson(
   participant: json['participant'] == null
       ? const Reference()
       : Reference.fromJson(json['participant'] as Map<String, dynamic>),
-  propertyCounts:
-      (json['propertyCounts'] as List<dynamic>?)
-          ?.map((e) => PropertyCount.fromJson(e as Map<String, dynamic>))
+  activityCounts:
+      (json['activityCounts'] as List<dynamic>?)
+          ?.map((e) => ActivityCount.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
 );
@@ -23,5 +23,5 @@ Map<String, dynamic> _$SexualActivityParticipantToJson(
   _SexualActivityParticipant instance,
 ) => <String, dynamic>{
   'participant': instance.participant,
-  'propertyCounts': instance.propertyCounts,
+  'activityCounts': instance.activityCounts,
 };

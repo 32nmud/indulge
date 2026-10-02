@@ -91,6 +91,7 @@ class PartnerBreakdownCalculator {
     }
 
     return PartnerBreakdownData(
+      allCategoriesMap: stateSnapshot.sexualActivityCategories ?? {},
       personCounts: agg.personCounts,
       personEventCounts: agg.personEventCounts,
       personEvents: agg.personEvents,
@@ -111,6 +112,8 @@ class PartnerBreakdownCalculator {
       startDate: startDate,
       endDate: endDate,
       events: events,
+      partnerRoleCounts: agg.partnerRoleCounts,
+      userRoleCounts: agg.userRoleCounts,
     );
   }
 }

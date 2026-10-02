@@ -9,16 +9,17 @@ part 'location.g.dart';
 abstract class Location with _$Location {
   const Location._();
 
-  const factory Location({@Default("") String id, required Address address}) =
-      _Location;
+  const factory Location({
+    @Default("") String id,
+    Address? address,
+    required double latitude,
+    required double longitude,
+  }) = _Location;
 
   // -----------------------------------------------------------------
   // Custom JSON (de)serialization
   // -----------------------------------------------------------------
   factory Location.fromJson(Map<String, dynamic> json) {
-    if (!json.containsKey('address')) {
-      throw ArgumentError('Missing required field "address"');
-    }
     // Remove any incoming `resourceType` – we ignore it completely.
     final cleaned = Map<String, dynamic>.from(json)..remove('resourceType');
     return _$LocationFromJson(cleaned);

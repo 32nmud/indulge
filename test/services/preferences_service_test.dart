@@ -312,6 +312,167 @@ void main() {
       });
     });
 
+    group('co-occurrence exclusion keys', () {
+      test(
+        'getCoOccurrenceExcludedActivityKeys returns empty list by default',
+        () {
+          expect(
+            preferencesService.getCoOccurrenceExcludedActivityKeys(),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'setCoOccurrenceExcludedActivityKeys updates value and notifies',
+        () async {
+          var notified = false;
+          preferencesService.coOccurrenceExcludedActivityKeysNotifier
+              .addListener(() => notified = true);
+
+          await preferencesService.setCoOccurrenceExcludedActivityKeys([
+            'cat1:activity1',
+            'cat2:activity2',
+          ]);
+
+          expect(
+            preferencesService.getCoOccurrenceExcludedActivityKeys(),
+            equals(['cat1:activity1', 'cat2:activity2']),
+          );
+          expect(notified, isTrue);
+        },
+      );
+
+      test('setCoOccurrenceExcludedActivityKeys can clear the list', () async {
+        await preferencesService.setCoOccurrenceExcludedActivityKeys([
+          'cat1:activity1',
+        ]);
+        await preferencesService.setCoOccurrenceExcludedActivityKeys([]);
+
+        expect(
+          preferencesService.getCoOccurrenceExcludedActivityKeys(),
+          isEmpty,
+        );
+      });
+
+      test(
+        'getCoOccurrenceExcludedCategoryIdsParent returns empty list by default',
+        () {
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'getCoOccurrenceExcludedCategoryIdsSubcategory returns empty list by default',
+        () {
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsSubcategory(),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'setCoOccurrenceExcludedCategoryIdsParent updates value and notifies',
+        () async {
+          var notified = false;
+          preferencesService.coOccurrenceExcludedCategoryIdsParentNotifier
+              .addListener(() => notified = true);
+
+          await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([
+            'bdsm',
+            'fetish',
+          ]);
+
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
+            equals(['bdsm', 'fetish']),
+          );
+          expect(notified, isTrue);
+        },
+      );
+
+      test(
+        'setCoOccurrenceExcludedCategoryIdsSubcategory updates value and notifies',
+        () async {
+          var notified = false;
+          preferencesService.coOccurrenceExcludedCategoryIdsSubcategoryNotifier
+              .addListener(() => notified = true);
+
+          await preferencesService
+              .setCoOccurrenceExcludedCategoryIdsSubcategory([
+                'bdsm_sub',
+                'fetish_sub',
+              ]);
+
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsSubcategory(),
+            equals(['bdsm_sub', 'fetish_sub']),
+          );
+          expect(notified, isTrue);
+        },
+      );
+
+      test(
+        'setCoOccurrenceExcludedCategoryIdsParent can clear the list',
+        () async {
+          await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([
+            'bdsm',
+          ]);
+          await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([]);
+
+          expect(
+            preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
+            isEmpty,
+          );
+        },
+      );
+
+      test('loads saved excluded activity keys on build', () async {
+        SharedPreferences.setMockInitialValues({
+          'pref_co_occurrence_excluded_activity_keys':
+              '["cat1:act1","cat2:act2"]',
+        });
+        final service = await PreferencesService.build();
+
+        expect(
+          service.getCoOccurrenceExcludedActivityKeys(),
+          equals(['cat1:act1', 'cat2:act2']),
+        );
+      });
+
+      test('loads saved excluded category IDs (parent) on build', () async {
+        SharedPreferences.setMockInitialValues({
+          'pref_co_occurrence_excluded_category_ids_parent': '["bdsm","toys"]',
+        });
+        final service = await PreferencesService.build();
+
+        expect(
+          service.getCoOccurrenceExcludedCategoryIdsParent(),
+          equals(['bdsm', 'toys']),
+        );
+      });
+
+      test(
+        'loads saved excluded category IDs (subcategory) on build',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'pref_co_occurrence_excluded_category_ids_subcategory':
+                '["bdsm_sub","toys_sub"]',
+          });
+          final service = await PreferencesService.build();
+
+          expect(
+            service.getCoOccurrenceExcludedCategoryIdsSubcategory(),
+            equals(['bdsm_sub', 'toys_sub']),
+          );
+        },
+      );
+    });
+
     group('clearAll', () {
       test('clears all preferences and resets to defaults', () async {
         // Set some values first
@@ -321,6 +482,14 @@ void main() {
         await preferencesService.setCustomFirst(DateTime(2024, 1, 1));
         await preferencesService.setAutoAddLocation(true);
         await preferencesService.setCalendarViewMode(true);
+
+        // Set co-occurrence exclusions too
+        await preferencesService.setCoOccurrenceExcludedActivityKeys([
+          'cat1:act1',
+        ]);
+        await preferencesService.setCoOccurrenceExcludedCategoryIdsParent([
+          'bdsm',
+        ]);
 
         // Clear all
         await preferencesService.clearAll();
@@ -333,6 +502,14 @@ void main() {
         expect(preferencesService.getCustomFirst(), isNull);
         expect(preferencesService.getAutoAddLocation(), isFalse);
         expect(preferencesService.getCalendarViewMode(), isFalse);
+        expect(
+          preferencesService.getCoOccurrenceExcludedActivityKeys(),
+          isEmpty,
+        );
+        expect(
+          preferencesService.getCoOccurrenceExcludedCategoryIdsParent(),
+          isEmpty,
+        );
       });
     });
 

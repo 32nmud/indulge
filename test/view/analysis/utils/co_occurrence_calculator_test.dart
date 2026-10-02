@@ -29,10 +29,11 @@ void main() {
                 activityCounts: activityIds
                     .map(
                       (aId) => ActivityCount(
-                        activityReference: Reference(
-                          reference: aId,
-                          resourceType: 'SexualActivity',
+                        categoryReference: Reference(
+                          reference: 'category-sex',
+                          resourceType: 'SexualActivityCategory',
                         ),
+                        activityName: aId,
                         count: 1,
                       ),
                     )
@@ -116,8 +117,8 @@ void main() {
         ];
 
         final activities = {
-          'oral-male': SexualActivity(id: 'oral-male', name: 'Oral (Male)'),
-          'vaginal': SexualActivity(id: 'vaginal', name: 'Vaginal'),
+          'Oral (Male)': SexualActivity(name: 'Oral (Male)'),
+          'Vaginal': SexualActivity(name: 'Vaginal'),
         };
 
         final result = CoOccurrenceCalculator.calculate(
@@ -225,9 +226,9 @@ void main() {
         };
 
         final activities = {
-          'oral': SexualActivity(id: 'oral', name: 'Oral'),
-          'vaginal': SexualActivity(id: 'vaginal', name: 'Vaginal'),
-          'anal': SexualActivity(id: 'anal', name: 'Anal'),
+          'Oral': SexualActivity(name: 'Oral'),
+          'Vaginal': SexualActivity(name: 'Vaginal'),
+          'Anal': SexualActivity(name: 'Anal'),
         };
 
         final result = CoOccurrenceCalculator.calculate(

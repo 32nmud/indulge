@@ -7,7 +7,6 @@ import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
 import 'package:uuid/uuid.dart';
 import 'utils/event_mutations.dart';
 import 'widgets/widgets.dart';
-import 'widgets/activity_card.dart';
 import 'utils/event_validator.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:latlong2/latlong.dart' as ll;
@@ -230,6 +229,26 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
   }
 
   void _addParticipant(int activityIndex, Person person) {
+    // Check if user has any solo activities - if so, don't allow adding others
+    final myself = context.read<EventStateStore>().state.myself;
+    if (myself != null) {
+      final activity = _workingEvent.activities[activityIndex];
+      final myParticipant = activity.participants.firstWhere(
+        (p) => p.participant.reference == myself.id,
+        orElse: () => const ActivityParticipant(),
+      );
+      final hasSoloActivity = myParticipant.activityCounts.any((ac) => ac.solo);
+      if (hasSoloActivity) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot add participants to a solo activity'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+
     final updatedEvent = addParticipant(_workingEvent, activityIndex, person);
     if (identical(updatedEvent, _workingEvent)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -248,61 +267,67 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
     });
   }
 
-  void _toggleMyselfForProperty(int activityIndex, String activityId) {
-    final myself = context.read<EventStateStore>().state.myself;
-    if (myself == null) return;
+  /// Get subcategories for a given parent category ID
+  List<SexualActivityCategory> _getSubcategories(String parentId) {
+    final parent = _availableActivityCategories[parentId];
+    if (parent == null) return [];
 
-    setState(() {
-      _workingEvent = toggleMyselfForProperty(
-        _workingEvent,
-        activityIndex,
-        myself.id,
-        activityId,
-      );
-    });
+    // Preserve the order the user set in settings — subCategories list is
+    // already ordered by the user via the editor's up/down controls.
+    return parent.subCategories
+        .where((ref) => ref.reference.isNotEmpty)
+        .map((ref) => _availableActivityCategories[ref.reference])
+        .whereType<SexualActivityCategory>()
+        .toList();
   }
 
   void _toggleParticipantForProperty(
     int activityIndex,
-    String activityId,
-    String personId,
-  ) {
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
     setState(() {
       _workingEvent = toggleParticipantForProperty(
         _workingEvent,
         activityIndex,
-        activityId,
+        activityName,
         personId,
+        categoryId: categoryId,
       );
     });
   }
 
   void _incrementPropertyCount(
     int activityIndex,
-    String activityId,
-    String personId,
-  ) {
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
     setState(() {
       _workingEvent = incrementPropertyCount(
         _workingEvent,
         activityIndex,
-        activityId,
+        activityName,
         personId,
+        categoryId: categoryId,
       );
     });
   }
 
   void _decrementPropertyCount(
     int activityIndex,
-    String activityId,
-    String personId,
-  ) {
+    String activityName,
+    String personId, {
+    String? categoryId,
+  }) {
     setState(() {
       _workingEvent = decrementPropertyCount(
         _workingEvent,
         activityIndex,
-        activityId,
+        activityName,
         personId,
+        categoryId: categoryId,
       );
     });
   }
@@ -389,7 +414,9 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
         _clearPendingLocation();
       }
 
-      await provider.saveEvent(_workingEvent);
+      // Clean up participants who were added but have no activities
+      final cleanedEvent = cleanupDanglingParticipants(_workingEvent);
+      await provider.saveEvent(cleanedEvent);
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -568,6 +595,7 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
   Widget _buildActivityCard(int activityIndex, EventActivity activity) {
     final myself = context.read<EventStateStore>().state.myself;
     final isExpanded = _expandedActivities.contains(activityIndex);
+    final subcategories = _getSubcategories(activity.category.reference);
 
     return ActivityCard(
       activityIndex: activityIndex,
@@ -577,6 +605,7 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
       availablePersons: _availablePersons,
       myself: myself,
       isExpanded: isExpanded,
+      subcategories: subcategories,
       onToggleExpanded: () {
         setState(() {
           if (isExpanded) {
@@ -597,10 +626,33 @@ class _SexualEventEditorPageState extends State<SexualEventEditorPage> {
           );
         });
       },
-      toggleMyselfForProperty: _toggleMyselfForProperty,
       toggleParticipantForProperty: _toggleParticipantForProperty,
       incrementPropertyCount: _incrementPropertyCount,
       decrementPropertyCount: _decrementPropertyCount,
+      onToggleSolo: (activityIndex, activityName, personId, {categoryId}) {
+        setState(() {
+          _workingEvent = toggleSolo(
+            _workingEvent,
+            activityIndex,
+            activityName,
+            personId,
+            categoryId: categoryId,
+          );
+        });
+      },
+      onToggleParticipantActivity:
+          (activityIndex, activityName, personId, role, {categoryId}) {
+            setState(() {
+              _workingEvent = toggleParticipantActivity(
+                _workingEvent,
+                activityIndex,
+                activityName,
+                personId,
+                role,
+                categoryId: categoryId,
+              );
+            });
+          },
     );
   }
 

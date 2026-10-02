@@ -20,6 +20,24 @@ _Person _$PersonFromJson(Map<String, dynamic> json) => _Person(
       ? null
       : DateTime.parse(json['birthday'] as String),
   isSelf: json['isSelf'] as bool? ?? false,
+  bodyType: json['bodyType'] as String?,
+  endowment: json['endowment'] as String?,
+  cutStatus: json['cutStatus'] as String?,
+  breastSize: json['breastSize'] as String?,
+  assignedSexAtBirth: json['assignedSexAtBirth'] as String?,
+  height: json['height'] as String?,
+  gender: json['gender'] as String?,
+  hivStatus: json['hivStatus'] as String?,
+  herpesStatus: json['herpesStatus'] as String?,
+  pronouns: json['pronouns'] as String?,
+  socialLinks:
+      (json['socialLinks'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  notes: json['notes'] as String?,
+  imageBytes: json['imageBytes'] as String?,
+  version: (json['version'] as num?)?.toInt() ?? 1,
 );
 
 Map<String, dynamic> _$PersonToJson(_Person instance) => <String, dynamic>{
@@ -30,4 +48,18 @@ Map<String, dynamic> _$PersonToJson(_Person instance) => <String, dynamic>{
   'location': instance.location,
   'birthday': instance.birthday?.toIso8601String(),
   'isSelf': instance.isSelf,
+  'bodyType': instance.bodyType,
+  'endowment': instance.endowment,
+  'cutStatus': instance.cutStatus,
+  'breastSize': instance.breastSize,
+  'assignedSexAtBirth': instance.assignedSexAtBirth,
+  'height': instance.height,
+  'gender': instance.gender,
+  'hivStatus': instance.hivStatus,
+  'herpesStatus': instance.herpesStatus,
+  'pronouns': instance.pronouns,
+  'socialLinks': instance.socialLinks,
+  'notes': instance.notes,
+  'imageBytes': instance.imageBytes,
+  'version': instance.version,
 };

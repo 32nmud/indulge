@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
-import 'package:indulge/view/home/daily_event_view.dart';
-import 'package:indulge/view/common/bottom_nav_bar.dart';
 import 'package:indulge/provider/sexual_event_provider.dart';
 import 'package:indulge/provider/clinical_event_provider.dart';
 import 'package:indulge/provider/event_state_store.dart';
 import 'package:indulge/provider/theme_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
-import 'package:indulge/view/contacts/contact_list_page.dart';
-import 'package:indulge/view/settings/settings_page.dart';
-import 'package:indulge/view/analysis/analysis_page.dart';
-import 'package:indulge/view/search/search_page.dart';
 import 'package:indulge/view/migration/migration_check.dart';
 import 'package:indulge/view/common/navigation_helper.dart';
 import 'package:indulge/view/security/pin_entry_screen.dart';
+import 'package:indulge/view/home/daily_event_view.dart';
+import 'package:indulge/view/search/search_page.dart';
+import 'package:indulge/view/analysis/analysis_page.dart';
+import 'package:indulge/view/contacts/contact_list_page.dart';
+import 'package:indulge/view/common/contact_editor/contact_editor_page.dart';
+import 'package:indulge/view/settings/settings_page.dart';
+import 'package:indulge/view/common/speed_dial_fab.dart';
+import 'package:indulge/view/common/sexual_event_editor/sexual_event_editor.dart';
+import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
+import 'package:indulge/provider/clinical_event_provider.dart'
+    show ClinicalEventsProvider;
 import 'dart:io';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:indulge/domain/database/database_engine.dart';
-import 'package:indulge/view/common/speed_dial_fab.dart';
-import 'package:indulge/view/common/clinical_event_editor/clinical_event_editor.dart';
 import 'package:logging/logging.dart';
 
 // Preferences service (SharedPreferences wrapper) - initialize at startup
@@ -260,7 +261,19 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int currentPageIndex = 0;
+  int _currentPageIndex = 0;
+
+  /// Set when navigation is triggered programmatically (e.g. "search this
+  /// partner") so the back button/gesture can return the user to where they
+  /// came from.  Cleared whenever the user taps a bottom-nav destination
+  /// themselves.
+  int? _previousPageIndex;
+
+  /// Pages that have been visited at least once.  The IndexedStack only builds
+  /// a page on first visit so we don't pay the cost of constructing all five
+  /// pages at startup.
+  final Set<int> _builtPages = {0};
+
   final GlobalKey<SearchPageState> _searchPageKey =
       GlobalKey<SearchPageState>();
 
@@ -273,219 +286,258 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Method to navigate to search page with partner filter
-  void navigateToSearchWithPartner(String partnerId) {
+  /// Called when the user explicitly taps a bottom-nav destination.
+  /// Clears the back-history so the OS back button exits normally.
+  void _userNavigateTo(int index) {
+    if (index == _currentPageIndex) return;
     setState(() {
-      currentPageIndex = 1; // Search page index
-    });
-    // Wait for the page to build, then set the filter
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchPageKey.currentState?.setPartnerFilter(partnerId);
+      _builtPages.add(index);
+      _previousPageIndex = null;
+      _currentPageIndex = index;
     });
   }
 
-  // Method to navigate to search page with event type filter
-  void navigateToSearchWithEventType(String eventType) {
+  /// Called when code inside a page navigates to another tab (e.g. opening
+  /// Search from within Analysis).  Records the origin so the user can swipe /
+  /// press back to return there.
+  void _programmaticNavigateTo(int index) {
+    if (index == _currentPageIndex) return;
     setState(() {
-      currentPageIndex = 1; // Search page index
-    });
-    // Wait for the page to build, then set the filter
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchPageKey.currentState?.setEventTypeFilter(eventType);
+      _builtPages.add(index);
+      _previousPageIndex = _currentPageIndex;
+      _currentPageIndex = index;
     });
   }
 
-  void navigateToSearchWithCategory(String categoryId) {
-    setState(() {
-      currentPageIndex = 1; // Search page index
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchPageKey.currentState?.applyFilters(categoryId: categoryId);
-    });
-  }
-
-  // Method to navigate to search page with date range filter
-  void navigateToSearchWithDateRange(DateTimeRange range) {
-    setState(() {
-      currentPageIndex = 1; // Search page index
-    });
-    // Wait for the page to build, then set the filter
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchPageKey.currentState?.setDateRangeFilter(range);
-    });
-  }
-
-  void navigateToSearch({
-    DateTimeRange? dateRange,
-    String? eventType,
-    String? partnerId,
-    String? categoryId,
-    bool sinceLastStiTest = false,
-  }) {
-    setState(() {
-      currentPageIndex = 1; // Search page index
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchPageKey.currentState?.applyFilters(
-        dateRange: dateRange,
-        eventType: eventType,
-        partnerId: partnerId,
-        categoryId: categoryId,
-        sinceLastStiTest: sinceLastStiTest,
-      );
-    });
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return const EventViewPage();
+      case 1:
+        return SearchPage(key: _searchPageKey);
+      case 2:
+        return const AnalysisPage();
+      case 3:
+        return const ContactListPage();
+      case 4:
+        return const SettingsPage();
+      default:
+        return const EventViewPage();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return NavigationHelper(
-      navigateToSearchWithPartner: navigateToSearchWithPartner,
-      navigateToSearchWithEventType: navigateToSearchWithEventType,
-      navigateToSearchWithCategory: navigateToSearchWithCategory,
-      navigateToSearchWithDateRange: navigateToSearchWithDateRange,
-      navigateToSearch: navigateToSearch,
-      child: Scaffold(
-        body: FutureBuilder<String>(
-          future: context.read<SexualEventsProvider>().ready,
-          builder: (ctx, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    return Scaffold(
+      body: FutureBuilder<String>(
+        future: context.read<SexualEventsProvider>().ready,
+        builder: (ctx, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Error initializing app',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      '${snapshot.error}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Error initializing app',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        '${snapshot.error}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return IndexedStack(
-              index: currentPageIndex,
-              children: [
-                const EventViewPage(),
-                SearchPage(key: _searchPageKey),
-                const AnalysisPage(),
-                const ContactListPage(key: PageStorageKey('contact_list')),
-                const SettingsPage(),
-              ],
+                  ),
+                ],
+              ),
             );
-          },
-        ),
-        bottomNavigationBar: BottomNavBar(currentPageIndex, (int index) {
-          setState(() {
-            currentPageIndex = index;
-          });
-        }),
-        floatingActionButton: _buildFloatingActionButton(),
+          }
+
+          return NavigationHelper(
+            navigateToSearchWithPartner: (String partnerId) {
+              _programmaticNavigateTo(1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(partnerId: partnerId);
+              });
+            },
+            navigateToSearchWithEventType: (String eventType) {
+              _programmaticNavigateTo(1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(eventType: eventType);
+              });
+            },
+            navigateToSearchWithCategory: (String categoryId) {
+              _programmaticNavigateTo(1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(
+                  categoryId: categoryId,
+                );
+              });
+            },
+            navigateToSearchWithDateRange: (DateTimeRange range) {
+              _programmaticNavigateTo(1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _searchPageKey.currentState?.applyFilters(dateRange: range);
+              });
+            },
+            navigateToSearch:
+                ({
+                  DateTimeRange? dateRange,
+                  String? eventType,
+                  String? partnerId,
+                  String? categoryId,
+                  bool sinceLastStiTest = false,
+                }) {
+                  _programmaticNavigateTo(1);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _searchPageKey.currentState?.applyFilters(
+                      dateRange: dateRange,
+                      eventType: eventType,
+                      partnerId: partnerId,
+                      categoryId: categoryId,
+                      sinceLastStiTest: sinceLastStiTest,
+                    );
+                  });
+                },
+            // IndexedStack keeps every visited page alive in the widget tree
+            // so state (scroll position, loaded data, page index, etc.) is
+            // preserved when the user switches tabs or is sent to Search
+            // programmatically.  Pages that haven't been visited yet are
+            // replaced with a cheap SizedBox so we don't pay build cost
+            // upfront for all five pages.
+            child: PopScope(
+              // Allow the OS back gesture/button only when there is nowhere to
+              // go back to (i.e. normal app-exit behaviour).
+              canPop: _previousPageIndex == null,
+              onPopInvokedWithResult: (didPop, _) {
+                if (!didPop && _previousPageIndex != null) {
+                  setState(() {
+                    _currentPageIndex = _previousPageIndex!;
+                    _previousPageIndex = null;
+                  });
+                }
+              },
+              child: IndexedStack(
+                index: _currentPageIndex,
+                children: List.generate(5, (i) {
+                  if (!_builtPages.contains(i)) return const SizedBox.shrink();
+                  return _buildPageWithFab(i);
+                }),
+              ),
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentPageIndex,
+        onDestinationSelected: _userNavigateTo,
+        destinations: const [
+          NavigationDestination(
+            selectedIcon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.search),
+            icon: Icon(Icons.search_outlined),
+            label: 'Search',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.bar_chart),
+            icon: Icon(Icons.bar_chart_outlined),
+            label: 'Analysis',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.contacts),
+            icon: Icon(Icons.contacts_outlined),
+            label: 'Contacts',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.settings),
+            icon: Icon(Icons.settings_outlined),
+            label: 'Settings',
+          ),
+        ],
       ),
     );
   }
 
-  Widget? _buildFloatingActionButton() {
-    // Show different FAB based on current page
-    switch (currentPageIndex) {
-      case 0: // Events page - show speed-dial FAB with Sexual + Clinical actions
-        return SpeedDialFab(
-          items: [
-            SpeedDialItem(
-              icon: const Icon(Icons.local_fire_department),
-              label: 'Sexual',
+  Widget _buildPageWithFab(int index) {
+    return Scaffold(
+      body: _buildPage(index),
+      floatingActionButton: index == 0
+          ? SpeedDialFab(
+              items: [
+                SpeedDialItem(
+                  icon: const Icon(Icons.edit),
+                  label: 'Log Event',
+                  onPressed: () => _openEventEditor(null),
+                ),
+                SpeedDialItem(
+                  icon: const Icon(Icons.medical_services),
+                  label: 'Log Test Result',
+                  onPressed: () => _openClinicalEventEditor(null),
+                ),
+              ],
+            )
+          : index == 3
+          ? FloatingActionButton(
               onPressed: () {
-                final selectedDate = context
-                    .read<EventStateStore>()
-                    .state
-                    .selectedDate;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) =>
-                        SexualEventEditorPage(initialDate: selectedDate),
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ContactEditorPage(),
                   ),
                 );
               },
-            ),
-            SpeedDialItem(
-              icon: const Icon(Icons.medical_services),
-              label: 'Clinical',
-              onPressed: () {
-                final selectedDate = context
-                    .read<EventStateStore>()
-                    .state
-                    .selectedDate;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => ClinicalEventEditorPage(
-                      initialDate: selectedDate,
-                      onSave: (clinicalEvent) async {
-                        try {
-                          await context
-                              .read<ClinicalEventsProvider>()
-                              .saveEvent(clinicalEvent);
-                          return true;
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Error saving clinical event: $e',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                          return false;
-                        }
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-          closedIcon: Icons.add,
-        );
-      case 3: // Contacts page
-        return FloatingActionButton(
-          heroTag: 'contacts_add_fab',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) => const ContactEditorPage(),
-              ),
-            );
+              child: const Icon(Icons.add),
+            )
+          : null,
+    );
+  }
+
+  void _openEventEditor(DateTime? initialDate) {
+    // If no date was explicitly provided, use the currently selected date from
+    // the store (e.g. the user has navigated to a past day in the calendar).
+    // Fall back to today only when the store has no selection.
+    final selectedDate =
+        initialDate ??
+        context.read<EventStateStore>().state.selectedDate ??
+        DateTime.now();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SexualEventEditorPage(initialDate: selectedDate),
+      ),
+    );
+  }
+
+  void _openClinicalEventEditor(DateTime? initialDate) {
+    final selectedDate =
+        initialDate ??
+        context.read<EventStateStore>().state.selectedDate ??
+        DateTime.now();
+    final clinicalProvider = context.read<ClinicalEventsProvider>();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ClinicalEventEditorPage(
+          initialDate: selectedDate,
+          onSave: (event) async {
+            try {
+              await clinicalProvider.saveEvent(event);
+              return true;
+            } catch (_) {
+              return false;
+            }
           },
-          tooltip: 'Add a new contact',
-          child: const Icon(Icons.person_add),
-        );
-      default:
-        return null; // No FAB for other pages
-    }
+        ),
+      ),
+    );
   }
 }

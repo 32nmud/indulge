@@ -3,9 +3,10 @@ import '../common/page_title.dart';
 import 'event_averages_section.dart';
 import 'co_occurrence_section.dart';
 import 'activity_type_distribution.dart';
-import 'properties_by_activity_section.dart';
+import 'activity_section_breakdown.dart';
 import 'category_trends_chart.dart';
-import 'property_trends_chart.dart';
+import 'activity_trends_chart.dart';
+
 import '../../models/analysis_event_type.dart';
 import '../../models/activity_breakdown_data.dart';
 
@@ -37,13 +38,28 @@ class ActivityBreakdownPage extends StatelessWidget {
         CoOccurrenceSection(data: data, filterType: selectedType),
         const SizedBox(height: 16),
         ActivityTypeDistribution(data: data, filterType: selectedType),
-        PropertiesByActivitySection(data: data, filterType: selectedType),
+        ActivitySectionBreakdown(
+          data: data,
+          filterType: selectedType,
+          showActionable: true,
+          title: 'Activities',
+          subtitle: 'Things you did — grouped by category',
+          icon: Icons.sports_martial_arts,
+        ),
+        ActivitySectionBreakdown(
+          data: data,
+          filterType: selectedType,
+          showActionable: false,
+          title: 'Gear & Items',
+          subtitle: 'Things you used — grouped by category',
+          icon: Icons.hardware,
+        ),
         CategoryTrendsChart(
           data: data,
           filterType: selectedType,
           showTypeFilter: false,
         ),
-        PropertyTrendsChart(
+        ActivityTrendsChart(
           data: data,
           filterType: selectedType,
           showTypeFilter: false,

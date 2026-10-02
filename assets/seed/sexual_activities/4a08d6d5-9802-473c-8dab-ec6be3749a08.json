@@ -1,0 +1,37 @@
+{
+  "id": "4a08d6d5-9802-473c-8dab-ec6be3749a08",
+  "name": "Penetration",
+  "displayCharacter": "🔥",
+  "activities": [
+    {
+      "name": "Vaginal",
+      "displayCharacter": "🥠",
+      "requiresPartner": true,
+      "stiRisk": true
+    },
+    {
+      "name": "Anal",
+      "displayCharacter": "🍑",
+      "requiresPartner": true,
+      "stiRisk": true
+    },
+    {
+      "name": "Came inside",
+      "displayCharacter": "💦",
+      "requiresPartner": true,
+      "stiRisk": true
+    },
+    {
+      "name": "Condom",
+      "displayCharacter": "🛡️",
+      "requiresPartner": true,
+      "isActionable": false
+    },
+    {
+      "name": "Broken condom",
+      "displayCharacter": "💔",
+      "requiresPartner": true,
+      "isActionable": false
+    }
+  ]
+}

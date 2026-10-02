@@ -42,6 +42,22 @@ class PreferencesService {
       'pref_partner_properties_category_selected_ids';
   static const String _kActivitySelectedIds = 'pref_activity_selected_ids';
 
+  // Co-occurrence exclude filter keys (JSON-encoded lists of strings)
+  static const String _kCoOccurrenceExcludedActivityKeys =
+      'pref_co_occurrence_excluded_activity_keys';
+  // Legacy single key (kept for migration only — no longer written)
+  static const String _kCoOccurrenceExcludedCategoryIds =
+      'pref_co_occurrence_excluded_category_ids';
+  // Per-mode category exclusion keys (parent vs subcategory view)
+  static const String _kCoOccurrenceExcludedCategoryIdsParent =
+      'pref_co_occurrence_excluded_category_ids_parent';
+  static const String _kCoOccurrenceExcludedCategoryIdsSubcategory =
+      'pref_co_occurrence_excluded_category_ids_subcategory';
+
+  // Analysis page order: JSON-encoded list of page-index integers.
+  // Default order: [0, 1, 2, 3, 4] (overview, activity, partner, period, health)
+  static const String _kAnalysisPageOrder = 'pref_analysis_page_order';
+
   // Auto-add location setting
   static const String _kAutoAddLocation = 'pref_auto_add_location';
 
@@ -49,7 +65,7 @@ class PreferencesService {
   static const String _kCalendarViewMode = 'pref_calendar_view_mode';
 
   // Current preferences version. Increment when stored keys/shape change.
-  static const int _currentPreferencesVersion = 5;
+  static const int _currentPreferencesVersion = 8;
 
   // Default values
   static const PeriodPreset _defaultPreset = PeriodPreset.lastMonthVsThisMonth;
@@ -90,6 +106,19 @@ class PreferencesService {
   // Calendar view mode: true => calendar view, false => timeline view
   final ValueNotifier<bool> calendarViewModeNotifier;
 
+  // Co-occurrence exclude filters
+  final ValueNotifier<List<String>> coOccurrenceExcludedActivityKeysNotifier;
+  // Per-mode category exclusions (parent mode and subcategory mode stored separately)
+  final ValueNotifier<List<String>>
+  coOccurrenceExcludedCategoryIdsParentNotifier;
+  final ValueNotifier<List<String>>
+  coOccurrenceExcludedCategoryIdsSubcategoryNotifier;
+
+  /// Page order for the Analysis screen.  Each entry is a page index (0-4).
+  /// The list length must equal the number of pages; a missing/invalid stored
+  /// value falls back to the default [0, 1, 2, 3, 4] order.
+  final ValueNotifier<List<int>> analysisPageOrderNotifier;
+
   PreferencesService._(
     this._prefs,
     this.periodPresetNotifier,
@@ -107,6 +136,10 @@ class PreferencesService {
     this.propertiesCategorySelectedIdsNotifier,
     this.partnerPropertiesCategorySelectedIdsNotifier,
     this.activitySelectedIdsNotifier,
+    this.coOccurrenceExcludedActivityKeysNotifier,
+    this.coOccurrenceExcludedCategoryIdsParentNotifier,
+    this.coOccurrenceExcludedCategoryIdsSubcategoryNotifier,
+    this.analysisPageOrderNotifier,
   );
 
   /// Asynchronously build the singleton service.
@@ -200,6 +233,36 @@ class PreferencesService {
       }
     }
 
+    final coExcludedActivityKeysJson = prefs.getString(
+      _kCoOccurrenceExcludedActivityKeys,
+    );
+    final coExcludedActivityKeys = _parseStringList(coExcludedActivityKeysJson);
+    final coExcludedCategoryIdsParent = _parseStringList(
+      prefs.getString(_kCoOccurrenceExcludedCategoryIdsParent),
+    );
+    final coExcludedCategoryIdsSubcategory = _parseStringList(
+      prefs.getString(_kCoOccurrenceExcludedCategoryIdsSubcategory),
+    );
+
+    // Load analysis page order (JSON-encoded list of ints). Fall back to the
+    // default order [0..4] if missing or malformed.
+    List<int> _parseIntList(String? jsonStr, List<int> defaultValue) {
+      if (jsonStr == null) return defaultValue;
+      try {
+        final decoded = jsonDecode(jsonStr) as List<dynamic>;
+        final ints = decoded.map((e) => (e as num).toInt()).toList();
+        return ints;
+      } catch (_) {
+        return defaultValue;
+      }
+    }
+
+    const defaultPageOrder = [0, 1, 2, 3, 4];
+    final analysisPageOrder = _parseIntList(
+      prefs.getString(_kAnalysisPageOrder),
+      defaultPageOrder,
+    );
+
     final categorySelectedJson = prefs.getString(_kCategorySelectedIds);
     final propertiesCategorySelectedJson = prefs.getString(
       _kPropertiesCategorySelectedIds,
@@ -234,6 +297,10 @@ class PreferencesService {
       ValueNotifier<List<String>>(propertiesCategorySelected),
       ValueNotifier<List<String>>(partnerPropertiesCategorySelected),
       ValueNotifier<List<String>>(activitySelected),
+      ValueNotifier<List<String>>(coExcludedActivityKeys),
+      ValueNotifier<List<String>>(coExcludedCategoryIdsParent),
+      ValueNotifier<List<String>>(coExcludedCategoryIdsSubcategory),
+      ValueNotifier<List<int>>(analysisPageOrder),
     );
   }
 
@@ -491,10 +558,72 @@ class PreferencesService {
   }
 
   // -------------------------
+  // Co-occurrence exclusion APIs
+  // -------------------------
+
+  List<String> getCoOccurrenceExcludedActivityKeys() =>
+      List.unmodifiable(coOccurrenceExcludedActivityKeysNotifier.value);
+
+  Future<void> setCoOccurrenceExcludedActivityKeys(List<String> keys) async {
+    final jsonStr = jsonEncode(keys);
+    await _prefs.setString(_kCoOccurrenceExcludedActivityKeys, jsonStr);
+    coOccurrenceExcludedActivityKeysNotifier.value = List.unmodifiable(keys);
+  }
+
+  // ── Per-mode category exclusions ─────────────────────────────────────────
+
+  List<String> getCoOccurrenceExcludedCategoryIdsParent() =>
+      List.unmodifiable(coOccurrenceExcludedCategoryIdsParentNotifier.value);
+
+  Future<void> setCoOccurrenceExcludedCategoryIdsParent(
+    List<String> ids,
+  ) async {
+    await _prefs.setString(
+      _kCoOccurrenceExcludedCategoryIdsParent,
+      jsonEncode(ids),
+    );
+    coOccurrenceExcludedCategoryIdsParentNotifier.value = List.unmodifiable(
+      ids,
+    );
+  }
+
+  List<String> getCoOccurrenceExcludedCategoryIdsSubcategory() =>
+      List.unmodifiable(
+        coOccurrenceExcludedCategoryIdsSubcategoryNotifier.value,
+      );
+
+  Future<void> setCoOccurrenceExcludedCategoryIdsSubcategory(
+    List<String> ids,
+  ) async {
+    await _prefs.setString(
+      _kCoOccurrenceExcludedCategoryIdsSubcategory,
+      jsonEncode(ids),
+    );
+    coOccurrenceExcludedCategoryIdsSubcategoryNotifier.value =
+        List.unmodifiable(ids);
+  }
+
+  // -------------------------
   // Utilities
   // -------------------------
 
-  /// Clears persisted preferences for the keys this service manages.
+  /// Clears all persisted preferences managed by this service and resets
+  /// in-memory notifiers to their default values.
+  // ── Analysis page order ───────────────────────────────────────────────────
+
+  static const List<int> _defaultPageOrder = [0, 1, 2, 3, 4];
+
+  List<int> getAnalysisPageOrder() => analysisPageOrderNotifier.value.isNotEmpty
+      ? analysisPageOrderNotifier.value
+      : _defaultPageOrder;
+
+  Future<void> setAnalysisPageOrder(List<int> order) async {
+    await _prefs.setString(_kAnalysisPageOrder, jsonEncode(order));
+    analysisPageOrderNotifier.value = order;
+  }
+
+  // ── Clear all ─────────────────────────────────────────────────────────────
+
   Future<void> clearAll() async {
     await _prefs.remove(_kPeriodPreset);
     await _prefs.remove(_kCustomFirst);
@@ -509,7 +638,13 @@ class PreferencesService {
     await _prefs.remove(_kCalendarViewMode);
     await _prefs.remove(_kCategorySelectedIds);
     await _prefs.remove(_kPropertiesCategorySelectedIds);
+    await _prefs.remove(_kPartnerPropertiesCategorySelectedIds);
     await _prefs.remove(_kActivitySelectedIds);
+    await _prefs.remove(_kCoOccurrenceExcludedActivityKeys);
+    await _prefs.remove(_kCoOccurrenceExcludedCategoryIds);
+    await _prefs.remove(_kCoOccurrenceExcludedCategoryIdsParent);
+    await _prefs.remove(_kCoOccurrenceExcludedCategoryIdsSubcategory);
+    await _prefs.remove(_kAnalysisPageOrder);
 
     periodPresetNotifier.value = _defaultPreset;
     customFirstNotifier.value = null;
@@ -523,12 +658,16 @@ class PreferencesService {
     activityShowPatternNotifier.value = false;
 
     autoAddLocationNotifier.value = false;
-
     calendarViewModeNotifier.value = false;
 
     categorySelectedIdsNotifier.value = <String>[];
     propertiesCategorySelectedIdsNotifier.value = <String>[];
+    partnerPropertiesCategorySelectedIdsNotifier.value = <String>[];
     activitySelectedIdsNotifier.value = <String>[];
+    coOccurrenceExcludedActivityKeysNotifier.value = <String>[];
+    coOccurrenceExcludedCategoryIdsParentNotifier.value = <String>[];
+    coOccurrenceExcludedCategoryIdsSubcategoryNotifier.value = <String>[];
+    analysisPageOrderNotifier.value = _defaultPageOrder;
   }
 
   /// Migration hook - apply transformations from older stored preferences
@@ -594,7 +733,68 @@ class PreferencesService {
         await prefs.setBool(_kAutoAddLocation, false);
       }
 
-      // Update version
+      await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
+    }
+
+    if (fromVersion < 6) {
+      // Version 6: introduce co-occurrence exclusion filter persistence.
+      // Default to empty lists (no exclusions) for existing installs.
+      if (!prefs.containsKey(_kCoOccurrenceExcludedActivityKeys)) {
+        await prefs.setString(
+          _kCoOccurrenceExcludedActivityKeys,
+          jsonEncode(<String>[]),
+        );
+      }
+      if (!prefs.containsKey(_kCoOccurrenceExcludedCategoryIds)) {
+        await prefs.setString(
+          _kCoOccurrenceExcludedCategoryIds,
+          jsonEncode(<String>[]),
+        );
+      }
+
+      await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
+    }
+
+    if (fromVersion < 7) {
+      // Version 7: split co-occurrence category exclusions into separate keys
+      // for parent mode and subcategory mode.
+      // Migrate any existing single-key exclusions into the parent key so
+      // users don't lose their existing filters.
+      final legacyJson = prefs.getString(_kCoOccurrenceExcludedCategoryIds);
+      final legacyIds = legacyJson != null
+          ? (() {
+              try {
+                return (jsonDecode(legacyJson) as List<dynamic>)
+                    .map((e) => e.toString())
+                    .toList();
+              } catch (_) {
+                return <String>[];
+              }
+            })()
+          : <String>[];
+
+      if (!prefs.containsKey(_kCoOccurrenceExcludedCategoryIdsParent)) {
+        await prefs.setString(
+          _kCoOccurrenceExcludedCategoryIdsParent,
+          jsonEncode(legacyIds),
+        );
+      }
+      if (!prefs.containsKey(_kCoOccurrenceExcludedCategoryIdsSubcategory)) {
+        await prefs.setString(
+          _kCoOccurrenceExcludedCategoryIdsSubcategory,
+          jsonEncode(<String>[]),
+        );
+      }
+
+      await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
+    }
+
+    if (fromVersion < 8) {
+      // Version 8: introduce analysis page order persistence.
+      // Default to the standard order [0,1,2,3,4] for existing installs.
+      if (!prefs.containsKey(_kAnalysisPageOrder)) {
+        await prefs.setString(_kAnalysisPageOrder, jsonEncode([0, 1, 2, 3, 4]));
+      }
       await prefs.setInt(_kPreferencesVersion, _currentPreferencesVersion);
     }
   }

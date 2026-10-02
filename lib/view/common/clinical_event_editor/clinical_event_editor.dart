@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'clinical_event_form.dart';
-import 'package:indulge/data/models/v2/clinical_event/clinical_event.dart';
+import 'package:indulge/data/models/v1/clinical_event/clinical_event.dart';
 
 /// ClinicalEventEditorPage hosts the `ClinicalEventForm` and provides an
 /// AppBar save action that mirrors the behavior in the sexual event editor:

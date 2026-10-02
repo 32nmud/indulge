@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:indulge/data/models/v2/clinical_event/clinical_event.dart';
-import 'package:indulge/data/models/v2/clinical_test_result/clinical_test_result.dart';
+import 'package:indulge/data/models/v1/clinical_event/clinical_event.dart';
+import 'package:indulge/data/models/v1/clinical_test_result/clinical_test_result.dart';
 import 'package:indulge/view/common/sexual_event_editor/widgets/widgets.dart';
 
 /// A form widget for creating/editing a `ClinicalEvent`.
