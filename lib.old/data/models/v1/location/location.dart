@@ -1,0 +1,45 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:uuid/uuid.dart';
+import '../address/address.dart';
+
+part 'location.freezed.dart';
+part 'location.g.dart';
+
+@Freezed(toJson: true, fromJson: true)
+abstract class Location with _$Location {
+  const Location._();
+
+  const factory Location({
+    @Default("") String id,
+    Address? address,
+    required double latitude,
+    required double longitude,
+  }) = _Location;
+
+  // -----------------------------------------------------------------
+  // Custom JSON (de)serialization
+  // -----------------------------------------------------------------
+  factory Location.fromJson(Map<String, dynamic> json) {
+    // Remove any incoming `resourceType` – we ignore it completely.
+    final cleaned = Map<String, dynamic>.from(json)..remove('resourceType');
+    return _$LocationFromJson(cleaned);
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    // Let the generated helper create the map, then inject the constant.
+    final map = _$LocationToJson(this as _Location);
+    map['resourceType'] = "Location"; // guarantee the correct value
+    return map;
+  }
+
+  // -----------------------------------------------------------------
+  // Fixed getters
+  // -----------------------------------------------------------------
+  @JsonKey(name: 'resourceType')
+  String get resourceType => "Location";
+
+  @override
+  String get id =>
+      (this as _Location).id == "" ? const Uuid().v4() : (this as _Location).id;
+}

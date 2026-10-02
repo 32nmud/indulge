@@ -1,0 +1,307 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'activity_count.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$ActivityCount {
+
+ Reference get categoryReference; String get activityName; int get count; ActivityRole get role; bool get solo;
+/// Create a copy of ActivityCount
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ActivityCountCopyWith<ActivityCount> get copyWith => _$ActivityCountCopyWithImpl<ActivityCount>(this as ActivityCount, _$identity);
+
+  /// Serializes this ActivityCount to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityCount&&(identical(other.categoryReference, categoryReference) || other.categoryReference == categoryReference)&&(identical(other.activityName, activityName) || other.activityName == activityName)&&(identical(other.count, count) || other.count == count)&&(identical(other.role, role) || other.role == role)&&(identical(other.solo, solo) || other.solo == solo));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,categoryReference,activityName,count,role,solo);
+
+@override
+String toString() {
+  return 'ActivityCount(categoryReference: $categoryReference, activityName: $activityName, count: $count, role: $role, solo: $solo)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ActivityCountCopyWith<$Res>  {
+  factory $ActivityCountCopyWith(ActivityCount value, $Res Function(ActivityCount) _then) = _$ActivityCountCopyWithImpl;
+@useResult
+$Res call({
+ Reference categoryReference, String activityName, int count, ActivityRole role, bool solo
+});
+
+
+$ReferenceCopyWith<$Res> get categoryReference;
+
+}
+/// @nodoc
+class _$ActivityCountCopyWithImpl<$Res>
+    implements $ActivityCountCopyWith<$Res> {
+  _$ActivityCountCopyWithImpl(this._self, this._then);
+
+  final ActivityCount _self;
+  final $Res Function(ActivityCount) _then;
+
+/// Create a copy of ActivityCount
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? categoryReference = null,Object? activityName = null,Object? count = null,Object? role = null,Object? solo = null,}) {
+  return _then(_self.copyWith(
+categoryReference: null == categoryReference ? _self.categoryReference : categoryReference // ignore: cast_nullable_to_non_nullable
+as Reference,activityName: null == activityName ? _self.activityName : activityName // ignore: cast_nullable_to_non_nullable
+as String,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
+as int,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as ActivityRole,solo: null == solo ? _self.solo : solo // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+/// Create a copy of ActivityCount
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReferenceCopyWith<$Res> get categoryReference {
+  
+  return $ReferenceCopyWith<$Res>(_self.categoryReference, (value) {
+    return _then(_self.copyWith(categoryReference: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [ActivityCount].
+extension ActivityCountPatterns on ActivityCount {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ActivityCount value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ActivityCount() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ActivityCount value)  $default,){
+final _that = this;
+switch (_that) {
+case _ActivityCount():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ActivityCount value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ActivityCount() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Reference categoryReference,  String activityName,  int count,  ActivityRole role,  bool solo)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ActivityCount() when $default != null:
+return $default(_that.categoryReference,_that.activityName,_that.count,_that.role,_that.solo);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Reference categoryReference,  String activityName,  int count,  ActivityRole role,  bool solo)  $default,) {final _that = this;
+switch (_that) {
+case _ActivityCount():
+return $default(_that.categoryReference,_that.activityName,_that.count,_that.role,_that.solo);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Reference categoryReference,  String activityName,  int count,  ActivityRole role,  bool solo)?  $default,) {final _that = this;
+switch (_that) {
+case _ActivityCount() when $default != null:
+return $default(_that.categoryReference,_that.activityName,_that.count,_that.role,_that.solo);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ActivityCount extends ActivityCount {
+  const _ActivityCount({this.categoryReference = const Reference(), this.activityName = "", this.count = 1, this.role = ActivityRole.participated, this.solo = false}): super._();
+  factory _ActivityCount.fromJson(Map<String, dynamic> json) => _$ActivityCountFromJson(json);
+
+@override@JsonKey() final  Reference categoryReference;
+@override@JsonKey() final  String activityName;
+@override@JsonKey() final  int count;
+@override@JsonKey() final  ActivityRole role;
+@override@JsonKey() final  bool solo;
+
+/// Create a copy of ActivityCount
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ActivityCountCopyWith<_ActivityCount> get copyWith => __$ActivityCountCopyWithImpl<_ActivityCount>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ActivityCountToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityCount&&(identical(other.categoryReference, categoryReference) || other.categoryReference == categoryReference)&&(identical(other.activityName, activityName) || other.activityName == activityName)&&(identical(other.count, count) || other.count == count)&&(identical(other.role, role) || other.role == role)&&(identical(other.solo, solo) || other.solo == solo));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,categoryReference,activityName,count,role,solo);
+
+@override
+String toString() {
+  return 'ActivityCount(categoryReference: $categoryReference, activityName: $activityName, count: $count, role: $role, solo: $solo)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ActivityCountCopyWith<$Res> implements $ActivityCountCopyWith<$Res> {
+  factory _$ActivityCountCopyWith(_ActivityCount value, $Res Function(_ActivityCount) _then) = __$ActivityCountCopyWithImpl;
+@override @useResult
+$Res call({
+ Reference categoryReference, String activityName, int count, ActivityRole role, bool solo
+});
+
+
+@override $ReferenceCopyWith<$Res> get categoryReference;
+
+}
+/// @nodoc
+class __$ActivityCountCopyWithImpl<$Res>
+    implements _$ActivityCountCopyWith<$Res> {
+  __$ActivityCountCopyWithImpl(this._self, this._then);
+
+  final _ActivityCount _self;
+  final $Res Function(_ActivityCount) _then;
+
+/// Create a copy of ActivityCount
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? categoryReference = null,Object? activityName = null,Object? count = null,Object? role = null,Object? solo = null,}) {
+  return _then(_ActivityCount(
+categoryReference: null == categoryReference ? _self.categoryReference : categoryReference // ignore: cast_nullable_to_non_nullable
+as Reference,activityName: null == activityName ? _self.activityName : activityName // ignore: cast_nullable_to_non_nullable
+as String,count: null == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
+as int,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as ActivityRole,solo: null == solo ? _self.solo : solo // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+/// Create a copy of ActivityCount
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReferenceCopyWith<$Res> get categoryReference {
+  
+  return $ReferenceCopyWith<$Res>(_self.categoryReference, (value) {
+    return _then(_self.copyWith(categoryReference: value));
+  });
+}
+}
+
+// dart format on

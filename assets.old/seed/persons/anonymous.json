@@ -1,0 +1,26 @@
+{
+  "id": "anonymous",
+  "date": "2024-01-01T00:00:00.000Z",
+  "lastUpdateDate": null,
+  "name": {
+    "given": "Anonymous",
+    "family": null,
+    "nickname": null
+  },
+  "location": null,
+  "birthday": null,
+  "isSelf": false,
+  "bodyType": null,
+  "endowment": null,
+  "cutStatus": null,
+  "breastSize": null,
+  "assignedSexAtBirth": null,
+  "height": null,
+  "gender": null,
+  "hivStatus": null,
+  "herpesStatus": null,
+  "pronouns": null,
+  "socialLinks": [],
+  "notes": null,
+  "imageBytes": null
+}

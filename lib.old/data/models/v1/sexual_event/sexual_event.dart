@@ -1,0 +1,54 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:indulge/data/models/versioned_model.dart';
+import 'package:uuid/uuid.dart';
+import '../event_activity/event_activity.dart';
+import '../location/location.dart';
+
+part 'sexual_event.freezed.dart';
+part 'sexual_event.g.dart';
+
+@Freezed(toJson: true, fromJson: true)
+abstract class SexualEvent with _$SexualEvent implements VersionedModel {
+  const SexualEvent._();
+
+  const factory SexualEvent({
+    @Default("") String id,
+    required DateTime date,
+    DateTime? lastModifiedDate,
+    required List<EventActivity> activities,
+    Location? location, // embedded Location resource (optional)
+    String? notes, // free-form text notes for the event
+  }) = _SexualEvent;
+
+  // -----------------------------------------------------------------
+  // Custom JSON (de)serialization
+  // -----------------------------------------------------------------
+  factory SexualEvent.fromJson(Map<String, dynamic> json) {
+    // Remove any incoming `resourceType` – we ignore it completely.
+    final cleaned = Map<String, dynamic>.from(json)..remove('resourceType');
+    return _$SexualEventFromJson(cleaned);
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    // Let the generated helper create the map, then inject the constant.
+    final map = _$SexualEventToJson(this as _SexualEvent);
+    map['resourceType'] = "SexualEvent"; // guarantee the correct value
+    return map;
+  }
+
+  // -----------------------------------------------------------------
+  // Fixed getters
+  // -----------------------------------------------------------------
+  @JsonKey(name: 'resourceType')
+  @override
+  String get resourceType => "SexualEvent";
+
+  @override
+  int get version => 1;
+
+  @override
+  String get id => (this as _SexualEvent).id == ""
+      ? const Uuid().v4()
+      : (this as _SexualEvent).id;
+}
