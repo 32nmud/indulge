@@ -1,0 +1,26 @@
+{
+  "id": "me",
+  "date": "2024-01-01T00:00:00.000Z",
+  "lastUpdateDate": "2026-02-11T10:05:08.619344",
+  "name": {
+    "given": "Me",
+    "family": null,
+    "nickname": null
+  },
+  "location": null,
+  "birthday": null,
+  "isSelf": true,
+  "bodyType": null,
+  "endowment": null,
+  "cutStatus": null,
+  "breastSize": null,
+  "assignedSexAtBirth": null,
+  "height": null,
+  "gender": null,
+  "hivStatus": null,
+  "herpesStatus": null,
+  "pronouns": null,
+  "socialLinks": [],
+  "notes": null,
+  "imageBytes": null
+}

@@ -1,0 +1,26 @@
+{
+  "id": "5d34810a-b052-440c-8569-261f63497329",
+  "resourceType": "Event",
+  "type": "sexual",
+  "date": "2025-11-15",
+  "lastUpdate": "2025-11-15",
+  "location": { "reference": "Location/a1965520-60d6-4b6c-b2fd-19d9c4193409" },
+  "activities": [
+    {
+      "activityType": {
+        "reference": "SexualActivityType/cb646f22-695c-450d-abcb-83c3086a904c"
+      },
+      "participants": [
+        { "reference": "Person/987d4924-cfb3-48bc-bcc0-b4cc21756003" }
+      ]
+    },
+    {
+      "activityType": {
+        "reference": "SexualActivityType/05a98d03-1323-4e35-a943-0176bd6818f4"
+      },
+      "participants": [
+        { "reference": "Person/987d4924-cfb3-48bc-bcc0-b4cc21756003" }
+      ]
+    }
+  ]
+}
